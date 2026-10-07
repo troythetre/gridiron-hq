@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type Membership = { status: string; current_period_end: string | null };
+export type Membership = {
+  status: string;
+  current_period_end: string | null;
+  stripe_customer_id: string | null;
+};
 
 const OWNER_EMAIL = "troythetre@gmail.com";
 
@@ -12,10 +16,10 @@ export async function getMembership(userId: string): Promise<Membership | null> 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("membership_subscriptions")
-    .select("status,current_period_end")
+    .select("status,current_period_end,stripe_customer_id")
     .eq("profile_id", userId)
     .maybeSingle();
-  if (error) return null;
+  if (error) throw error;
   return data;
 }
 

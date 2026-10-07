@@ -136,7 +136,7 @@ export function StartSitTool({
                   value={upsidePreference}
                   onChange={(event) => setUpsidePreference(Number(event.target.value))}
                   aria-label="Choose how much to prioritize upside over floor"
-                  className="mt-3 w-full accent-primary"
+                    className="mt-3 w-full accent-violet-400"
                 />
                 <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted"><span>Prioritize floor</span><span>Prioritize upside</span></div>
               </div>
@@ -163,7 +163,7 @@ export function StartSitTool({
           </Card>
 
           {result && playerA && playerB && (
-            <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-[1fr_auto_1fr]">
+            <div className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
               {scoredA && scoredB && <>
               <ResultCard
                 side="A"
@@ -177,7 +177,7 @@ export function StartSitTool({
                 <Swords className="h-6 w-6" />
                 <span className="text-xs font-semibold">{Math.abs(signedMargin).toFixed(1)} pt margin</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider">Engine lean</span>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white/90"><div className="h-full rounded-full bg-red-500" style={{ width: `${leanA}%` }} /></div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-red-500 via-white/70 to-white" style={{ width: `${leanA}%` }} /></div>
                 <div className="flex w-full justify-between text-[10px] font-bold"><span>A {leanA}%</span><span>B {100 - leanA}%</span></div>
               </div>
               <ResultCard
@@ -332,8 +332,8 @@ function ResultCard({
           side === "A" ? "border-red-500/45 bg-red-950/20" : "border-white/25 bg-white/[.04]",
           isWinner && "border-emerald-400/50 bg-emerald-400/[.09] ring-1 ring-emerald-400/20",
         )}>
-          {photo && <Image src={photo} alt="" fill unoptimized={photo.startsWith("http")} sizes="(max-width: 640px) 100vw, 40vw" className="object-cover object-top opacity-20" />}
-          <div className={cn("absolute inset-0", side === "A" ? "bg-gradient-to-r from-red-950/90 via-red-950/65 to-black/45" : "bg-gradient-to-r from-black/85 via-black/65 to-white/10")} />
+          {photo && <Image src={photo} alt="" fill unoptimized={photo.startsWith("http")} sizes="(max-width: 1024px) 100vw, 40vw" className="object-cover object-top opacity-10" />}
+          <div className={cn("absolute inset-0", side === "A" ? "bg-gradient-to-r from-red-950/95 via-red-950/90 to-black/80" : "bg-gradient-to-r from-black/95 via-black/90 to-black/75")} />
           <CardContent className="relative p-4">
             <div className="flex items-center justify-between gap-2">
               <div className="flex min-w-0 items-center gap-2">
@@ -348,7 +348,7 @@ function ResultCard({
               <p className="text-right text-lg font-black tabular-nums text-white">{leanPercent}%<span className="block text-[9px] font-bold uppercase tracking-wider text-white/65">engine lean</span></p>
               <ChevronDown className="h-4 w-4 shrink-0 text-white/70 transition group-open:rotate-180" />
             </div>
-            <ul className="mt-3 space-y-1 text-sm text-white/75">
+            <ul className="mt-3 space-y-1 text-xs leading-5 text-white/80">
               {scored.reasons.map((reason, index) => <li key={index}>· {reason}</li>)}
             </ul>
             {injury && <div className="mt-3"><StatusBadge status={injury.status} /></div>}
