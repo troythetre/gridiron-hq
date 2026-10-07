@@ -11,7 +11,7 @@ export default async function NewsPage() {
     supabase.from("espn_rosters").select("roster_json").eq("profile_id", user!.id),
   ]);
   const teamPlayerNames = [
-    ...(sleeperRosters ?? []).flatMap((roster) => roster.roster_json.map((player) => player.name)),
+    ...((sleeperRosters ?? []) as { roster_json: { name: string }[] }[]).flatMap((roster) => roster.roster_json.map((player) => player.name)),
     ...(espnRosters ?? []).flatMap((roster) => roster.roster_json.map((player: { name: string }) => player.name)),
   ];
 
