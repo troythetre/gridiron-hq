@@ -30,7 +30,7 @@ function trendGroup(trend: number | null) {
 export function RosterBrowser({ players }: { players: RosterBrowserPlayer[] }) {
   const [position, setPosition] = useState("ALL");
   const [sort, setSort] = useState("points");
-  const [groupBy, setGroupBy] = useState("none");
+  const [groupBy, setGroupBy] = useState("position");
 
   const rows = useMemo(() => players
     .filter((player) => position === "ALL" || player.pos === position)
@@ -66,10 +66,10 @@ export function RosterBrowser({ players }: { players: RosterBrowserPlayer[] }) {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="points">Sort: PPG</SelectItem>
-          <SelectItem value="trend">Sort: weekly trend</SelectItem>
-          <SelectItem value="rank">Sort: position rank</SelectItem>
-          <SelectItem value="name">Sort: name</SelectItem>
+          <SelectItem value="points">Sort: PPG (high to low)</SelectItem>
+          <SelectItem value="trend">Sort: weekly trend (up first)</SelectItem>
+          <SelectItem value="rank">Sort: position rank (best first)</SelectItem>
+          <SelectItem value="name">Sort: name (A–Z)</SelectItem>
         </SelectContent>
       </Select>
       <Select value={groupBy} onValueChange={setGroupBy}>
