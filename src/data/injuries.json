@@ -1,0 +1,20 @@
+[
+  {"name": "Lamar Jackson", "pos": "QB", "team": "BAL", "injury": "Ankle", "status": "QUESTIONABLE",
+   "note": "Day-to-day; head coach unsure if he'll play Week 5.", "source": "Forbes, 10/5/2026"},
+  {"name": "Saquon Barkley", "pos": "RB", "team": "PHI", "injury": "Hamstring", "status": "QUESTIONABLE",
+   "note": "Underwent tests Monday; reporting says it \"does not appear to be overly serious.\"", "source": "Forbes, 10/5/2026"},
+  {"name": "Ja'Marr Chase", "pos": "WR", "team": "CIN", "injury": "Concussion", "status": "QUESTIONABLE",
+   "note": "Shouldn't be sidelined long-term, but Week 5 status unclear pending protocol.", "source": "Forbes, 10/5/2026"},
+  {"name": "Tee Higgins", "pos": "WR", "team": "CIN", "injury": "Adductor", "status": "QUESTIONABLE",
+   "note": "Day-to-day per head coach Zac Taylor.", "source": "Forbes, 10/5/2026"},
+  {"name": "Rashee Rice", "pos": "WR", "team": "KC", "injury": "Hamstring", "status": "OUT",
+   "note": "Could miss several weeks; Chiefs were on bye Week 5.", "source": "Forbes, 10/5/2026"},
+  {"name": "Tank Bigsby", "pos": "RB", "team": "PHI", "injury": "Core muscle (surgery)", "status": "OUT",
+   "note": "Heading to injured reserve for at least 4 weeks.", "source": "Forbes, 10/5/2026"},
+  {"name": "Tyquan Thornton", "pos": "WR", "team": "KC", "injury": "Dislocated ankle", "status": "OUT",
+   "note": "Expected out 12-16 weeks.", "source": "Forbes, 10/5/2026"},
+  {"name": "Ladd McConkey", "pos": "WR", "team": "LAC", "injury": "Foot (aggravated)", "status": "QUESTIONABLE",
+   "note": "Day-to-day.", "source": "Forbes, 10/5/2026"},
+  {"name": "Jadarian Price", "pos": "RB", "team": "SEA", "injury": "Chest (prior); now IR", "status": "OUT",
+   "note": "Placed on injured reserve; Emanuel Wilson has taken over the Seattle backfield.", "source": "Yahoo Sports, 10/2026"}
+]
