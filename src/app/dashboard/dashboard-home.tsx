@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, BookOpen, MessageCircle, Newspaper, Search, ShieldAlert, Sparkles, TrendingUp } from "lucide-react";
 import type { InjuryRow, NewsItemRow, FantasyVideoRow, WaiverPickRow, PlayerMarketRow } from "@/lib/types";
 import { PlayerAvatar } from "@/components/player-avatar";
@@ -102,9 +103,9 @@ export function DashboardHome({
     <section className="space-y-4">
       <SectionHeader title="Film Study" detail="Fresh fantasy analysis and player breakdowns" href="/dashboard/fantasy-feed" />
       {videos.length ? <div className="grid gap-3 md:grid-cols-3">{videos.map((video) => <a key={video.video_id} href={video.watch_url} target="_blank" rel="noreferrer" className="group overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-primary/40">
-        <div className="relative aspect-video overflow-hidden bg-background"><img src={video.thumbnail_url} alt="" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" /><span className="absolute bottom-2 left-2 rounded-full bg-black/80 px-2 py-1 text-[9px] font-bold text-white">FILM ROOM</span></div>
+        <div className="relative aspect-video overflow-hidden bg-background"><Image src={video.thumbnail_url} alt="" fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition duration-300 group-hover:scale-105" /><span className="absolute bottom-2 left-2 rounded-full bg-black/80 px-2 py-1 text-[9px] font-bold text-white">FILM ROOM</span></div>
         <div className="p-3"><p className="line-clamp-2 text-sm font-bold leading-5">{video.title}</p><p className="mt-1 text-[10px] text-muted">{video.channel_title} · {new Date(video.published_at).toLocaleDateString()}</p></div>
-      </a>)}</div> : <Card><CardContent className="flex items-center gap-3 p-5 text-sm text-muted"><BookOpen className="h-5 w-5" />Film study videos will appear here when the feed has fresh analysis.</CardContent></Card>}
+      </a>)}</div> : <Card><CardContent className="flex items-center gap-3 p-5 text-sm text-muted"><BookOpen className="h-5 w-5" /><span>No film videos are loaded yet. Apply the Fantasy Feed migration and run its refresh workflow; <Link href="/dashboard/fantasy-feed" className="font-bold text-primary hover:underline">see setup</Link>.</span></CardContent></Card>}
     </section>
 
     <section className="space-y-4">

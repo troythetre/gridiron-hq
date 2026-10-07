@@ -53,7 +53,10 @@ export async function getFantasyVideos(): Promise<FantasyVideoRow[]> {
     .select("*")
     .order("published_at", { ascending: false })
     .limit(60);
-  if (error?.code === "42P01") return [];
+  // Video ingestion is optional until the community/feed migration is applied.
+  // Supabase/PostgREST use different error codes for a missing table vs a stale
+  // schema cache; neither should take down the main dashboard.
+  if (error?.code === "42P01" || error?.code === "PGRST205") return [];
   if (error) throw error;
   return data ?? [];
 }
