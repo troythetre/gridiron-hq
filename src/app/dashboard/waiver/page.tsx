@@ -7,6 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link2 } from "lucide-react";
+import { PlayerAvatar } from "@/components/player-avatar";
+
+const positionAccent: Record<string, string> = {
+  QB: "border-l-violet-400 bg-violet-500/[.045]",
+  RB: "border-l-emerald-400 bg-emerald-500/[.045]",
+  WR: "border-l-sky-400 bg-sky-500/[.045]",
+  TE: "border-l-amber-400 bg-amber-500/[.045]",
+  K: "border-l-orange-400 bg-orange-500/[.045]",
+  DST: "border-l-rose-400 bg-rose-500/[.045]",
+};
 
 type RosterPlayer = { name: string; pos: string };
 type TeamRoster = {
@@ -53,23 +63,15 @@ function WaiverPickList({ picks }: { picks: Awaited<ReturnType<typeof getWaiverP
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {picks.map((pick, index) => (
-        <Card key={pick.id}>
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-lg font-bold text-muted">#{index + 1}</span>
-                <PosBadge pos={pick.pos ?? "?"} />
-                <div>
-                  <p className="font-medium">{pick.name}</p>
-                  <p className="text-xs text-muted">{pick.team}</p>
-                </div>
-              </div>
-              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                ~{pick.pct_rostered_est}% rostered
-              </span>
+        <Card key={pick.id} className={`group overflow-hidden border-l-4 border-y-slate-700/80 border-r-slate-700/80 bg-gradient-to-br from-slate-800/60 to-slate-950/80 transition hover:-translate-y-0.5 hover:border-r-slate-500 hover:shadow-xl hover:shadow-black/20 ${positionAccent[(pick.pos ?? "").toUpperCase()] ?? "border-l-slate-400"}`}>
+          <CardContent className="relative p-4 sm:p-5">
+            <span className="absolute right-4 top-4 text-xs font-black tracking-widest text-slate-500">WAIVER #{String(index + 1).padStart(2, "0")}</span>
+            <div className="flex items-center gap-3 pr-24">
+              <PlayerAvatar name={pick.name} team={pick.team ?? "FA"} position={pick.pos ?? "?"} size={54} />
+              <div className="min-w-0"><p className="truncate text-base font-extrabold text-slate-100 group-hover:text-white">{pick.name}</p><div className="mt-1.5 flex items-center gap-2"><PosBadge pos={pick.pos ?? "?"} /><span className="text-xs font-bold text-slate-400">{pick.team ?? "Free agent"}</span></div></div>
             </div>
-            <p className="mt-3 text-sm text-muted">{pick.note}</p>
-            {pick.source && <p className="mt-2 text-xs text-muted/70">{pick.source}</p>}
+            <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-700/70 pt-3"><span className="rounded-full border border-slate-600 bg-slate-900/70 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-300">~{pick.pct_rostered_est ?? "—"}% rostered</span>{pick.source && <span className="truncate text-[10px] uppercase tracking-wider text-slate-500">{pick.source}</span>}</div>
+            {pick.note && <p className="mt-3 text-sm leading-6 text-slate-300">{pick.note}</p>}
           </CardContent>
         </Card>
       ))}
@@ -106,9 +108,10 @@ export default async function WaiverPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Waiver Wire</h1>
-        <p className="text-sm text-muted">Pickup targets tailored to the position depth on your synced teams.</p>
+      <div className="rounded-3xl border border-slate-600/60 bg-[linear-gradient(135deg,#343a42,#161a20_75%)] p-6 sm:p-8">
+        <p className="text-[10px] font-black uppercase tracking-[.22em] text-slate-300">Roster-aware pickups</p>
+        <h1 className="mt-2 text-3xl font-black text-slate-50 sm:text-4xl">Waiver Wire</h1>
+        <p className="mt-2 text-sm text-slate-300/75">Targets are sorted by positional depth for your synced teams. Each player card is highlighted by position.</p>
       </div>
 
       {teams.length ? teams.map((team) => {

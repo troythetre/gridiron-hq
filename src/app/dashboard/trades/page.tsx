@@ -3,14 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getInjuries } from "@/lib/data";
 import { evaluateTrade, type InjuryStatus } from "@/lib/scoring";
 import type { PlayerRow, TradeOfferStatus } from "@/lib/types";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TradeBlockPanel, type TradeBlockEntry } from "./trade-block-panel";
 import { ProposeTradeForm, type TradeMember } from "./propose-trade-form";
 import { TradeOffersList, type OfferView } from "./trade-offers-list";
-import { Users2 } from "lucide-react";
 import { hasActiveMembership } from "@/lib/membership";
 import { MembershipWall } from "@/components/membership-wall";
+import { TradeCalculator } from "./trade-calculator";
+import { getPlayers } from "@/lib/data";
 
 export default async function TradesPage({
   searchParams,
@@ -28,22 +28,26 @@ export default async function TradesPage({
     .eq("profile_id", user!.id);
 
   if (!memberships || memberships.length === 0) {
+    const [{ data: sleeperRosters }, { data: espnRosters }, players, injuries] = await Promise.all([
+      supabase.from("sleeper_rosters").select("team_name,league_name,roster_json").eq("profile_id", user.id),
+      supabase.from("espn_rosters").select("team_name,league_name,roster_json").eq("profile_id", user.id),
+      getPlayers(),
+      getInjuries(),
+    ]);
+    const synced = [
+      ...((sleeperRosters ?? []) as { team_name: string | null; league_name: string; roster_json: { name: string }[] }[]),
+      ...((espnRosters ?? []) as { team_name: string; league_name: string; roster_json: { name: string }[] }[]),
+    ];
+    const rosterNames = synced.flatMap((roster) => roster.roster_json.map((player) => player.name));
+    const teamNames = [...new Set(synced.map((roster) => `${roster.team_name ?? "My team"} · ${roster.league_name}`))];
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Trades</h1>
-          <p className="text-sm text-muted">Trades work on leagues created here in Gridiron HQ.</p>
+        <div className="rounded-3xl border border-cyan-500/20 bg-[linear-gradient(135deg,#102936,#10151c_72%)] p-6 sm:p-8">
+          <p className="text-[10px] font-black uppercase tracking-[.2em] text-cyan-300">Roster-aware analysis</p>
+          <h1 className="mt-2 text-3xl font-black">Trade Calculator</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Compare the player value on each side of a deal. Your synced team players are prioritized automatically.</p>
         </div>
-        <Card>
-          <CardContent className="flex items-center gap-3 p-6 text-sm text-muted">
-            <Users2 className="h-5 w-5 shrink-0" />
-            You&apos;re not in a league yet.{" "}
-            <Link href="/dashboard/leagues" className="text-primary underline-offset-4 hover:underline">
-              Create or join one
-            </Link>{" "}
-            to use the trade block.
-          </CardContent>
-        </Card>
+        <TradeCalculator players={players} injuries={injuries} rosterNames={rosterNames} teamNames={teamNames} />
       </div>
     );
   }

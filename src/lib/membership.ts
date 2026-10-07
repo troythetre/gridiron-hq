@@ -14,6 +14,8 @@ export async function getMembership(userId: string): Promise<Membership | null> 
 }
 
 export async function hasActiveMembership(userId: string) {
+  // Keep premium routes reviewable in local development before Stripe is configured.
+  if (process.env.NODE_ENV !== "production" && !process.env.STRIPE_SECRET_KEY) return true;
   const membership = await getMembership(userId);
   return !!membership && ["active", "trialing"].includes(membership.status)
     && (!membership.current_period_end || new Date(membership.current_period_end).getTime() > Date.now());
