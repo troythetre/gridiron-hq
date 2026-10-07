@@ -14,6 +14,7 @@ import { useFantasyPreferences, pointsForFormat } from "@/components/fantasy-pre
 import type { OverviewPlayer, OverviewPost, OverviewTeam } from "./page";
 import type { RecommendedTrade } from "@/lib/trade-recommendations";
 import { teamColors } from "@/lib/player-visuals";
+import { newsHeadlineToneClass } from "@/lib/news-headline-tone";
 
 type PersonalizedNews = NewsItemRow & { onTeam: boolean; matchingPlayers: string[] };
 
@@ -211,11 +212,10 @@ function DashboardNewsCard({
   onToggle: () => void;
 }) {
   const leadPlayer = players[0];
-  const [teamPrimary, teamSecondary] = teamColors(leadPlayer?.team);
+  const [teamPrimary] = teamColors(leadPlayer?.team);
   const storyHref = safeStoryUrl(item.article_url);
   const fallbackHref = safeStoryUrl(item.source_url);
   const playerNames = players.slice(0, 2).map((player) => player.name);
-  const bodyColor = `color-mix(in srgb, ${teamSecondary} 35%, white)`;
   const panelId = `news-story-${item.id}`;
 
   return (
@@ -249,8 +249,8 @@ function DashboardNewsCard({
             </span>
             <time className="text-[10px] text-muted">{item.item_date ?? "Latest"}</time>
           </span>
-          <span className="block font-display text-base font-bold leading-5 text-white">{item.headline}</span>
-          {item.body && <span className="mt-1 block line-clamp-2 text-xs leading-5" style={{ color: bodyColor }}>{item.body}</span>}
+          <span className={`block font-display text-base font-bold leading-5 ${newsHeadlineToneClass(item.headline)}`}>{item.headline}</span>
+          {item.body && <span className="mt-1 block line-clamp-2 text-xs leading-5 text-white">{item.body}</span>}
         </span>
         <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
@@ -264,7 +264,7 @@ function DashboardNewsCard({
               </Link>)}
             </div>
           )}
-          {item.body && <p className="max-w-2xl whitespace-pre-line text-sm leading-6" style={{ color: bodyColor }}>{item.body}</p>}
+          {item.body && <p className="max-w-2xl whitespace-pre-line text-sm leading-6 text-white">{item.body}</p>}
           {(storyHref || fallbackHref) && (
             <a href={storyHref ?? fallbackHref!} target="_blank" rel="noopener noreferrer" className="inline-flex text-xs font-bold text-white hover:underline">
               Read full story <ArrowUpRight className="ml-1 h-3.5 w-3.5" />

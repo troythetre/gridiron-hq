@@ -298,7 +298,151 @@ function trainingRows(profiles: PlayerProfileData[]): TrainingRow[] {
   return rows;
 }
 
-export function trainFantasyScoreModel(profiles: PlayerProfileData[]): FantasyScoreModel {
+function contextualTrainingRows(games: NflModelGame[]): TrainingRow[] {
+  const byPlayerSeason = new Map<string, NflModelGame[]>();
+  for (const game of games) {
+    if (game.fantasy_points == null || !Number.isFinite(game.fantasy_points)) continue;
+    const key = `${game.player_id}|${game.season}`;
+    const playerGames = byPlayerSeason.get(key) ?? [];
+    playerGames.push(game);
+    byPlayerSeason.set(key, playerGames);
+  }
+
+  const rows: TrainingRow[] = [];
+  for (const playerGames of byPlayerSeason.values()) {
+    playerGames.sort((a, b) => a.game_date.localeCompare(b.game_date) || a.week - b.week);
+    for (let index = 2; index < playerGames.length; index += 1) {
+      const previous = playerGames.slice(0, index).map((game) => ({
+        week: game.week,
+        points: game.fantasy_points!,
+        opportunities: (game.targets ?? 0) + (game.carries ?? 0),
+        snapShare: null,
+        injuryStatus: null,
+        practiceStatus: null,
+      }));
+      const current = playerGames[index];
+      const base = buildFeatures(previous);
+      rows.push({
+        season: current.season,
+        position: normalizePosition(current.position) ?? current.position,
+        features: [...base, ...contextFeatures(current)],
+        target: current.fantasy_points!,
+        playerId: current.player_id,
+        gameType: current.game_type,
+        baseline: base[2] * 10,
+      });
+    }
+  }
+  return rows;
+}
+
+function contextualBenchmark(rows: TrainingRow[]): ContextBenchmark {
+  const seasons = [...new Set(rows.map((row) => row.season))].sort((a, b) => a - b);
+  const predictions: {
+    season: number;
+    playerId: string;
+    gameType: string;
+    actual: number;
+    predicted: number;
+    baseline: number;
+  }[] = [];
+
+  for (const season of seasons) {
+    const training = rows.filter((row) => row.season < season);
+    const validation = rows.filter((row) => row.season === season);
+    if (!training.length || !validation.length) continue;
+    const models = new Map(
+      POSITIONS.map((position) => [
+        position,
+        fit(training.filter((row) => row.position === position)),
+      ]),
+    );
+    for (const row of validation) {
+      const coefficients = models.get(row.position as (typeof POSITIONS)[number]);
+      if (!coefficients) continue;
+      predictions.push({
+        season,
+        playerId: row.playerId ?? "",
+        gameType: row.gameType ?? "REG",
+        actual: row.target,
+        predicted: predict(coefficients, row.features),
+        baseline: row.baseline ?? row.features[2] * 10,
+      });
+    }
+  }
+
+  const mae = (values: number[]) => values.length
+    ? values.reduce((sum, value) => sum + Math.abs(value), 0) / values.length
+    : null;
+  const modelMae = mae(predictions.map((row) => row.predicted - row.actual));
+  const baselineMae = mae(predictions.map((row) => row.baseline - row.actual));
+  const playerErrors = new Map<string, number[]>();
+  for (const row of predictions) {
+    const errors = playerErrors.get(row.playerId) ?? [];
+    errors.push(Math.abs(row.predicted - row.actual) - Math.abs(row.baseline - row.actual));
+    playerErrors.set(row.playerId, errors);
+  }
+  const playerIds = [...playerErrors.keys()].filter(Boolean);
+  let maeDifferenceInterval: [number, number] | null = null;
+  if (playerIds.length >= 2) {
+    let seed = 1;
+    const random = () => {
+      seed = (seed * 1664525 + 1013904223) % 4294967296;
+      return seed / 4294967296;
+    };
+    const bootstrap: number[] = [];
+    for (let iteration = 0; iteration < 400; iteration += 1) {
+      let total = 0;
+      let count = 0;
+      for (let sample = 0; sample < playerIds.length; sample += 1) {
+        const chosen = playerIds[Math.floor(random() * playerIds.length)];
+        for (const difference of playerErrors.get(chosen) ?? []) {
+          total += difference;
+          count += 1;
+        }
+      }
+      if (count) bootstrap.push(total / count);
+    }
+    bootstrap.sort((a, b) => a - b);
+    maeDifferenceInterval = [
+      bootstrap[Math.floor(bootstrap.length * 0.025)],
+      bootstrap[Math.floor(bootstrap.length * 0.975)],
+    ];
+  }
+
+  const seasonBenchmarks = seasons.map((season) => {
+    const seasonRows = predictions.filter((row) => row.season === season);
+    const regular = seasonRows.filter((row) => row.gameType === "REG");
+    const playoffs = seasonRows.filter((row) => row.gameType === "POST");
+    return {
+      season,
+      samples: seasonRows.length,
+      regularSeasonMae: mae(regular.map((row) => row.predicted - row.actual)),
+      playoffMae: mae(playoffs.map((row) => row.predicted - row.actual)),
+      baselineMae: mae(seasonRows.map((row) => row.baseline - row.actual)),
+    };
+  }).filter((row) => row.samples > 0);
+
+  const conclusion = !predictions.length || !maeDifferenceInterval
+    ? "not-enough-data"
+    : maeDifferenceInterval[1] < 0
+      ? "model-ahead"
+      : maeDifferenceInterval[0] > 0
+        ? "baseline-ahead"
+        : "inconclusive";
+  return {
+    modelMae,
+    baselineMae,
+    samples: predictions.length,
+    playerCount: playerIds.length,
+    improvementPercent: modelMae != null && baselineMae ? ((baselineMae - modelMae) / baselineMae) * 100 : null,
+    maeDifferenceInterval,
+    conclusion,
+    seasons: seasonBenchmarks,
+  };
+}
+
+export function trainFantasyScoreModel(profiles: PlayerProfileData[], nflGames: NflModelGame[] = []): FantasyScoreModel {
   const rows = trainingRows(profiles);
   const seasons = [...new Set(rows.map((row) => row.season))].sort((a, b) => a - b);
   const validationSeason = seasons.at(-1);
@@ -321,6 +465,13 @@ export function trainFantasyScoreModel(profiles: PlayerProfileData[]): FantasySc
     if (coefficients) models[position] = coefficients;
   }
 
+  const contextRows = contextualTrainingRows(nflGames);
+  const contextModels: FantasyScoreModel["contextModels"] = {};
+  for (const position of POSITIONS) {
+    const coefficients = fit(contextRows.filter((row) => row.position === position));
+    if (coefficients) contextModels[position] = coefficients;
+  }
+
   const meanAbsoluteError = (values: number[]) => values.length
     ? values.reduce((sum, value) => sum + Math.abs(value), 0) / values.length
     : null;
@@ -331,7 +482,9 @@ export function trainFantasyScoreModel(profiles: PlayerProfileData[]): FantasySc
       baselineMae: meanAbsoluteError(validationPredictions.map((row) => row.baseline - row.actual)),
       samples: validationPredictions.length,
       seasons: validationSeason == null ? [] : [validationSeason],
+      ...(contextRows.length ? { rollingContext: contextualBenchmark(contextRows) } : {}),
     },
+    ...(Object.keys(contextModels).length ? { contextModels } : {}),
   };
 }
 
@@ -340,9 +493,12 @@ export function forecastFantasyScore(
   position: string,
   model: FantasyScoreModel,
   currentInjuryStatus: string | null = null,
+  context?: NflForecastContext,
 ): FantasyScoreForecast | null {
   const normalizedPosition = normalizePosition(position);
-  const coefficients = normalizedPosition ? model.models[normalizedPosition] : undefined;
+  const contextCoefficients = normalizedPosition && context ? model.contextModels?.[normalizedPosition] : undefined;
+  const coefficients = contextCoefficients
+    ?? (normalizedPosition ? model.models[normalizedPosition] : undefined);
   const previous = weeks
     .filter((week) => week.fantasyPoints != null && Number.isFinite(week.fantasyPoints))
     .sort((a, b) => a.week - b.week)
@@ -362,6 +518,10 @@ export function forecastFantasyScore(
       : concern >= 0.45 ? 0.8
         : 1;
   return {
-    points: predict(coefficients, buildFeatures(previous, concern)) * availability,
+    points: predict(coefficients, [
+      ...buildFeatures(previous, concern),
+      ...(contextCoefficients && context ? contextFeatures(context) : []),
+    ]) * availability,
+    modelVersion: contextCoefficients ? "context" : "base",
   };
 }

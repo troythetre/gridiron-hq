@@ -15,6 +15,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
     name: player.name,
     team: player.team,
     pos: player.pos,
+    photoUrl: player.photoUrl,
     avgPts: player.avg_pts,
     totalPts: player.total_pts,
     games: player.games,

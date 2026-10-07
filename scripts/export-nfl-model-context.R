@@ -61,6 +61,7 @@ required_stats <- c(
 missing_stats <- setdiff(required_stats, names(stats))
 if (length(missing_stats)) stop(sprintf("NFL weekly stats are missing columns: %s", paste(missing_stats, collapse = ", ")))
 
+pbp <- pbp[season_type %in% c("REG", "POST")]
 pbp[, game_date := as.Date(game_date)]
 pbp[, is_pass_target := !is.na(receiver_player_id) & pass_attempt == 1]
 pbp[, is_offensive_play := play_type %in% c("run", "pass", "qb_spike", "qb_kneel")]
@@ -80,10 +81,10 @@ team_games <- game_rows[, .(
   rush_epa_total = sum(epa[rush_attempt == 1], na.rm = TRUE),
   rush_success_total = sum(success[rush_attempt == 1], na.rm = TRUE),
   qb_dropbacks = sum(qb_dropback == 1, na.rm = TRUE),
-  sacks = sum(sack == 1, na.rm = TRUE),
-  by = .(game_id, posteam)
+  sacks = sum(sack == 1, na.rm = TRUE)
+), by = .(game_id, posteam)]
 )]
-data.table::setnames(team_games, "posteam", "team")
+if (!"game_id" %in% names(team_games)) stop(sprintf("Expected game_id in team context; found: %s", paste(names(team_games), collapse = ", ")))
 team_games[, `:=`(
   go_rate = data.table::fifelse(fourth_down_plays > 0, fourth_down_go / fourth_down_plays, NA_real_),
   rush_epa = data.table::fifelse(rush_plays > 0, rush_epa_total / rush_plays, NA_real_),

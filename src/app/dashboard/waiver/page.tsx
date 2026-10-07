@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link2 } from "lucide-react";
 import { PlayerAvatar } from "@/components/player-avatar";
+import Image from "next/image";
+import { PLAYER_PHOTOS } from "@/lib/player-visuals";
 
 const positionAccent: Record<string, string> = {
   QB: "border-l-violet-400 bg-violet-500/[.045]",
@@ -63,11 +65,18 @@ function WaiverPickList({ picks }: { picks: Awaited<ReturnType<typeof getWaiverP
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {picks.map((pick, index) => (
-        <Card key={pick.id} className={`group overflow-hidden border-l-4 border-y-slate-700/80 border-r-slate-700/80 bg-gradient-to-br from-slate-800/60 to-slate-950/80 transition hover:-translate-y-0.5 hover:border-r-slate-500 hover:shadow-xl hover:shadow-black/20 ${positionAccent[(pick.pos ?? "").toUpperCase()] ?? "border-l-slate-400"}`}>
-          <CardContent className="relative p-4 sm:p-5">
+        <Card key={pick.id} className={`group relative isolate min-h-44 overflow-hidden border-l-4 border-y-slate-700/80 border-r-slate-700/80 bg-gradient-to-br from-slate-800/60 to-slate-950/80 transition hover:-translate-y-0.5 hover:border-r-slate-500 hover:shadow-xl hover:shadow-black/20 ${positionAccent[(pick.pos ?? "").toUpperCase()] ?? "border-l-slate-400"}`}>
+          {PLAYER_PHOTOS[pick.name] ? (
+            <span aria-hidden="true" className="absolute inset-y-0 right-0 w-[72%]">
+              <Image src={PLAYER_PHOTOS[pick.name]} alt="" fill unoptimized={PLAYER_PHOTOS[pick.name].startsWith("http")} sizes="(max-width: 640px) 75vw, 36vw" className="object-cover object-[center_18%] opacity-45 transition duration-300 group-hover:scale-105 group-hover:opacity-60" />
+            </span>
+          ) : (
+            <PlayerAvatar name={pick.name} team={pick.team ?? "FA"} position={pick.pos ?? "?"} size={170} className="absolute -right-3 top-1/2 -translate-y-1/2 opacity-35 transition group-hover:opacity-50" />
+          )}
+          <span aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-[#101319] via-[#101319]/90 via-45% to-[#101319]/25" />
+          <CardContent className="relative z-10 p-4 sm:p-5">
             <span className="absolute right-4 top-4 text-xs font-black tracking-widest text-slate-500">WAIVER #{String(index + 1).padStart(2, "0")}</span>
             <div className="flex items-center gap-3 pr-24">
-              <PlayerAvatar name={pick.name} team={pick.team ?? "FA"} position={pick.pos ?? "?"} size={54} />
               <div className="min-w-0"><p className="truncate text-base font-extrabold text-slate-100 group-hover:text-white">{pick.name}</p><div className="mt-1.5 flex items-center gap-2"><PosBadge pos={pick.pos ?? "?"} /><span className="text-xs font-bold text-slate-400">{pick.team ?? "Free agent"}</span></div></div>
             </div>
             <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-700/70 pt-3"><span className="rounded-full border border-slate-600 bg-slate-900/70 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-300">~{pick.pct_rostered_est ?? "—"}% rostered</span>{pick.source && <span className="truncate text-[10px] uppercase tracking-wider text-slate-500">{pick.source}</span>}</div>

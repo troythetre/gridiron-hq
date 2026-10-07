@@ -166,7 +166,13 @@ function normalize(value: string) {
 }
 function normalizePos(value: string) { const pos = value.toUpperCase(); return pos === "DEF" || pos === "D/ST" ? "DST" : pos; }
 function fmt(value: number) { return Number.isFinite(value) ? value.toFixed(1) : "0.0"; }
-function trendClass(delta: number | null) { return delta == null ? "text-muted" : delta >= 0.5 ? "text-amber-300" : delta <= -0.5 ? "text-orange-400" : "text-muted"; }
+function trendClass(delta: number | null) { return delta == null ? "text-muted" : delta >= 0.5 ? "text-emerald-400" : delta <= -0.5 ? "text-red-400" : "text-muted"; }
+function forecastTrend(delta: number | null) {
+  if (delta == null || Math.abs(delta) < 0.5) return null;
+  return delta > 0
+    ? { label: "Expected up", className: "text-amber-300" }
+    : { label: "Expected down", className: "text-orange-400" };
+}
 function average(values: number[]) { return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0; }
 
 function weeklyPoints(player: AnalysisPlayer, scoring: "standard" | "half_ppr" | "ppr") {
@@ -222,7 +228,7 @@ export function MyTeamAnalysis({ userId, teams, waiver, matchupSeasons, fantasyS
     const forecast = modelForecast
       ? { points: pointsForFormat(modelForecast.points, recentReceptions, scoring) }
       : null;
-    return { player, games, points, avg, recentAvg, delta, trend, std, opportunity, forecast, high: Math.max(...points), low: Math.min(...points) };
+    return { player, games, points, avg, recentAvg, delta, trend, std, opportunity, forecast, expectedDelta: forecast ? forecast.points - recentAvg : null, high: Math.max(...points), low: Math.min(...points) };
   }), [team, scoring, fantasyScoreModel]);
 
   const positionSummary = positions.map((pos) => {
@@ -255,11 +261,12 @@ export function MyTeamAnalysis({ userId, teams, waiver, matchupSeasons, fantasyS
   });
   const lineup = selectLineup(enriched.map(({ player, avg }) => ({ player, points: avg })));
   const projectedPoints = lineup.reduce((sum, item) => sum + item.points, 0);
-  const modelLineup = selectLineup(enriched.map(({ player, avg, forecast }) => ({
+  const modelLineup = selectLineup(enriched.map(({ player, avg, forecast, expectedDelta }) => ({
     player,
     points: forecast?.points ?? avg,
     isModelled: forecast != null,
     forecast,
+    expectedDelta,
   })));
   const modelLineupPoints = modelLineup.reduce((sum, item) => sum + item.points, 0);
   const modelledStarters = modelLineup.filter((item) => item.isModelled).length;
@@ -332,11 +339,14 @@ export function MyTeamAnalysis({ userId, teams, waiver, matchupSeasons, fantasyS
         </div>
         {fantasyScoreModel.validation.modelMae != null && fantasyScoreModel.validation.baselineMae != null && <p className="text-[10px] leading-4 text-muted">Holdout comparison: {fmt(fantasyScoreModel.validation.modelMae)} points MAE for the model versus {fmt(fantasyScoreModel.validation.baselineMae)} for a trailing three-game-average baseline. Holdout scores are half-PPR regardless of the display scoring setting.</p>}
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {modelLineup.map(({ player, points, isModelled }) => <div key={player.key} className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-background/30 p-2.5">
+          {modelLineup.map(({ player, points, isModelled, expectedDelta }) => {
+            const expectation = isModelled ? forecastTrend(expectedDelta ?? null) : null;
+            return <div key={player.key} className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-background/30 p-2.5">
             <PlayerAvatar name={player.name} team={player.team} position={player.pos} size={40} />
-            <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{player.name}</span><span className="mt-1 flex items-center gap-1.5"><PosBadge pos={player.pos} /><span className="text-[10px] text-muted">{isModelled ? "ML estimate" : "Average fallback"}</span></span></span>
+            <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{player.name}</span><span className="mt-1 flex flex-wrap items-center gap-1.5"><PosBadge pos={player.pos} /><span className="text-[10px] text-muted">{isModelled ? "ML estimate" : "Average fallback"}</span>{expectation && <span className={`text-[10px] font-bold ${expectation.className}`}>{expectation.label}</span>}</span></span>
             <span className="text-right"><strong className="block text-sm tabular-nums">{fmt(points)}</strong><span className="text-[9px] uppercase text-muted">points</span></span>
-          </div>)}
+          </div>;
+          })}
         </div>
       </CardContent>
     </Card>

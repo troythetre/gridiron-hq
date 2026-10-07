@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { PosBadge } from "@/components/pos-badge";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { pointsForFormat, useFantasyPreferences } from "@/components/fantasy-preferences";
+import { PLAYER_PHOTOS } from "@/lib/player-visuals";
 
-type ComparePlayer = { id: number; name: string; team: string; pos: string; avgPts: number; totalPts: number; games: number; overallRank: number | null; posRank: number | null; receptions: number; targets: number };
+type ComparePlayer = { id: number; name: string; team: string; pos: string; photoUrl?: string | null; avgPts: number; totalPts: number; games: number; overallRank: number | null; posRank: number | null; receptions: number; targets: number };
 
 export function PlayerCompare({ players, initialPlayerId }: { players: ComparePlayer[]; initialPlayerId?: number }) {
   const [leftId, setLeftId] = useState(initialPlayerId && players.some((player) => player.id === initialPlayerId) ? initialPlayerId : players[0]?.id ?? 0);
@@ -34,7 +36,23 @@ export function PlayerCompare({ players, initialPlayerId }: { players: ComparePl
 
   if (!left || !right) return <p className="rounded-xl border border-border p-5 text-sm text-muted">Ranked player data is not available.</p>;
   const chooser = (label: string, id: number, setId: (id: number) => void) => <label className="block min-w-0 flex-1"><span className="mb-2 block text-[10px] font-black uppercase tracking-wider text-muted">{label}</span><select aria-label={label} value={id} onChange={(event) => setId(Number(event.target.value))} className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm font-bold">{players.map((player) => <option key={player.id} value={player.id}>{player.name} · {player.pos} · {player.team}</option>)}</select></label>;
-  const playerCard = (player: ComparePlayer) => <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/40 p-4"><PlayerAvatar name={player.name} team={player.team} position={player.pos} size={58} /><div className="min-w-0"><Link href={`/dashboard/players/${player.id}`} className="block truncate text-lg font-black hover:text-primary">{player.name}</Link><div className="mt-1 flex items-center gap-2"><PosBadge pos={player.pos} /><span className="text-xs text-muted">{player.team}</span></div></div></div>;
+  const playerCard = (player: ComparePlayer) => {
+    const photo = PLAYER_PHOTOS[player.name] ?? player.photoUrl;
+    return <div className="group relative isolate flex min-h-32 items-center gap-4 overflow-hidden rounded-2xl border border-border bg-background/40 p-5 sm:min-h-36">
+      {photo ? (
+        <span aria-hidden="true" className="absolute inset-y-0 right-0 w-[72%]">
+          <Image src={photo} alt="" fill unoptimized={photo.startsWith("http")} sizes="(max-width: 768px) 100vw, 50vw" className="object-cover object-[center_18%] opacity-50 transition duration-300 group-hover:scale-105 group-hover:opacity-65" />
+        </span>
+      ) : (
+        <PlayerAvatar name={player.name} team={player.team} position={player.pos} size={180} className="absolute -right-2 top-1/2 -translate-y-1/2 opacity-40 transition group-hover:opacity-55" />
+      )}
+      <span aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-[#090b10] via-[#090b10]/85 via-45% to-[#090b10]/25" />
+      <span className="relative z-10 min-w-0">
+        <Link href={`/dashboard/players/${player.id}`} className="block truncate text-lg font-black text-white drop-shadow hover:text-primary">{player.name}</Link>
+        <span className="mt-2 flex items-center gap-2"><PosBadge pos={player.pos} /><span className="text-xs font-semibold text-white/75">{player.team}</span></span>
+      </span>
+    </div>;
+  };
 
   return <section className="space-y-5 rounded-3xl border border-border bg-surface p-4 sm:p-6">
     <div className="flex flex-col gap-3 sm:flex-row">{chooser("Player one", leftId, setLeftId)}{chooser("Player two", rightId, setRightId)}</div>

@@ -168,57 +168,139 @@ export function CollegeRankingsPanel({ data }: { data: CollegeFootballRankings }
   );
 }
 
-const rivalries = [
+type RivalryCategory = "Historic" | "Modern or revived" | "Rivalry in the making";
+
+const rivalries: {
+  name: string;
+  teams: string;
+  history: string;
+  link: string;
+  category: RivalryCategory;
+}[] = [
   {
     name: "The Game",
     teams: "Michigan vs. Ohio State",
     history: "First played in 1897, this late-season Big Ten matchup has repeatedly carried conference and national-title stakes. The winner earns bragging rights across one of college football's most enduring rivalries.",
     link: "https://en.wikipedia.org/wiki/The_Game_(American_football)",
+    category: "Historic",
   },
   {
     name: "Iron Bowl",
     teams: "Alabama vs. Auburn",
     history: "The in-state rivalry began in 1893, paused for several decades, and resumed in 1948. Its close finishes and the 2013 Kick Six have made it one of the SEC's defining annual games.",
     link: "https://en.wikipedia.org/wiki/Iron_Bowl",
+    category: "Historic",
   },
   {
     name: "Red River Rivalry",
     teams: "Texas vs. Oklahoma",
     history: "First played in 1900, the rivalry is staged at the Cotton Bowl during the State Fair of Texas in Dallas. The neutral-site setting gives the annual meeting a festival atmosphere alongside major conference stakes.",
     link: "https://en.wikipedia.org/wiki/Red_River_Rivalry",
+    category: "Historic",
   },
   {
     name: "Army–Navy Game",
     teams: "Army vs. Navy",
     history: "First played in 1890, this annual service-academy matchup is known for its pageantry, shared traditions, and national attention. The game is usually held near the end of the regular season.",
     link: "https://en.wikipedia.org/wiki/Army%E2%80%93Navy_Game",
+    category: "Historic",
+  },
+  {
+    name: "Backyard Brawl",
+    teams: "Pittsburgh vs. West Virginia",
+    history: "The series dates to 1895 and is one of the sport's classic regional rivalries. After a long interruption, the teams renewed the matchup in 2022, bringing the old in-state-and-neighbor-state edge back to the schedule.",
+    link: "https://en.wikipedia.org/wiki/Backyard_Brawl",
+    category: "Historic",
+  },
+  {
+    name: "Clean, Old-Fashioned Hate",
+    teams: "Georgia vs. Georgia Tech",
+    history: "The Atlanta-versus-Athens rivalry began in 1893. The schools' close geography, contrasting identities, and long run of annual meetings keep it central to the state's football calendar.",
+    link: "https://en.wikipedia.org/wiki/Clean,_Old-Fashioned_Hate",
+    category: "Historic",
+  },
+  {
+    name: "Florida–Miami",
+    teams: "Florida vs. Miami",
+    history: "Their series began in 1938, but the matchup became a national event during the programs' rise in the 1980s and 1990s. It is a high-profile in-state clash, though it has not been an annual game in recent decades.",
+    link: "https://en.wikipedia.org/wiki/Florida%E2%80%93Miami_football_rivalry",
+    category: "Modern or revived",
+  },
+  {
+    name: "Lone Star Showdown",
+    teams: "Texas vs. Texas A&M",
+    history: "This long-running state rivalry returned to the regular-season schedule in 2024 after the schools had not met since 2011. Conference alignment brought the familiar matchup back with renewed stakes.",
+    link: "https://en.wikipedia.org/wiki/Lone_Star_Showdown",
+    category: "Modern or revived",
+  },
+  {
+    name: "War on I-4",
+    teams: "UCF vs. South Florida",
+    history: "A newer in-state rivalry built around nearby campuses and conference competition. The series has had pauses as conference schedules changed, so its future frequency depends on the teams' schedules.",
+    link: "https://en.wikipedia.org/wiki/War_on_I-4",
+    category: "Modern or revived",
+  },
+  {
+    name: "Colorado–Nebraska",
+    teams: "Colorado vs. Nebraska",
+    history: "A former Big Eight and Big 12 conference matchup with a long history, this rivalry has gained fresh attention as conference realignment renewed meetings. Whether it becomes a regular annual fixture again remains to be seen.",
+    link: "https://en.wikipedia.org/wiki/Colorado%E2%80%93Nebraska_football_rivalry",
+    category: "Modern or revived",
+  },
+  {
+    name: "Playoff-era showdown",
+    teams: "Alabama vs. Georgia",
+    history: "Repeated high-stakes SEC Championship and College Football Playoff meetings have made this a major modern matchup. It is not a traditional annual rivalry, but recent title races have given it a rivalry-like edge.",
+    link: "https://en.wikipedia.org/wiki/Alabama%E2%80%93Georgia_football_rivalry",
+    category: "Rivalry in the making",
+  },
+  {
+    name: "CFP heavyweight clashes",
+    teams: "Alabama vs. Clemson",
+    history: "A run of major College Football Playoff meetings created a memorable championship-era matchup. The teams do not meet every season, so it is best viewed as a modern postseason rivalry rather than a continuous annual series.",
+    link: "https://en.wikipedia.org/wiki/Alabama%E2%80%93Clemson_football_rivalry",
+    category: "Rivalry in the making",
   },
 ];
 
 export function RivalryHistoryPanel() {
+  const categories: { name: RivalryCategory; detail: string }[] = [
+    { name: "Historic", detail: "Traditions built over generations." },
+    { name: "Modern or revived", detail: "New prominence, realignment, or a renewed series." },
+    { name: "Rivalry in the making", detail: "High-stakes matchups that could grow into something more." },
+  ];
   return (
     <section className="space-y-4">
       <div>
         <h2 className="text-lg font-bold">College football rivalry history</h2>
-        <p className="mt-1 text-xs text-muted">The origins, traditions, and defining moments behind landmark matchups.</p>
+        <p className="mt-1 text-xs text-muted">Historic classics, revived matchups, and new rivalries still earning their place.</p>
       </div>
-      <div className="grid gap-3 md:grid-cols-2">
-        {rivalries.map((rivalry) => (
-          <Card key={rivalry.name}>
-            <CardContent className="space-y-3 p-5">
-              <div>
-                <h3 className="font-bold">{rivalry.name}</h3>
-                <p className="mt-1 text-xs font-semibold text-primary">{rivalry.teams}</p>
-              </div>
-              <p className="text-sm leading-6 text-muted">{rivalry.history}</p>
-              <Link href={rivalry.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground hover:text-primary">
-                Read more <ExternalLink className="h-3.5 w-3.5" />
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <p className="text-[11px] text-muted">Historical summaries are educational; current series records are not shown.</p>
+      {categories.map((category) => {
+        const entries = rivalries.filter((rivalry) => rivalry.category === category.name);
+        return <section key={category.name} className="space-y-3">
+          <div>
+            <h3 className="font-display text-base font-bold uppercase tracking-wide">{category.name}</h3>
+            <p className="mt-1 text-xs text-muted">{category.detail}</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {entries.map((rivalry) => (
+              <Card key={rivalry.name}>
+                <CardContent className="space-y-3 p-5">
+                  <div>
+                    <h4 className="font-bold">{rivalry.name}</h4>
+                    <p className="mt-1 text-xs font-semibold text-primary">{rivalry.teams}</p>
+                  </div>
+                  <p className="text-sm leading-6 text-muted">{rivalry.history}</p>
+                  <Link href={rivalry.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground hover:text-primary">
+                    Read more <ExternalLink className="h-3.5 w-3.5" />
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>;
+      })}
+      <p className="text-[11px] text-muted">Category labels are editorial, not official NCAA designations. Historical summaries are educational; current series records are not shown.</p>
     </section>
   );
 }

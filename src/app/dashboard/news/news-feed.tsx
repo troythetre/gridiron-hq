@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { NewsItemRow } from "@/lib/types";
 import * as Dialog from "@radix-ui/react-dialog";
 import Image from "next/image";
+import { newsHeadlineToneClass } from "@/lib/news-headline-tone";
 
 const filters = [
   { id: "my_team", label: "My Players" },
@@ -86,8 +87,8 @@ export function NewsFeed({ news, teamPlayerNames }: { news: NewsItemRow[]; teamP
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.16em] text-primary"><Newspaper className="h-3.5 w-3.5" />{item.source || "Gridiron News"}{onTeam && <span className="rounded-full bg-primary/10 px-2 py-1 tracking-wide">Your team</span>}</span>
                 <time className="shrink-0 text-xs text-muted" dateTime={item.item_date ?? undefined}>{displayDate(item.item_date)}</time>
               </div>
-              <CardTitle className="text-lg leading-snug">
-                <span className="transition group-hover:text-primary">{item.headline}<ArrowUpRight className="ml-1 inline h-4 w-4 opacity-60" /></span>
+              <CardTitle className={`text-lg leading-snug ${newsHeadlineToneClass(item.headline)}`}>
+                <span className="transition group-hover:brightness-125">{item.headline}<ArrowUpRight className="ml-1 inline h-4 w-4 opacity-60" /></span>
               </CardTitle>
             </CardHeader>
             <CardContent>

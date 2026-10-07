@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { PlayerRow } from "@/lib/types";
 import { PosBadge } from "@/components/pos-badge";
 import { PlayerAvatar } from "@/components/player-avatar";
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { pointsForFormat, useFantasyPreferences } from "@/components/fantasy-preferences";
+import { PLAYER_PHOTOS } from "@/lib/player-visuals";
 
 const POSITIONS = ["ALL", "QB", "RB", "WR", "TE", "K", "DST"] as const;
 type ReceptionStats = { wk1: number; wk2: number; avg: number; total: number; experience: number | null };
@@ -78,77 +80,78 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
       </div>
 
       <div className="space-y-2 md:hidden">
-        {filtered.map((p) => <Link
-          key={p.id}
-          href={p.profileHref ?? `/dashboard/players/${p.id}`}
-          className="block rounded-2xl border border-border bg-surface p-3 transition hover:border-primary/40"
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="w-6 shrink-0 text-center text-xs font-bold text-muted">{p.overallRank}</span>
-            <PlayerAvatar name={p.name} team={p.team} position={p.pos} photoUrl={p.photoUrl} size={46} className="shrink-0" />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-bold">{p.name}</span>
-              <span className="mt-1 flex items-center gap-2 text-[10px] text-muted"><PosBadge pos={p.pos} />{p.team}</span>
+        {filtered.map((p) => {
+          const photo = PLAYER_PHOTOS[p.name] ?? p.photoUrl;
+          return <Link
+            key={p.id}
+            href={p.profileHref ?? `/dashboard/players/${p.id}`}
+            className="group relative isolate block min-h-32 overflow-hidden rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/50"
+          >
+            {photo ? (
+              <span aria-hidden="true" className="absolute inset-y-0 right-0 w-[68%]">
+                <Image src={photo} alt="" fill unoptimized={photo.startsWith("http")} sizes="68vw" className="object-cover object-[center_20%] opacity-75 transition duration-300 group-hover:scale-105 group-hover:opacity-90" />
+              </span>
+            ) : (
+              <PlayerAvatar name={p.name} team={p.team} position={p.pos} size={150} className="absolute -right-2 top-1/2 -translate-y-1/2 opacity-45" />
+            )}
+            <span aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-[#090b10] via-[#090b10]/90 via-45% to-[#090b10]/25" />
+            <span className="relative z-10 flex min-w-0 items-start justify-between gap-3">
+              <span className="min-w-0">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-white/65">Rank #{p.overallRank}</span>
+                <span className="mt-1 block truncate text-base font-black text-white drop-shadow">{p.name}</span>
+                <span className="mt-2 flex items-center gap-2 text-xs text-white/80"><PosBadge pos={p.pos} />{p.team}</span>
+              </span>
+              <span className="shrink-0 rounded-lg border border-white/20 bg-black/55 px-2.5 py-1.5 text-right text-white shadow-lg">
+                <span className="block font-display text-lg font-black">{p.displayAvg.toFixed(1)}</span>
+                <span className="block text-[9px] uppercase tracking-wider text-white/70">Avg</span>
+              </span>
             </span>
-            <span className="shrink-0 text-right">
-              <span className="block font-display text-lg font-bold">{p.displayAvg.toFixed(1)}</span>
-              <span className="text-[9px] uppercase tracking-wider text-muted">Avg</span>
+            <span className="relative z-10 mt-4 flex justify-between gap-2 border-t border-white/15 pt-2 text-[10px] text-white/75">
+              <span>Total <strong className="text-white">{p.displayTotal.toFixed(1)}</strong></span>
+              <span>Pos rank <strong className="text-white">#{p.positionRank}</strong></span>
+              <span>W1/W2 <strong className="text-white">{p.displayWk1?.toFixed(1) ?? "—"} / {p.displayWk2?.toFixed(1) ?? "—"}</strong></span>
             </span>
-          </div>
-          <div className="mt-3 flex justify-between border-t border-border/70 pt-2 text-[10px] text-muted">
-            <span>Total <strong className="text-foreground">{p.displayTotal.toFixed(1)}</strong></span>
-            <span>Pos rank <strong className="text-foreground">#{p.positionRank}</strong></span>
-            <span>W1/W2 <strong className="text-foreground">{p.displayWk1?.toFixed(1) ?? "—"} / {p.displayWk2?.toFixed(1) ?? "—"}</strong></span>
-          </div>
-        </Link>)}
+          </Link>;
+        })}
         {filtered.length === 0 && <p className="rounded-2xl border border-border bg-surface p-6 text-center text-sm text-muted">No players match your filters.</p>}
       </div>
 
       <div className="hidden overflow-x-auto rounded-[var(--radius)] border border-border bg-surface md:block">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase text-muted">
-              <th className="px-4 py-3 font-medium">Rank</th>
-              <th className="px-4 py-3 font-medium">Player</th>
-              <th className="px-4 py-3 font-medium">Pos</th>
-              <th className="px-4 py-3 font-medium">Team</th>
-              <th className="px-4 py-3 text-right font-medium">Wk1</th>
-              <th className="px-4 py-3 text-right font-medium">Wk2</th>
-              <th className="px-4 py-3 text-right font-medium">Total</th>
-              <th className="px-4 py-3 text-right font-medium">Avg</th>
-              <th className="px-4 py-3 text-right font-medium">Pos Rank</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((p) => (
-              <tr key={p.id} className="border-b border-border/60 last:border-0 hover:bg-border/10">
-                <td className="px-4 py-2.5 text-muted">{p.overallRank}</td>
-                <td className="px-4 py-2.5 font-medium">
-                  <Link href={p.profileHref ?? `/dashboard/players/${p.id}`} className="group inline-flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                    <PlayerAvatar name={p.name} team={p.team} position={p.pos} photoUrl={p.photoUrl} size={38} className="shrink-0 rounded-full transition duration-200 group-hover:scale-105" />
-                    <span className="transition group-hover:text-primary">{p.name}</span>
-                  </Link>
-                </td>
-                <td className="px-4 py-2.5">
-                  <PosBadge pos={p.pos} />
-                </td>
-                <td className="px-4 py-2.5 text-muted">{p.team}</td>
-                <td className="px-4 py-2.5 text-right text-muted">{p.displayWk1?.toFixed(1) ?? "-"}</td>
-                <td className="px-4 py-2.5 text-right text-muted">{p.displayWk2?.toFixed(1) ?? "-"}</td>
-                <td className="px-4 py-2.5 text-right font-semibold">{p.displayTotal.toFixed(1)}</td>
-                <td className="px-4 py-2.5 text-right text-muted">{p.displayAvg.toFixed(1)}</td>
-                <td className="px-4 py-2.5 text-right"><PositionRank rank={p.positionRank} /></td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-muted">
-                  No players match your filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <div className="min-w-[900px] p-2">
+          <div className="grid grid-cols-[48px_minmax(220px,2fr)_64px_64px_repeat(5,minmax(76px,1fr))] items-center gap-2 px-3 py-2 text-xs uppercase text-muted">
+            <span>Rank</span><span>Player</span><span>Pos</span><span>Team</span>
+            <span className="text-right">Wk1</span><span className="text-right">Wk2</span><span className="text-right">Total</span><span className="text-right">Avg</span><span className="text-right">Pos Rank</span>
+          </div>
+          <div className="space-y-2">
+            {filtered.map((p) => {
+              const photo = PLAYER_PHOTOS[p.name] ?? p.photoUrl;
+              return <Link
+                key={p.id}
+                href={p.profileHref ?? `/dashboard/players/${p.id}`}
+                className="group relative isolate grid min-h-[4.75rem] grid-cols-[48px_minmax(220px,2fr)_64px_64px_repeat(5,minmax(76px,1fr))] items-center gap-2 overflow-hidden rounded-xl border border-border/80 bg-surface px-3 py-1.5 text-sm transition hover:border-primary/45 hover:bg-surface-raised"
+              >
+                {photo ? (
+                  <span aria-hidden="true" className="absolute inset-y-0 left-[8%] -z-10 w-[38%]">
+                    <Image src={photo} alt="" fill unoptimized={photo.startsWith("http")} sizes="38vw" className="object-cover object-[center_20%] opacity-65 transition duration-300 group-hover:scale-105 group-hover:opacity-80" />
+                  </span>
+                ) : (
+                  <PlayerAvatar name={p.name} team={p.team} position={p.pos} size={92} className="absolute right-[55%] top-1/2 -z-10 -translate-y-1/2 opacity-35" />
+                )}
+                <span aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-[#090b10]/90 via-[#090b10]/80 via-45% to-[#090b10]/95" />
+                <span className="text-muted">{p.overallRank}</span>
+                <span className="truncate font-bold text-white drop-shadow transition group-hover:text-primary">{p.name}</span>
+                <span><PosBadge pos={p.pos} /></span>
+                <span className="text-muted">{p.team}</span>
+                <span className="text-right text-muted">{p.displayWk1?.toFixed(1) ?? "-"}</span>
+                <span className="text-right text-muted">{p.displayWk2?.toFixed(1) ?? "-"}</span>
+                <span className="text-right font-semibold">{p.displayTotal.toFixed(1)}</span>
+                <span className="text-right text-muted">{p.displayAvg.toFixed(1)}</span>
+                <span className="text-right"><PositionRank rank={p.positionRank} /></span>
+              </Link>;
+            })}
+            {filtered.length === 0 && <p className="px-4 py-8 text-center text-muted">No players match your filters.</p>}
+          </div>
+        </div>
       </div>
     </div>
   );

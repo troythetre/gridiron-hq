@@ -1,12 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import type { InjuryRow, PlayerRow } from "@/lib/types";
 import { evaluateTrade, type InjuryStatus } from "@/lib/scoring";
 import { PosBadge } from "@/components/pos-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeftRight, Search } from "lucide-react";
+import { ArrowLeftRight, Check, Plus, Search } from "lucide-react";
 import Link from "next/link";
+import { PlayerAvatar } from "@/components/player-avatar";
+import { PLAYER_PHOTOS } from "@/lib/player-visuals";
 
 function tradeInput(player: PlayerRow, injury: InjuryRow | undefined) {
   return {
@@ -26,10 +29,40 @@ function PlayerPicker({ label, players, selected, onChange }: { label: string; p
   return <section className="rounded-2xl border border-border bg-surface p-4">
     <h2 className="text-sm font-extrabold uppercase tracking-wider">{label}</h2>
     <label className="relative mt-3 block"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a player" className="h-10 w-full rounded-full border border-border bg-background pl-10 pr-4 text-sm outline-none focus:border-primary/50" /></label>
-    <div className="mt-3 max-h-72 space-y-1 overflow-y-auto">
-      {filtered.map((player) => <button key={player.id} type="button" aria-pressed={selected.includes(player.id)} onClick={() => toggle(player.id)} className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${selected.includes(player.id) ? "border-primary/50 bg-primary/10" : "border-transparent bg-background/35 hover:border-border hover:bg-background/70"}`}>
-        <PosBadge pos={player.pos} /><span className="min-w-0 flex-1 truncate text-sm font-semibold">{player.name}</span><span className="text-xs text-muted">{player.team}</span><span className="min-w-12 text-right text-xs font-bold tabular-nums">{player.avg_pts.toFixed(1)} ppg</span>
-      </button>)}
+    <div className="mt-3 max-h-[min(62vh,38rem)] space-y-2 overflow-y-auto pr-1">
+      {filtered.map((player) => {
+        const isSelected = selected.includes(player.id);
+        const photo = PLAYER_PHOTOS[player.name] ?? player.photoUrl;
+        return <button
+          key={player.id}
+          type="button"
+          aria-pressed={isSelected}
+          onClick={() => toggle(player.id)}
+          className={`group relative isolate flex min-h-20 w-full items-end overflow-hidden rounded-xl border p-3 text-left transition ${isSelected ? "border-primary/70 ring-1 ring-primary/40" : "border-border/80 hover:border-primary/50"}`}
+        >
+          {photo ? (
+            <span aria-hidden="true" className="absolute inset-y-0 right-0 w-[72%]">
+              <Image src={photo} alt="" fill unoptimized={photo.startsWith("http")} sizes="(max-width: 1024px) 70vw, 35vw" className="object-cover object-[center_22%] opacity-80 transition duration-300 group-hover:scale-105 group-hover:opacity-95" />
+            </span>
+          ) : (
+            <PlayerAvatar name={player.name} team={player.team} position={player.pos} size={132} className="absolute -right-1 top-1/2 -translate-y-1/2 opacity-40 transition group-hover:opacity-60" />
+          )}
+          <span aria-hidden="true" className={`absolute inset-0 -z-10 ${isSelected ? "bg-primary/25" : "bg-background/30"}`} />
+          <span aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-[#090b10] via-[#090b10]/90 via-45% to-[#090b10]/20" />
+          <span className="relative z-10 flex w-full items-end justify-between gap-2">
+            <span className="min-w-0">
+              <span className="flex items-center gap-1.5">
+                <PosBadge pos={player.pos} />
+                <span className="truncate text-sm font-black text-white drop-shadow sm:text-base">{player.name}</span>
+              </span>
+              <span className="mt-1.5 block text-[11px] font-semibold text-white/80">{player.team} · {player.avg_pts.toFixed(1)} PPG</span>
+            </span>
+            <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border shadow-lg transition ${isSelected ? "border-primary bg-primary text-primary-foreground" : "border-white/40 bg-black/55 text-white group-hover:border-white"}`}>
+              {isSelected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            </span>
+          </span>
+        </button>;
+      })}
       {filtered.length === 0 && <p className="py-5 text-center text-xs text-muted">No players match this search.</p>}
     </div>
   </section>;
