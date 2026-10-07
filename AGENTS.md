@@ -7,3 +7,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Repository development notes
+
+- Read [README.md](./README.md) for local setup, Supabase configuration, and
+  manual platform smoke tests.
+- [supabase/schema.sql](./supabase/schema.sql) is the checked-in reference for
+  database tables, row-level security, and the signup trigger. The repository
+  currently has no Supabase CLI migration or seed workflow.
+- The project provides `npm run lint` and `npm run build`; there is no automated
+  test script configured.
+- Keep comments next to the implementation they explain. Prefer documenting
+  non-obvious intent, constraints, and tradeoffs rather than restating what the
+  code already says; update comments when behavior or framework terminology
+  changes.

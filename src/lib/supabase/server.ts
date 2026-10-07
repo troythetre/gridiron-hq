@@ -22,8 +22,8 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // setAll called from a Server Component - safe to ignore because
-            // the proxy (middleware) below refreshes the session on every request.
+            // Server Components cannot write response cookies during rendering.
+            // The proxy refreshes the session and persists updated cookies per request.
           }
         },
       },
