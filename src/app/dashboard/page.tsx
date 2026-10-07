@@ -1,150 +1,71 @@
-import Link from "next/link";
-import { getPlayers, getInjuries, getWaiverPicks, getNews } from "@/lib/data";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PosBadge, StatusBadge } from "@/components/pos-badge";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { getFantasyVideos, getInjuries, getNews, getPlayers, getWaiverPicks } from "@/lib/data";
+import { buildPlayerMarket } from "@/lib/player-market";
+import type { PlayerProfileData } from "@/lib/player-profile-types";
+import type { PlayerRow, SleeperRosterRow, NewsItemRow, FantasyVideoRow, InjuryRow, WaiverPickRow, PlayerMarketRow } from "@/lib/types";
+import profileData from "@/data/player-profiles.json";
+import { DashboardHome } from "./dashboard-home";
 
-export default async function DashboardOverview() {
-  const [players, injuries, waiver, news] = await Promise.all([
-    getPlayers(),
-    getInjuries(),
-    getWaiverPicks(),
-    getNews(),
-  ]);
-
-  const topPlayers = players.slice(0, 5);
-  const topInjuries = injuries.slice(0, 3);
-  const topWaiver = waiver.slice(0, 3);
-  const latestNews = news.slice(0, 3);
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Overview</h1>
-        <p className="text-sm text-muted">Everything that moved this week, at a glance.</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatTile label="Players tracked" value={players.length} />
-        <StatTile label="Active injuries" value={injuries.length} />
-        <StatTile label="Waiver targets" value={waiver.length} />
-        <StatTile label="News items" value={news.length} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle>Top overall</CardTitle>
-              <CardDescription>By season half-PPR points</CardDescription>
-            </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/dashboard/rankings">
-                View all <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {topPlayers.map((p) => (
-              <div key={p.id} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-border/20">
-                <div className="flex items-center gap-2">
-                  <PosBadge pos={p.pos} />
-                  <span className="text-sm font-medium">{p.name}</span>
-                  <span className="text-xs text-muted">{p.team}</span>
-                </div>
-                <span className="text-sm font-semibold">{p.total_pts.toFixed(1)}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle>Injury watch</CardTitle>
-              <CardDescription>Most severe first</CardDescription>
-            </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/dashboard/injuries">
-                View all <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {topInjuries.map((i) => (
-              <div key={i.id} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-border/20">
-                <div className="flex items-center gap-2">
-                  <PosBadge pos={i.pos ?? "?"} />
-                  <span className="text-sm font-medium">{i.name}</span>
-                  <span className="text-xs text-muted">{i.injury}</span>
-                </div>
-                <StatusBadge status={i.status} />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle>Top waiver pickups</CardTitle>
-              <CardDescription>Ranked by estimated % rostered</CardDescription>
-            </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/dashboard/waiver">
-                View all <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {topWaiver.map((w) => (
-              <div key={w.id} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-border/20">
-                <div className="flex items-center gap-2">
-                  <PosBadge pos={w.pos ?? "?"} />
-                  <span className="text-sm font-medium">{w.name}</span>
-                  <span className="text-xs text-muted">{w.team}</span>
-                </div>
-                <span className="text-xs text-muted">{w.pct_rostered_est}% rostered</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle>Latest news</CardTitle>
-              <CardDescription>Short, sourced blurbs</CardDescription>
-            </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/dashboard/news">
-                View all <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {latestNews.map((n) => (
-              <div key={n.id} className="rounded-md px-2 py-1.5 hover:bg-border/20">
-                <p className="text-sm font-medium">{n.article_url ? <a href={n.article_url} target="_blank" rel="noreferrer" className="hover:text-primary">{n.headline}</a> : n.headline}</p>
-                <p className="text-xs text-muted">{n.item_date}</p>
-                {n.source && <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">{n.article_url ? n.source : n.source_url ? <a href={n.source_url} target="_blank" rel="noreferrer">{n.source}</a> : n.source}</p>}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+function normalizeName(value: string) {
+  return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function StatTile({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-xs text-muted">{label}</p>
-      </CardContent>
-    </Card>
-  );
+export type OverviewPlayer = PlayerRow & { receptionsPerGame: number; totalReceptions: number; yearsExperience: number | null };
+export type OverviewTeam = { id: string; teamName: string; leagueName: string; platform: "Sleeper" | "ESPN"; wins: number; losses: number; ties: number; players: { name: string; pos: string; team: string | null; playerId: number | null }[] };
+export type OverviewPost = { id: string; body: string; created_at: string };
+
+export default async function DashboardOverview() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const [players, injuries, waiver, news, videos, { data: sleeperRows }, { data: espnRows }, { data: postsResult }] = await Promise.all([
+    getPlayers(), getInjuries(), getWaiverPicks(), getNews(), getFantasyVideos(),
+    supabase.from("sleeper_rosters").select("*").eq("profile_id", user!.id).order("synced_at", { ascending: false }),
+    supabase.from("espn_rosters").select("*").eq("profile_id", user!.id).order("synced_at", { ascending: false }),
+    supabase.from("forum_posts").select("id,body,created_at").order("created_at", { ascending: false }).limit(4),
+  ]);
+
+  const profiles = profileData as PlayerProfileData[];
+  const profileByPlayer = new Map(profiles.map((profile) => [`${normalizeName(profile.name)}|${profile.team}`, profile]));
+  const overviewPlayers: OverviewPlayer[] = players.map((player) => {
+    const profile = profileByPlayer.get(`${normalizeName(player.name)}|${player.team}`);
+    const weeks = profile?.weeks.filter((week) => week.fantasyPoints != null) ?? [];
+    return {
+      ...player,
+      receptionsPerGame: weeks.length ? weeks.reduce((sum, week) => sum + (week.receptions ?? 0), 0) / weeks.length : 0,
+      totalReceptions: weeks.reduce((sum, week) => sum + (week.receptions ?? 0), 0),
+      yearsExperience: profile?.yearsExperience ?? null,
+    };
+  });
+  const playerByName = new Map(overviewPlayers.map((player) => [normalizeName(player.name), player]));
+  const teams: OverviewTeam[] = [
+    ...((sleeperRows ?? []) as SleeperRosterRow[]).map((roster) => ({
+      id: `sleeper-${roster.id}`, teamName: roster.team_name ?? "My team", leagueName: roster.league_name, platform: "Sleeper" as const,
+      wins: roster.wins, losses: roster.losses, ties: roster.ties,
+      players: roster.roster_json.map((player) => ({ ...player, playerId: playerByName.get(normalizeName(player.name))?.id ?? null })),
+    })),
+    ...((espnRows ?? []) as { id: string; team_name: string; league_name: string; wins: number; losses: number; ties: number; roster_json: { name: string; pos: string; team: string | null }[] }[]).map((roster) => ({
+      id: `espn-${roster.id}`, teamName: roster.team_name, leagueName: roster.league_name, platform: "ESPN" as const,
+      wins: roster.wins, losses: roster.losses, ties: roster.ties,
+      players: roster.roster_json.map((player) => ({ ...player, playerId: playerByName.get(normalizeName(player.name))?.id ?? null })),
+    })),
+  ];
+  const rosteredNames = new Set(teams.flatMap((team) => team.players.map((player) => normalizeName(player.name))));
+  const newsForTeam = (news as NewsItemRow[]).map((item) => ({
+    item,
+    rosterNames: [...rosteredNames].filter((name) => normalizeName(`${item.headline} ${item.body ?? ""}`).includes(name)),
+  })).sort((a, b) => Number(b.rosterNames.length > 0) - Number(a.rosterNames.length > 0) || (b.item.item_date ?? "").localeCompare(a.item.item_date ?? ""));
+  const rankedKeys = new Set(players.map((player) => `${player.name.toLowerCase()}|${player.team}`));
+  const trending = buildPlayerMarket(profiles, injuries as InjuryRow[], news as NewsItemRow[], "half_ppr", rankedKeys)
+    .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct)).slice(0, 6);
+
+  return <DashboardHome
+    players={overviewPlayers}
+    injuries={injuries as InjuryRow[]}
+    waiver={waiver as WaiverPickRow[]}
+    news={newsForTeam.slice(0, 4).map(({ item, rosterNames: matched }) => ({ ...item, onTeam: matched.length > 0, matchingPlayers: matched.map((name) => teams.flatMap((team) => team.players).find((player) => normalizeName(player.name) === name)?.name ?? name) }))}
+    videos={(videos as FantasyVideoRow[]).slice(0, 3)}
+    teams={teams}
+    trending={trending as PlayerMarketRow[]}
+    huddlePosts={(postsResult ?? []) as OverviewPost[]}
+  />;
 }
