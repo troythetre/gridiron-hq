@@ -7,6 +7,7 @@ import type { NewsItemRow } from "@/lib/types";
 import * as Dialog from "@radix-ui/react-dialog";
 
 const filters = [
+  { id: "my_team", label: "My Players" },
   { id: "all", label: "All News" },
   { id: "players", label: "Players" },
   { id: "teams", label: "Teams" },
@@ -28,24 +29,42 @@ function displayDate(value: string | null) {
   return Number.isNaN(date.valueOf()) ? value : new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date);
 }
 
-export function NewsFeed({ news }: { news: NewsItemRow[] }) {
-  const [active, setActive] = useState("all");
+export function NewsFeed({ news, teamPlayerNames }: { news: NewsItemRow[]; teamPlayerNames: string[] }) {
+  const [active, setActive] = useState(teamPlayerNames.length ? "my_team" : "all");
   const [selected, setSelected] = useState<NewsItemRow | null>(null);
-  const visible = useMemo(() => news.filter((item) => active === "all" || item.topics?.includes(active)), [active, news]);
+  const { visible, teamPlayerMatches } = useMemo(() => {
+    const names = [...new Set(teamPlayerNames.map(normalizeName).filter((name) => name.length > 3))];
+    const matches = new Map<number, string[]>();
+    for (const item of news) {
+      const text = normalizeName(`${item.headline} ${item.body ?? ""}`);
+      const found = names.filter((name) => text.includes(name));
+      if (found.length) matches.set(item.id, found);
+    }
+    const ordered = [...news].sort((a, b) => {
+      const personalized = Number(matches.has(b.id)) - Number(matches.has(a.id));
+      return personalized || (new Date(b.item_date ?? 0).getTime() - new Date(a.item_date ?? 0).getTime());
+    });
+    return {
+      visible: ordered.filter((item) => active === "my_team" ? matches.has(item.id) : active === "all" || item.topics?.includes(active)),
+      teamPlayerMatches: matches,
+    };
+  }, [active, news, teamPlayerNames]);
 
   return (
     <div className="space-y-5">
       <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Filter fantasy news">
         {filters.map((filter) => <button key={filter.id} type="button" role="tab" aria-selected={active === filter.id} onClick={() => setActive(filter.id)} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black uppercase tracking-wider transition ${active === filter.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-muted hover:border-primary/40 hover:text-foreground"}`}>{filter.label}</button>)}
       </div>
+      {active === "my_team" && teamPlayerNames.length > 0 && <p className="text-xs text-muted">Prioritizing stories that mention a player on your synced rosters.</p>}
       {visible.length ? <div className="grid gap-4 lg:grid-cols-2">
         {visible.map((item) => {
           const topics = item.topics ?? [];
+          const onTeam = teamPlayerMatches.has(item.id);
           return <button key={item.id} type="button" onClick={() => setSelected(item)} aria-label={`Read summary: ${item.headline}`} className="block w-full rounded-[var(--radius)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
             <Card className="group h-full overflow-hidden border-border/80 transition hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
             <CardHeader className="pb-2">
               <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.16em] text-primary"><Newspaper className="h-3.5 w-3.5" />{item.source || "Gridiron News"}</span>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.16em] text-primary"><Newspaper className="h-3.5 w-3.5" />{item.source || "Gridiron News"}{onTeam && <span className="rounded-full bg-primary/10 px-2 py-1 tracking-wide">Your team</span>}</span>
                 <time className="shrink-0 text-xs text-muted" dateTime={item.item_date ?? undefined}>{displayDate(item.item_date)}</time>
               </div>
               <CardTitle className="text-lg leading-snug">
@@ -62,7 +81,7 @@ export function NewsFeed({ news }: { news: NewsItemRow[] }) {
             </Card>
           </button>;
         })}
-      </div> : <div className="rounded-2xl border border-dashed border-border py-14 text-center text-sm text-muted">No stories match this filter yet. The feed refreshes automatically when scheduled ingestion is enabled.</div>}
+      </div> : <div className="rounded-2xl border border-dashed border-border py-14 text-center text-sm text-muted">{active === "my_team" ? "No recent stories matched players on your synced rosters. Check All News for broader coverage." : "No stories match this filter yet. The feed refreshes automatically when scheduled ingestion is enabled."}</div>}
       <Dialog.Root open={selected !== null} onOpenChange={(open) => { if (!open) setSelected(null); }}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" />
@@ -90,6 +109,10 @@ export function NewsFeed({ news }: { news: NewsItemRow[] }) {
       </Dialog.Root>
     </div>
   );
+}
+
+function normalizeName(value: string) {
+  return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function sourceHrefFor(item: NewsItemRow) {
