@@ -1,20 +1,21 @@
 import { cn } from "@/lib/utils";
 
 const POS_COLORS: Record<string, string> = {
-  QB: "bg-white/[.08] text-white",
-  RB: "bg-white/[.08] text-white",
-  WR: "bg-white/[.08] text-white",
-  TE: "bg-white/[.08] text-white",
-  K: "bg-white/[.08] text-white",
-  DST: "bg-white/[.08] text-white",
+  QB: "border-sky-400/30 bg-sky-400/10 text-sky-300",
+  RB: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+  WR: "border-orange-400/30 bg-orange-400/10 text-orange-300",
+  TE: "border-violet-400/30 bg-violet-400/10 text-violet-300",
+  K: "border-amber-300/30 bg-amber-300/10 text-amber-200",
+  DST: "border-rose-400/30 bg-rose-400/10 text-rose-300",
 };
 
 export function PosBadge({ pos, className }: { pos: string; className?: string }) {
+  const normalizedPos = pos.toUpperCase() === "DEF" || pos.toUpperCase() === "D/ST" ? "DST" : pos.toUpperCase();
   return (
     <span
       className={cn(
         "inline-flex h-6 min-w-[2.5rem] items-center justify-center rounded-full border border-white/10 px-1.5 text-xs font-semibold",
-        POS_COLORS[pos] ?? "bg-border/40 text-foreground",
+        POS_COLORS[normalizedPos] ?? "bg-border/40 text-foreground",
         className
       )}
     >

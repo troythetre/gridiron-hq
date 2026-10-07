@@ -8,7 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "news:fetch": "node scripts/fetch-fantasy-news.mjs",
-    "videos:fetch": "node scripts/fetch-fantasy-videos.mjs"
+    "videos:fetch": "node scripts/fetch-fantasy-videos.mjs",
+    "dev:vinext": "vite dev --port 3001",
+    "build:vinext": "vite build",
+    "start:vinext": "vite preview",
+    "deploy:vinext": "vinext-cloudflare deploy",
+    "deploy:vinext:built": "vinext-cloudflare deploy --skip-build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -21,6 +26,7 @@
     "@radix-ui/react-tabs": "^1.1.22",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
+    "@vinext/cloudflare": "^1.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.52.0",
@@ -28,17 +34,30 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-hook-form": "^7.89.0",
+    "react-server-dom-webpack": "^19.3.0",
     "tailwind-merge": "^3.7.0",
+    "vinext": "^1.0.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^2.0.0-beta.sha-52b0dc0e9",
     "@tailwindcss/turbopack": "^4",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.1.2",
+    "@vitejs/plugin-rsc": "^0.5.36",
+    "cf": "^1.0.0-beta.12",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.3.0"
+  },
+  "type": "module",
+  "optionalDependencies": {
+    "@rolldown/binding-darwin-arm64": "^1.2.12",
+    "@rolldown/binding-linux-x64-gnu": "^1.2.12"
   }
 }
