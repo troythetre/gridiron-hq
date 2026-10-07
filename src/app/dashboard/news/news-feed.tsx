@@ -5,6 +5,7 @@ import { ArrowUpRight, Newspaper, Rss, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { NewsItemRow } from "@/lib/types";
 import * as Dialog from "@radix-ui/react-dialog";
+import Image from "next/image";
 
 const filters = [
   { id: "my_team", label: "My Players" },
@@ -28,6 +29,17 @@ function displayDate(value: string | null) {
   const date = new Date(value);
   return Number.isNaN(date.valueOf()) ? value : new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date);
 }
+
+const topicColors: Record<string, string> = {
+  injury: "border-red-500/30 bg-red-500/10 text-red-300",
+  practice: "border-orange-500/30 bg-orange-500/10 text-orange-300",
+  players: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  teams: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+  fantasy: "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300",
+  ppr: "border-sky-500/30 bg-sky-500/10 text-sky-300",
+  half_ppr: "border-cyan-500/30 bg-cyan-500/10 text-cyan-300",
+  dynasty: "border-violet-500/30 bg-violet-500/10 text-violet-300",
+};
 
 export function NewsFeed({ news, teamPlayerNames }: { news: NewsItemRow[]; teamPlayerNames: string[] }) {
   const [active, setActive] = useState(teamPlayerNames.length ? "my_team" : "all");
@@ -62,6 +74,7 @@ export function NewsFeed({ news, teamPlayerNames }: { news: NewsItemRow[]; teamP
           const onTeam = teamPlayerMatches.has(item.id);
           return <button key={item.id} type="button" onClick={() => setSelected(item)} aria-label={`Read summary: ${item.headline}`} className="block w-full rounded-[var(--radius)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
             <Card className="group h-full overflow-hidden border-border/80 transition hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
+            {item.image_url && <div className="relative aspect-[16/8] overflow-hidden bg-background"><Image src={item.image_url} alt="" fill unoptimized sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition duration-500 group-hover:scale-[1.03]" /></div>}
             <CardHeader className="pb-2">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.16em] text-primary"><Newspaper className="h-3.5 w-3.5" />{item.source || "Gridiron News"}{onTeam && <span className="rounded-full bg-primary/10 px-2 py-1 tracking-wide">Your team</span>}</span>
@@ -74,7 +87,7 @@ export function NewsFeed({ news, teamPlayerNames }: { news: NewsItemRow[]; teamP
             <CardContent>
               {item.body && <p className="text-sm leading-6 text-foreground/80">{item.body}</p>}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
-                <div className="flex flex-wrap gap-1.5">{topics.map((topic) => <span key={topic} className="rounded-full bg-border/40 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-muted">{topic.replace("_", "-")}</span>)}</div>
+                <div className="flex flex-wrap gap-1.5">{topics.map((topic) => <span key={topic} className={`rounded-full border px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${topicColors[topic] ?? "border-border bg-border/40 text-muted"}`}>{topic.replace("_", "-")}</span>)}</div>
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-primary"><Rss className="h-3.5 w-3.5" />Open story</span>
               </div>
             </CardContent>

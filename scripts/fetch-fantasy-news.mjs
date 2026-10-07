@@ -60,11 +60,14 @@ function parseItems(xml) {
   return blocks.map((block) => {
     const atomLink = block.match(/<link\b[^>]*href=["']([^"']+)["'][^>]*\/?\s*>/i)?.[1];
     const link = atomLink || tagValue(block, "link") || tagValue(block, "guid");
+    const imageUrl = block.match(/<(?:media:thumbnail|media:content|enclosure)\b[^>]*(?:url|href)=["']([^"']+)["'][^>]*>/i)?.[1]
+      || block.match(/<img\b[^>]*src=["']([^"']+)["']/i)?.[1] || "";
     return {
       headline: tagValue(block, "title").replace(/<[^>]+>/g, "").trim(),
       articleUrl: decodeXml(link.trim()),
       excerpt: tagValue(block, "description") || tagValue(block, "summary") || tagValue(block, "content:encoded"),
       date: tagValue(block, "pubDate") || tagValue(block, "published") || tagValue(block, "updated"),
+      imageUrl: decodeXml(imageUrl),
     };
   }).filter((item) => item.headline && /^https?:\/\//i.test(item.articleUrl));
 }
@@ -100,6 +103,7 @@ const results = await Promise.allSettled(feeds.map(async (feed) => {
       source: feed.name,
       article_url: item.articleUrl,
       source_url: feed.homepage,
+      image_url: /^https?:\/\//i.test(item.imageUrl) ? item.imageUrl : null,
       topics: item.topics,
     }));
   return { source: feed.name, items };

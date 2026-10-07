@@ -12,14 +12,15 @@ export default async function InjuriesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Injury Tracker</h1>
-        <p className="text-sm text-muted">Most severe first - hand-researched, with sources.</p>
+      <div className="rounded-3xl border border-red-500/20 bg-[linear-gradient(135deg,#3b1015,#19090c_70%)] p-6 sm:p-8">
+        <p className="text-[10px] font-black uppercase tracking-[.2em] text-red-300">Player health report</p>
+        <h1 className="mt-2 text-3xl font-black text-red-50 sm:text-4xl">Injury Tracker</h1>
+        <p className="mt-2 text-sm text-red-100/70">Most severe first · hand-researched, with sources.</p>
       </div>
 
       <div className="space-y-3">
         {sorted.map((i) => (
-          <Card key={i.id}>
+          <Card key={i.id} className="border-red-950/30 shadow-sm shadow-red-950/10">
             <CardContent className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <PosBadge pos={i.pos ?? "?"} />

@@ -46,6 +46,7 @@ export interface NewsItemRow {
   source: string | null;
   article_url?: string | null;
   source_url?: string | null;
+  image_url?: string | null;
   topics?: string[] | null;
 }
 
