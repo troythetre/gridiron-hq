@@ -30,7 +30,7 @@ export function DashboardHome({
   const leaders = [...players].sort((a, b) => {
     if (mode === "dynasty" && (a.yearsExperience ?? 99) !== (b.yearsExperience ?? 99)) return (a.yearsExperience ?? 99) - (b.yearsExperience ?? 99);
     return points(b) - points(a);
-  }).slice(0, 5);
+  }).slice(0, 20);
   const rosterNames = new Set(teams.flatMap((team) => team.players.map((player) => player.name.toLowerCase())));
   const rosterInjuries = injuries.filter((injury) => rosterNames.has(injury.name.toLowerCase())).slice(0, 4);
   const onTeamNews = news.filter((item) => item.onTeam);
@@ -91,7 +91,12 @@ export function DashboardHome({
 
       <section className="space-y-4">
         <SectionHeader title="News for your players" detail="Roster stories first" href="/dashboard/news" />
-        <Card><CardContent className="divide-y divide-border p-2">
+        <Card><CardContent
+          role="region"
+          aria-label="News stories for your players"
+          tabIndex={0}
+          className="max-h-[70vh] divide-y divide-border overflow-y-auto overscroll-contain p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           {news.slice(0, 4).map((item) => {
             const mentionedPlayers = teams.flatMap((team) => team.players)
               .filter((player) => item.matchingPlayers.some((name) => normalizeName(name) === normalizeName(player.name)))
@@ -112,16 +117,16 @@ export function DashboardHome({
     <div className="grid gap-5 xl:grid-cols-2">
       <section className="space-y-4">
         <SectionHeader title="Trending" detail="Biggest recent player moves" href="/dashboard/market" />
-        <div className="grid gap-2 sm:grid-cols-2">{trending.slice(0, 4).map((player) => <Link key={player.id} href="/dashboard/market" className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:border-primary/40">
+        <div role="region" aria-label="Trending players" tabIndex={0} className="grid max-h-[28rem] gap-2 overflow-y-auto overscroll-contain pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:grid-cols-2">{trending.slice(0, 16).map((player) => <Link key={player.id} href="/dashboard/market" className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:border-primary/40">
           <PlayerAvatar name={player.name} team={player.team} position={player.pos} size={48} />
           <span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold">{player.name}</span><span className="flex items-center gap-2"><PosBadge pos={player.pos} /><span className="text-[10px] text-muted">{player.catalyst ?? "Market move"}</span></span></span>
-          <span className={`flex items-center text-sm font-black ${player.changePct >= 0 ? "text-success" : "text-danger"}`}>{player.changePct >= 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}{Math.abs(player.changePct).toFixed(1)}%</span>
+          <span className={`flex items-center text-sm font-black ${player.changePct >= 0 ? "text-emerald-400" : "text-red-400"}`}>{player.changePct >= 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}{Math.abs(player.changePct).toFixed(1)}%</span>
         </Link>)}</div>
       </section>
 
       <section className="space-y-4">
         <SectionHeader title="Stats leaders" detail={`${mode === "dynasty" ? "Dynasty outlook" : scoringLabel(scoring)} · average points per game`} href="/dashboard/rankings" />
-        <Card><CardContent className="divide-y divide-border p-2">
+        <Card><CardContent role="region" aria-label="Stats leaders" tabIndex={0} className="max-h-[28rem] divide-y divide-border overflow-y-auto overscroll-contain p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           {leaders.map((player, index) => <Link key={player.id} href={`/dashboard/players/${player.id}`} className="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-border/20">
             <span className="w-5 text-xs font-bold text-muted">{index + 1}</span><PlayerAvatar name={player.name} team={player.team} position={player.pos} size={38} /><PosBadge pos={player.pos} /><span className="min-w-0 flex-1 truncate text-sm font-semibold">{player.name}</span><span className="text-sm font-black tabular-nums">{points(player).toFixed(1)}<span className="ml-1 text-[9px] font-medium text-muted">PPG</span></span>
           </Link>)}

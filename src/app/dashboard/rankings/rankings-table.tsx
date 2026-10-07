@@ -97,7 +97,7 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
               <tr key={p.id} className="border-b border-border/60 last:border-0 hover:bg-border/10">
                 <td className="px-4 py-2.5 text-muted">{p.overallRank}</td>
                 <td className="px-4 py-2.5 font-medium">
-                  <Link href={`/dashboard/players/${p.id}`} className="group inline-flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                  <Link href={p.profileHref ?? `/dashboard/players/${p.id}`} className="group inline-flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary">
                     <PlayerAvatar name={p.name} team={p.team} position={p.pos} size={38} className="shrink-0 rounded-full transition duration-200 group-hover:scale-105" />
                     <span className="transition group-hover:text-primary">{p.name}</span>
                   </Link>

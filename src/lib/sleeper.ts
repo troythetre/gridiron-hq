@@ -27,6 +27,10 @@ export interface SleeperLeague {
   season: string;
   total_rosters: number;
   status: string;
+  settings?: {
+    playoff_teams?: number;
+    playoff_week_start?: number;
+  };
 }
 
 export interface SleeperRosterApi {
@@ -34,7 +38,25 @@ export interface SleeperRosterApi {
   owner_id: string | null;
   players: string[] | null;
   starters: string[] | null;
-  settings?: { wins?: number; losses?: number; ties?: number };
+  settings?: {
+    wins?: number;
+    losses?: number;
+    ties?: number;
+    fpts?: number;
+    fpts_decimal?: number;
+  };
+}
+
+export interface SleeperMatchup {
+  roster_id: number;
+  matchup_id: number | null;
+  points?: number | null;
+}
+
+export interface SleeperNflState {
+  week: number;
+  season: string;
+  season_type: string;
 }
 
 export interface SleeperLeagueUser {
@@ -88,6 +110,18 @@ export function getUserLeagues(sleeperUserId: string, season = currentNflSeason(
 
 export function getLeagueRosters(leagueId: string): Promise<SleeperRosterApi[]> {
   return sleeperFetch<SleeperRosterApi[]>(`/league/${leagueId}/rosters`);
+}
+
+export function getSleeperLeague(leagueId: string): Promise<SleeperLeague> {
+  return sleeperFetch<SleeperLeague>(`/league/${leagueId}`);
+}
+
+export function getLeagueMatchups(leagueId: string, week: number): Promise<SleeperMatchup[]> {
+  return sleeperFetch<SleeperMatchup[]>(`/league/${leagueId}/matchups/${week}`);
+}
+
+export function getSleeperNflState(): Promise<SleeperNflState> {
+  return sleeperFetch<SleeperNflState>("/state/nfl");
 }
 
 export function getLeagueUsers(leagueId: string): Promise<SleeperLeagueUser[]> {

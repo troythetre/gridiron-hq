@@ -25,12 +25,22 @@ app_players <- jsonlite::fromJSON(file.path(repo_root, "src", "data", "players.j
 profile_path <- file.path(repo_root, "src", "data", "player-profiles.json")
 existing_profiles <- jsonlite::fromJSON(profile_path, simplifyVector = FALSE)
 weekly <- readRDS(stats_path)
-history_seasons <- seq.int(max(2016L, season - 4L), season)
+history_seasons <- seq.int(1999L, season)
 history_data <- lapply(history_seasons, function(year) {
   path <- file.path(stats_dir, sprintf("player_stats_week_%s.rds", year))
   if (file.exists(path)) readRDS(path) else NULL
 })
 names(history_data) <- history_seasons
+snap_data <- lapply(history_seasons, function(year) {
+  path <- file.path(stats_dir, sprintf("snap_counts_%s.rds", year))
+  if (file.exists(path)) readRDS(path) else NULL
+})
+names(snap_data) <- history_seasons
+injury_data <- lapply(history_seasons, function(year) {
+  path <- file.path(stats_dir, sprintf("injury_reports_%s.rds", year))
+  if (file.exists(path)) readRDS(path) else NULL
+})
+names(injury_data) <- history_seasons
 `%||%` <- function(value, fallback) if (is.null(value) || length(value) == 0) fallback else value
 bios <- tryCatch(nflreadr::load_players(), error = function(error) NULL)
 if (is.null(bios) || !all(c("display_name", "latest_team", "position", "gsis_id") %in% names(bios))) {
@@ -86,7 +96,7 @@ value_or_null <- function(value) {
   if (length(value) == 0 || is.na(value[[1]]) || identical(value[[1]], "")) NULL else value[[1]]
 }
 
-player_weeks <- function(weekly_data, player, gsis_id = NULL) {
+player_weeks <- function(weekly_data, player, gsis_id = NULL, snap_counts = NULL, injuries = NULL) {
   if (is.null(weekly_data) || nrow(weekly_data) == 0) return(list())
   player_id <- if (!is.null(gsis_id) && !is.na(gsis_id) && nzchar(gsis_id)) gsis_id else player$gsisId
   matches_id <- !is.na(player_id) & weekly_data$player_id == player_id
@@ -95,6 +105,34 @@ player_weeks <- function(weekly_data, player, gsis_id = NULL) {
   rows <- rows[order(rows$week), , drop = FALSE]
   lapply(seq_len(nrow(rows)), function(j) {
     row <- rows[j, ]
+    snap_share <- NULL
+    if (!is.null(snap_counts) && nrow(snap_counts) > 0 &&
+        all(c("player", "team", "week", "offense_pct") %in% names(snap_counts))) {
+      snap_filter <- snap_counts$player == row$player_display_name &
+        snap_counts$team == row$team &
+        snap_counts$week == row$week
+      if ("game_type" %in% names(snap_counts)) snap_filter <- snap_filter & snap_counts$game_type == "REG"
+      snap_match <- snap_counts[snap_filter, , drop = FALSE]
+      if (nrow(snap_match) > 0) snap_share <- value_or_null(snap_match$offense_pct[[1]])
+    }
+    injury_status <- NULL
+    practice_status <- NULL
+    injury_match <- NULL
+    if (!is.null(injuries) && nrow(injuries) > 0 &&
+        all(c("week", "team", "full_name", "gsis_id") %in% names(injuries))) {
+      injury_filter <- injuries$week == row$week & injuries$team == row$team
+      if (!is.null(player_id) && !is.na(player_id) && nzchar(player_id)) {
+        injury_filter <- injury_filter & injuries$gsis_id == player_id
+      } else {
+        injury_filter <- injury_filter & injuries$full_name == player$name
+      }
+      if ("season_type" %in% names(injuries)) injury_filter <- injury_filter & injuries$season_type == "REG"
+      injury_match <- injuries[injury_filter, , drop = FALSE]
+      if (nrow(injury_match) > 0) {
+        injury_status <- value_or_null(injury_match$report_status[[nrow(injury_match)]])
+        practice_status <- value_or_null(injury_match$practice_status[[nrow(injury_match)]])
+      }
+    }
     list(
       week = row$week,
       fantasyPoints = value_or_null(row$fantasy_points),
@@ -115,7 +153,12 @@ player_weeks <- function(weekly_data, player, gsis_id = NULL) {
       targetShare = value_or_null(row$target_share),
       airYardsShare = value_or_null(row$air_yards_share),
       wopr = value_or_null(row$wopr),
-      racr = value_or_null(row$racr)
+      racr = value_or_null(row$racr),
+      snapShare = snap_share,
+      injuryStatus = injury_status,
+      practiceStatus = practice_status,
+      passingCpoe = value_or_null(row$passing_cpoe),
+      sacksSuffered = value_or_null(row$sacks_suffered)
     )
   })
 }
@@ -140,13 +183,39 @@ profiles <- lapply(seq_len(nrow(catalog)), function(i) {
   bio <- if (nrow(bio_match) > 0) bio_match[1, ] else NULL
 
   gsis_id <- if (is.null(bio)) NULL else value_or_null(bio$gsis_id)
-  weeks <- player_weeks(weekly, player, gsis_id)
+  weeks <- player_weeks(weekly, player, gsis_id, snap_data[[as.character(season)]], injury_data[[as.character(season)]])
   history <- lapply(names(history_data), function(year) {
-    year_weeks <- player_weeks(history_data[[year]], player, gsis_id)
-    trend_weeks <- lapply(year_weeks, function(week) week[c("week", "fantasyPoints", "rushingYards", "receivingYards", "targetShare", "airYardsShare")])
+    year_weeks <- player_weeks(history_data[[year]], player, gsis_id, snap_data[[year]], injury_data[[year]])
+    trend_weeks <- lapply(year_weeks, function(week) week[c("week", "fantasyPoints", "rushingYards", "receivingYards", "targetShare", "airYardsShare", "targets", "carries", "receptions", "snapShare", "injuryStatus", "practiceStatus")])
     list(season = as.integer(year), weeks = trend_weeks)
   })
   history <- Filter(function(item) length(item$weeks) > 0, history)
+  injury_history <- lapply(names(injury_data), function(year) {
+    injuries <- injury_data[[year]]
+    if (is.null(injuries) || nrow(injuries) == 0 ||
+        !all(c("week", "team", "full_name", "gsis_id") %in% names(injuries))) return(list())
+    injury_filter <- injuries$team == player$team
+    if (!is.null(gsis_id) && !is.na(gsis_id) && nzchar(gsis_id)) {
+      injury_filter <- injury_filter & injuries$gsis_id == gsis_id
+    } else {
+      injury_filter <- injury_filter & injuries$full_name == player$name
+    }
+    if ("season_type" %in% names(injuries)) injury_filter <- injury_filter & injuries$season_type == "REG"
+    matched <- injuries[injury_filter, , drop = FALSE]
+    if (nrow(matched) == 0) return(list())
+    lapply(seq_len(nrow(matched)), function(index) {
+      row <- matched[index, ]
+      list(
+        season = as.integer(year),
+        week = as.integer(row$week),
+        reportStatus = value_or_null(row$report_status),
+        practiceStatus = value_or_null(row$practice_status),
+        reportPrimaryInjury = value_or_null(row$report_primary_injury),
+        practicePrimaryInjury = value_or_null(row$practice_primary_injury)
+      )
+    })
+  })
+  injury_history <- unlist(injury_history, recursive = FALSE)
 
   list(
     name = player$name,
@@ -171,7 +240,8 @@ profiles <- lapply(seq_len(nrow(catalog)), function(i) {
     draftTeam = if (is.null(bio)) NULL else value_or_null(bio$draft_team),
     status = if (is.null(bio)) NULL else value_or_null(bio$status),
     weeks = weeks,
-    history = history
+    history = history,
+    injuryHistory = injury_history
   )
 })
 

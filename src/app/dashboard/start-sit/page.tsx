@@ -29,6 +29,14 @@ export default async function StartSitPage() {
       wk1: weeks.find((week) => week.week === 1)?.receptions ?? 0,
       wk2: weeks.find((week) => week.week === 2)?.receptions ?? 0,
       avg: weeks.length ? weeks.reduce((sum, week) => sum + (week.receptions ?? 0), 0) / weeks.length : 0,
+      weekly: weeks.map((week) => ({
+        week: week.week,
+        points: week.fantasyPoints ?? 0,
+        receptions: week.receptions ?? 0,
+        carries: week.carries,
+        targets: week.targets,
+        snapShare: week.snapShare,
+      })),
     }];
   }));
 

@@ -4,7 +4,9 @@
 # Data is stored locally and intentionally kept out of git; see docs/nfl-data.md.
 
 args <- commandArgs(trailingOnly = TRUE)
-seasons_arg <- if (length(args) > 0) args[[1]] else "2016:2026"
+refresh_existing <- "--refresh" %in% args
+season_args <- args[args != "--refresh"]
+seasons_arg <- if (length(season_args) > 0) season_args[[1]] else "1999:2026"
 
 parse_seasons <- function(value) {
   if (grepl("^[0-9]{4}:[0-9]{4}$", value)) {
@@ -14,16 +16,12 @@ parse_seasons <- function(value) {
 
   seasons <- suppressWarnings(as.integer(strsplit(value, ",", fixed = TRUE)[[1]]))
   if (length(seasons) == 0 || anyNA(seasons) || any(seasons < 1999)) {
-    stop("Pass seasons as a range (2016:2025) or comma-separated years (2023,2024).")
+    stop("Pass seasons as a range (1999:2026) or comma-separated years (2023,2024).")
   }
   unique(seasons)
 }
 
 seasons <- parse_seasons(seasons_arg)
-if (any(seasons < 2016)) {
-  stop("This pipeline starts in 2016, when the participation and Next Gen Stats data begin.")
-}
-
 script_arg <- grep("^--file=", commandArgs(), value = TRUE)
 if (length(script_arg) == 0) stop("Run this file with Rscript so its location can be resolved.")
 script_path <- sub("^--file=", "", script_arg[[1]])
@@ -44,11 +42,17 @@ loaders <- list(
   player_stats_week = function(season) {
     nflreadr::load_player_stats(seasons = season, summary_level = "week")
   },
+  schedules = function(season) nflreadr::load_schedules(seasons = season),
+  snap_counts = function(season) nflreadr::load_snap_counts(seasons = season),
+  injury_reports = function(season) nflreadr::load_injuries(seasons = season),
   participation = function(season) {
     nflreadr::load_participation(seasons = season, include_pbp = FALSE)
   },
   nextgen_receiving = function(season) {
     nflreadr::load_nextgen_stats(seasons = season, stat_type = "receiving")
+  },
+  nextgen_passing = function(season) {
+    nflreadr::load_nextgen_stats(seasons = season, stat_type = "passing")
   },
   ftn_charting = function(season) nflreadr::load_ftn_charting(seasons = season)
 )
@@ -64,7 +68,25 @@ manifest <- if (file.exists(manifest_path)) {
 
 for (season in seasons) {
   for (dataset in names(loaders)) {
-    if (dataset == "ftn_charting" && season < 2022) next
+    first_season <- switch(
+      dataset,
+      player_stats_week = 1999L,
+      schedules = 1999L,
+      snap_counts = 2012L,
+      injury_reports = 2009L,
+      nextgen_passing = 2016L,
+      ftn_charting = 2022L,
+      2016L
+    )
+    if (season < first_season) next
+
+    output_path <- file.path(output_dir, sprintf("%s_%s.rds", dataset, season))
+    already_downloaded <- nrow(manifest) > 0 &&
+      any(manifest$dataset == dataset & manifest$season == season & manifest$status == "downloaded")
+    if (!refresh_existing && file.exists(output_path) && already_downloaded) {
+      message(sprintf("Skipping %s for %s: already downloaded (use --refresh to replace).", dataset, season))
+      next
+    }
 
     message(sprintf("Fetching %s for %s...", dataset, season))
     fetched_at <- format(Sys.time(), tz = "UTC", usetz = TRUE)
@@ -82,7 +104,6 @@ for (season in seasons) {
       next
     }
 
-    output_path <- file.path(output_dir, sprintf("%s_%s.rds", dataset, season))
     saveRDS(result, output_path, compress = "gzip")
     manifest <- rbind(manifest, data.frame(
       dataset = dataset, season = season, rows = nrow(result), status = "downloaded",

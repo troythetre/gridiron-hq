@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MyTeamAnalysis, type AnalysisTeam, type AnalysisPlayer } from "./my-team-analysis";
 import { Link2, RefreshCw } from "lucide-react";
+import { getAllPlayers, getLeagueRosters, getLeagueUsers, normalizeSleeperPos, sleeperPlayerName, SleeperApiError } from "@/lib/sleeper";
+import { trainFantasyScoreModel } from "@/lib/fantasy-ml";
 
 type EspnRoster = {
   id: string; espn_league_id: string; season: number; league_name: string; team_name: string;
@@ -33,6 +35,7 @@ export default async function MyTeamPage() {
 
   const playerRows = players as PlayerRow[];
   const profileRows = profilesJson as PlayerProfileData[];
+  const fantasyScoreModel = trainFantasyScoreModel(profileRows);
   const matchupRows = matchupJson as unknown as { seasons: number[]; players: Record<string, NonNullable<AnalysisPlayer["matchup"]>> };
   const playerByName = new Map(playerRows.map((player) => [normalize(player.name), player]));
   const profileByPlayer = new Map(profileRows.map((profile) => [`${normalize(profile.name)}|${profile.team}`, profile]));
@@ -49,6 +52,58 @@ export default async function MyTeamPage() {
       players: roster.roster_json.map((player) => toAnalysisPlayer(player.name, player.pos, player.team)),
     })),
   ];
+
+  const sleeperLeagues = [...new Set(((sleeperRows ?? []) as SleeperRosterRow[]).map((roster) => roster.sleeper_league_id))];
+  const comparisons = new Map<string, NonNullable<AnalysisTeam["leagueComparison"]>>();
+  if (sleeperLeagues.length) {
+    let sleeperPlayers;
+    try {
+      sleeperPlayers = await getAllPlayers();
+    } catch (error) {
+      const message = error instanceof SleeperApiError ? error.message : "Sleeper player data could not be loaded.";
+      sleeperLeagues.forEach((leagueId) => comparisons.set(leagueId, { teams: [], error: message }));
+    }
+
+    if (sleeperPlayers) {
+      await Promise.all(sleeperLeagues.map(async (leagueId) => {
+        const ownRoster = ((sleeperRows ?? []) as SleeperRosterRow[]).find((roster) => roster.sleeper_league_id === leagueId);
+        if (!ownRoster) return;
+        try {
+          const [rosters, leagueUsers] = await Promise.all([getLeagueRosters(leagueId), getLeagueUsers(leagueId)]);
+          const userById = new Map(leagueUsers.map((user) => [user.user_id, user]));
+          const ownPlayerIds = new Set(ownRoster.roster_json.map((player) => player.sleeper_player_id));
+          const ownNames = new Set(ownRoster.roster_json.map((player) => normalize(player.name)));
+          const mappedTeams = rosters.map((roster) => {
+            const rosterIds = roster.players ?? [];
+            const users = roster.owner_id ? userById.get(roster.owner_id) : undefined;
+            const teamName = users?.metadata?.team_name ?? users?.display_name ?? `Team ${roster.roster_id}`;
+            return {
+              name: teamName,
+              isOwn: rosterIds.some((id) => ownPlayerIds.has(id)) || rosterIds.some((id) => ownNames.has(normalize(sleeperPlayerName(id, sleeperPlayers[id])))),
+              players: rosterIds.map((id) => {
+                const info = sleeperPlayers[id];
+                const name = sleeperPlayerName(id, info);
+                return {
+                  pos: normalizeSleeperPos(info?.position ?? playerByName.get(normalize(name))?.pos ?? "?"),
+                  avgPts: playerByName.get(normalize(name))?.avg_pts ?? null,
+                };
+              }),
+            };
+          });
+          comparisons.set(leagueId, { teams: mappedTeams });
+        } catch (error) {
+          const message = error instanceof SleeperApiError ? error.message : "Sleeper league rosters could not be loaded.";
+          comparisons.set(leagueId, { teams: [], error: message });
+        }
+      }));
+    }
+  }
+  teams.forEach((team) => {
+    if (team.platform === "Sleeper") {
+      const roster = ((sleeperRows ?? []) as SleeperRosterRow[]).find((row) => `sleeper-${row.id}` === team.id);
+      if (roster) team.leagueComparison = comparisons.get(roster.sleeper_league_id);
+    }
+  });
 
   function toAnalysisPlayer(name: string, pos: string, team: string | null): AnalysisPlayer {
     const row = playerByName.get(normalize(name));
@@ -78,6 +133,6 @@ export default async function MyTeamPage() {
       <div><p className="text-[10px] font-black uppercase tracking-[.22em] text-primary">Roster analytics center</p><h1 className="mt-2 font-display text-4xl font-black sm:text-5xl">My Team</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Deep roster breakdowns, scoring trends, position depth, injury exposure, usage, and waiver fit for every connected league.</p></div>
       <Button asChild variant="secondary" size="sm"><Link href="/dashboard/sync"><RefreshCw className="mr-2 h-4 w-4" />Manage sync</Link></Button>
     </header>
-    {hasTeams ? <MyTeamAnalysis teams={teams} waiver={waiver as WaiverPickRow[]} matchupSeasons={[matchupRows.seasons[0] ?? 2022, matchupRows.seasons[1] ?? 2025]} /> : <Card className="border-dashed"><CardContent className="flex flex-col items-start gap-4 p-7 sm:p-9"><span className="grid h-12 w-12 place-items-center rounded-2xl border border-primary/20 bg-primary/10"><Link2 className="h-5 w-5 text-primary" /></span><div><h2 className="text-xl font-bold">Connect a team to unlock roster analytics</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Sync ESPN or Sleeper and this dashboard will show point production, player trends, injury risk, positional strengths and gaps, weekly scoring, and relevant waiver options.</p></div><Button asChild><Link href="/dashboard/sync">Connect ESPN or Sleeper</Link></Button></CardContent></Card>}
+    {hasTeams ? <MyTeamAnalysis teams={teams} waiver={waiver as WaiverPickRow[]} matchupSeasons={[matchupRows.seasons[0] ?? 2022, matchupRows.seasons[1] ?? 2025]} fantasyScoreModel={fantasyScoreModel} /> : <Card className="border-dashed"><CardContent className="flex flex-col items-start gap-4 p-7 sm:p-9"><span className="grid h-12 w-12 place-items-center rounded-2xl border border-primary/20 bg-primary/10"><Link2 className="h-5 w-5 text-primary" /></span><div><h2 className="text-xl font-bold">Connect a team to unlock roster analytics</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Sync ESPN or Sleeper and this dashboard will show point production, player trends, injury risk, positional strengths and gaps, weekly scoring, and relevant waiver options.</p></div><Button asChild><Link href="/dashboard/sync">Connect ESPN or Sleeper</Link></Button></CardContent></Card>}
   </div>;
 }

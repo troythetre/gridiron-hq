@@ -1,16 +1,6 @@
 /**
- * Start/Sit scoring engine.
- *
- * This is deliberately a transparent, explainable heuristic rather than a black-box
- * model: every input is visible in the UI next to the final number, so a user can
- * see *why* a player scored the way they did. It blends three signals:
- *
- *   1. Production  - average half-PPR points per game so far this season.
- *   2. Trend       - how much better/worse Week 2 was vs. Week 1 (recent form).
- *   3. Injury risk - a status-based penalty, since a point total alone doesn't
- *                    capture "probably won't play 100% of snaps this week."
- *
- * Score = avg_pts + (trend * TREND_WEIGHT) - injuryPenalty(status)
+ * Explainable Start/Sit estimate. It blends season production, recency-weighted
+ * production, empirical floor/upside, role stability, trend, and injury status.
  */
 
 export type InjuryStatus = "OUT" | "DOUBTFUL" | "QUESTIONABLE" | "MONITOR" | null;
@@ -21,14 +11,15 @@ export interface ScoredPlayer {
   team: string;
   avg_pts: number;
   trend: number;
+  floorScore: number;
+  upsideScore: number;
+  upsideWeight: number;
   injuryStatus: InjuryStatus;
   injuryNote?: string;
   score: number;
   recommendation: "START" | "FLEX" | "SIT" | "OUT";
   reasons: string[];
 }
-
-const TREND_WEIGHT = 0.3;
 
 const INJURY_PENALTY: Record<Exclude<InjuryStatus, null>, number> = {
   OUT: 9999, // effectively removes them from consideration
@@ -37,6 +28,41 @@ const INJURY_PENALTY: Record<Exclude<InjuryStatus, null>, number> = {
   MONITOR: 1,
 };
 
+type WeeklyScore = {
+  week: number;
+  points: number;
+  carries?: number | null;
+  targets?: number | null;
+  snapShare?: number | null;
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function quantile(values: number[], probability: number) {
+  const sorted = [...values].sort((a, b) => a - b);
+  if (sorted.length === 1) return sorted[0];
+  const position = (sorted.length - 1) * probability;
+  const lower = Math.floor(position);
+  const fraction = position - lower;
+  return sorted[lower] + (sorted[Math.ceil(position)] - sorted[lower]) * fraction;
+}
+
+function recencyWeightedMean(values: number[]) {
+  const weights = values.map((_, index) => index + 1);
+  const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+  return values.reduce((sum, value, index) => sum + value * weights[index], 0) / weightTotal;
+}
+
+function linearTrend(values: number[]) {
+  if (values.length < 2) return 0;
+  const meanX = (values.length - 1) / 2;
+  const meanY = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const numerator = values.reduce((sum, value, index) => sum + (index - meanX) * (value - meanY), 0);
+  const denominator = values.reduce((sum, _, index) => sum + (index - meanX) ** 2, 0);
+  return denominator ? numerator / denominator : 0;
+}
 
 export function scorePlayer(input: {
   name: string;
@@ -45,27 +71,65 @@ export function scorePlayer(input: {
   wk1_pts: number | null;
   wk2_pts: number | null;
   avg_pts: number;
+  weeklyScores?: WeeklyScore[];
+  upsideWeight?: number;
+  manualFloor?: number;
   injuryStatus?: InjuryStatus;
   injuryNote?: string;
 }): ScoredPlayer {
-  // Trend is the difference between Week 2 and Week 1 points, if both are available.
-  const trend =
-    input.wk1_pts != null && input.wk2_pts != null ? input.wk2_pts - input.wk1_pts : 0;
-  const injuryStatus = input.injuryStatus ?? null;
-  const penalty = injuryStatus ? INJURY_PENALTY[injuryStatus] : 0;
-  const score = Math.round((input.avg_pts + trend * TREND_WEIGHT - penalty) * 100) / 100;
-
-  // Reasons are a human-readable explanation of the score, shown in the UI.
-  const reasons: string[] = [
-    `${input.avg_pts.toFixed(1)} pts/game average`,
+  const weeklyScores = (input.weeklyScores ?? [])
+    .filter((week) => Number.isFinite(week.points))
+    .sort((a, b) => a.week - b.week);
+  const fallbackScores: WeeklyScore[] = [
+    ...(input.wk1_pts == null ? [] : [{ week: 1, points: input.wk1_pts }]),
+    ...(input.wk2_pts == null ? [] : [{ week: 2, points: input.wk2_pts }]),
   ];
+  const samples = weeklyScores.length ? weeklyScores : fallbackScores;
+  const points = samples.map((sample) => sample.points);
+  const recent = points.slice(-5);
+  const recentAverage = recent.length ? recencyWeightedMean(recent) : input.avg_pts;
+  const baseline = input.avg_pts * 0.55 + recentAverage * 0.45;
+  const observedFloor = points.length ? quantile(points, 0.2) : input.avg_pts;
+  const floorEstimate = input.manualFloor == null ? observedFloor : Math.max(observedFloor, input.manualFloor);
+  const upsideEstimate = points.length ? quantile(points, 0.8) : input.avg_pts;
+  const workload = samples.map((sample) =>
+    sample.carries != null || sample.targets != null
+      ? (sample.carries ?? 0) + (sample.targets ?? 0)
+      : sample.snapShare ?? null
+  ).filter((value): value is number => value != null);
+  let roleStability = 0;
+  if (workload.length >= 2) {
+    const workloadMean = workload.reduce((sum, value) => sum + value, 0) / workload.length;
+    const workloadVariance = workload.reduce((sum, value) => sum + (value - workloadMean) ** 2, 0) / workload.length;
+    const coefficientOfVariation = workloadMean > 0 ? Math.sqrt(workloadVariance) / workloadMean : 1;
+    roleStability = clamp((0.45 - coefficientOfVariation) * 1.2, -0.8, 0.5);
+  }
+  const floorScore = floorEstimate * 0.7 + baseline * 0.3 + roleStability;
+  const upsideScore = upsideEstimate * 0.7 + baseline * 0.3;
+  const upsideWeight = clamp(input.upsideWeight ?? 0.35, 0, 1);
+  const recentTrend = linearTrend(recent);
+  const trend = recentTrend || (
+    input.wk1_pts != null && input.wk2_pts != null ? input.wk2_pts - input.wk1_pts : 0
+  );
+  const trendImpact = clamp(trend * (0.12 + upsideWeight * 0.18), -2.5, 2.5);
+  const injuryStatus = input.injuryStatus ?? null;
+  const penalty = injuryStatus
+    ? INJURY_PENALTY[injuryStatus] * (1.2 - upsideWeight * 0.4)
+    : 0;
+  const blendedRange = floorScore * (1 - upsideWeight) + upsideScore * upsideWeight;
+  const score = Math.round((blendedRange + trendImpact - penalty) * 100) / 100;
+
+  const reasons: string[] = [
+    `${input.avg_pts.toFixed(1)} season pts/game · ${recentAverage.toFixed(1)} recency-weighted recent average`,
+    `Floor estimate ${floorScore.toFixed(1)} · upside estimate ${upsideScore.toFixed(1)} (${Math.round((1 - upsideWeight) * 100)}% floor / ${Math.round(upsideWeight * 100)}% upside)`,
+  ];
+  if (input.manualFloor != null) reasons.push(`your minimum expectation: ${input.manualFloor.toFixed(1)} pts`);
+  if (roleStability !== 0) reasons.push(`workload stability ${roleStability > 0 ? "+" : ""}${roleStability.toFixed(1)} floor adjustment`);
   if (trend !== 0) {
-    reasons.push(
-      `${trend > 0 ? "trending up" : "trending down"} ${Math.abs(trend).toFixed(1)} pts week-over-week`
-    );
+    reasons.push(`${trend > 0 ? "recent scoring trend +" : "recent scoring trend "}${trend.toFixed(1)} pts/game slope`);
   }
   if (injuryStatus) {
-    reasons.push(`${injuryStatus.toLowerCase()} - ${input.injuryNote ?? "injury risk"}`);
+    reasons.push(`${injuryStatus.toLowerCase()} risk -${penalty.toFixed(1)} points (${input.injuryNote ?? "status adjustment"})`);
   }
 
   let recommendation: ScoredPlayer["recommendation"] = "SIT";
@@ -83,6 +147,9 @@ export function scorePlayer(input: {
     team: input.team,
     avg_pts: input.avg_pts,
     trend,
+    floorScore: Math.round(floorScore * 100) / 100,
+    upsideScore: Math.round(upsideScore * 100) / 100,
+    upsideWeight,
     injuryStatus,
     injuryNote: input.injuryNote,
     score,
@@ -93,10 +160,11 @@ export function scorePlayer(input: {
 
 export function compare(
   a: Parameters<typeof scorePlayer>[0],
-  b: Parameters<typeof scorePlayer>[0]
+  b: Parameters<typeof scorePlayer>[0],
+  upsideWeight?: number,
 ): { winner: ScoredPlayer; loser: ScoredPlayer; margin: number } {
-  const sa = scorePlayer(a);
-  const sb = scorePlayer(b);
+  const sa = scorePlayer({ ...a, upsideWeight });
+  const sb = scorePlayer({ ...b, upsideWeight });
   const [winner, loser] = sa.score >= sb.score ? [sa, sb] : [sb, sa];
   return { winner, loser, margin: Math.round((winner.score - loser.score) * 100) / 100 };
 }

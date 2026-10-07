@@ -15,6 +15,7 @@ export interface PlayerRow {
   avg_pts: number;
   pos_rank: number | null;
   overall_rank: number | null;
+  profileHref?: string;
 }
 
 export interface InjuryRow {

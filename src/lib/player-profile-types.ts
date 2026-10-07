@@ -19,6 +19,20 @@ export interface PlayerWeekStat {
   airYardsShare: number | null;
   wopr: number | null;
   racr: number | null;
+  snapShare?: number | null;
+  injuryStatus?: string | null;
+  practiceStatus?: string | null;
+  passingCpoe?: number | null;
+  sacksSuffered?: number | null;
+}
+
+export interface PlayerInjuryHistoryWeek {
+  season: number;
+  week: number;
+  reportStatus: string | null;
+  practiceStatus: string | null;
+  reportPrimaryInjury: string | null;
+  practicePrimaryInjury: string | null;
 }
 
 export interface PlayerProfileData {
@@ -41,5 +55,10 @@ export interface PlayerProfileData {
   draftTeam: string | null;
   status: string | null;
   weeks: PlayerWeekStat[];
-  history?: { season: number; weeks: Pick<PlayerWeekStat, "week" | "fantasyPoints" | "rushingYards" | "receivingYards" | "targetShare" | "airYardsShare">[] }[];
+  history?: {
+    season: number;
+    weeks: (Pick<PlayerWeekStat, "week" | "fantasyPoints" | "rushingYards" | "receivingYards" | "targetShare" | "airYardsShare">
+      & Partial<Pick<PlayerWeekStat, "targets" | "carries" | "receptions" | "snapShare" | "injuryStatus" | "practiceStatus">>)[];
+  }[];
+  injuryHistory?: PlayerInjuryHistoryWeek[];
 }

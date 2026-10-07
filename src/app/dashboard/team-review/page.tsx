@@ -2,7 +2,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getInjuries, getPlayers, getWaiverPicks } from "@/lib/data";
 import type { SleeperRosterRow, InjuryRow, PlayerRow, WaiverPickRow } from "@/lib/types";
-import { PlayerAvatar } from "@/components/player-avatar";
 import { PosBadge, StatusBadge } from "@/components/pos-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,9 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Link2, ShieldAlert, Target, TrendingUp } from "lucide-react";
 import { hasActiveMembership } from "@/lib/membership";
 import { MembershipWall } from "@/components/membership-wall";
+import { RosterBrowser } from "./roster-browser";
+import { getAllPlayers, getLeagueRosters, sleeperPlayerName, SleeperApiError, type SleeperPlayerDict } from "@/lib/sleeper";
 
 type RosterPlayer = { name: string; pos: string; team: string | null };
-type TeamRoster = { id: string; platform: "ESPN" | "Sleeper"; teamName: string; leagueName: string; wins: number; losses: number; ties: number; players: RosterPlayer[] };
+type PositionComparison = { pos: string; rank: number; teams: number; points: number; leagueAverage: number };
+type TeamRoster = { id: string; platform: "ESPN" | "Sleeper"; teamName: string; leagueName: string; wins: number; losses: number; ties: number; players: RosterPlayer[]; positionalComparison?: { positions: PositionComparison[]; error?: string } };
 type EnrichedPlayer = { roster: RosterPlayer; player?: PlayerRow; injury?: InjuryRow };
 
 const POSITIONS = ["QB", "RB", "WR", "TE", "K", "DST"];
@@ -87,16 +89,34 @@ function TeamReview({ team, players, injuries, waiverPicks }: { team: TeamRoster
       </div>
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0"><div><CardTitle>Players on this team</CardTitle><CardDescription>{roster.length} synced roster players · click a player to open their profile</CardDescription></div><TrendingUp className="h-5 w-5 text-muted" /></CardHeader>
-        <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {roster.map(({ roster: player, player: rankedPlayer, injury }) => {
-            const href = rankedPlayer ? `/dashboard/players/${rankedPlayer.id}` : "/dashboard/search";
-            return <Link key={`${player.name}-${player.pos}`} href={href} className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-background/30 p-2.5 transition hover:border-primary/40 hover:bg-background/70">
-              <PlayerAvatar name={player.name} team={player.team ?? "FA"} position={player.pos} size={48} />
-              <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{player.name}</span><span className="mt-1 flex items-center gap-2"><PosBadge pos={player.pos} /><span className="text-[10px] text-muted">{player.team ?? "FA"}{rankedPlayer ? ` · ${rankedPlayer.avg_pts.toFixed(1)} PPG` : ""}</span></span></span>
-              {injury && <StatusBadge status={injury.status} />}
-            </Link>;
-          })}
+        <CardHeader><CardTitle>Positional strength vs. league</CardTitle><CardDescription>How your starter-level production compares with every team in this Sleeper league.</CardDescription></CardHeader>
+        <CardContent>
+          {team.positionalComparison?.positions.length ? <>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{team.positionalComparison.positions.map((row) => {
+              const difference = row.points - row.leagueAverage;
+              return <div key={row.pos} className="rounded-xl border border-border bg-background/35 p-3">
+                <div className="flex items-center gap-2"><PosBadge pos={row.pos} /><span className="ml-auto text-sm font-black tabular-nums">{row.points.toFixed(1)} PPG</span></div>
+                <div className="mt-2 flex items-center justify-between gap-2"><span className={`text-xs font-bold ${difference >= 0 ? "text-emerald-400" : "text-rose-400"}`}>#{row.rank} of {row.teams} · {difference >= 0 ? "+" : ""}{difference.toFixed(1)} vs avg</span><span className="text-[10px] text-muted">{row.leagueAverage.toFixed(1)} avg</span></div>
+              </div>;
+            })}</div>
+            <p className="mt-3 text-[10px] leading-4 text-muted">Based on matched season player PPG, using your top two RB/WR and top player at other positions. This is a roster comparison, not a projection; unmatched players are excluded.</p>
+          </> : <p className="rounded-xl border border-dashed border-border p-4 text-sm leading-6 text-muted">{team.positionalComparison?.error ?? (team.platform === "Sleeper" ? "League rosters are not available for comparison right now." : "League-mate comparison is currently available for Sleeper leagues; ESPN league rosters are not provided by the current sync.")}</p>}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0"><div><CardTitle>Players on this team</CardTitle><CardDescription>{roster.length} synced roster players · filter, sort, or group by position and weekly trend</CardDescription></div><TrendingUp className="h-5 w-5 text-muted" /></CardHeader>
+        <CardContent>
+          <RosterBrowser players={roster.map(({ roster: player, player: rankedPlayer, injury }) => ({
+            name: player.name,
+            pos: normalizePosition(player.pos),
+            team: player.team,
+            playerId: rankedPlayer?.id ?? null,
+            averagePoints: rankedPlayer?.avg_pts ?? null,
+            positionRank: rankedPlayer?.pos_rank ?? null,
+            trend: rankedPlayer?.wk1_pts != null && rankedPlayer.wk2_pts != null ? rankedPlayer.wk2_pts - rankedPlayer.wk1_pts : null,
+            injury: injury ?? null,
+          }))} />
         </CardContent>
       </Card>
     </section>
@@ -131,6 +151,71 @@ export default async function TeamReviewPage() {
       wins: roster.wins, losses: roster.losses, ties: roster.ties, players: roster.roster_json,
     })),
   ];
+
+  const sleeperRosterRows = (sleeperRows ?? []) as SleeperRosterRow[];
+  const comparisons = new Map<string, TeamRoster["positionalComparison"]>();
+  if (sleeperRosterRows.length) {
+    let sleeperPlayers: SleeperPlayerDict | null = null;
+    try {
+      sleeperPlayers = await getAllPlayers();
+    } catch (error) {
+      const message = error instanceof SleeperApiError ? error.message : "Sleeper player data could not be loaded.";
+      sleeperRosterRows.forEach((row) => comparisons.set(row.id, { positions: [], error: message }));
+    }
+
+    if (sleeperPlayers) {
+      await Promise.all(sleeperRosterRows.map(async (savedRoster) => {
+        try {
+          const leagueRosters = await getLeagueRosters(savedRoster.sleeper_league_id);
+          const ownedIds = new Set(savedRoster.roster_json.map((player) => player.sleeper_player_id));
+          const peerTeams = leagueRosters.map((leagueRoster) => {
+            const ids = leagueRoster.players ?? [];
+            return {
+              isOwn: ids.some((id) => ownedIds.has(id)),
+              players: ids.map((id) => {
+                const info = sleeperPlayers![id];
+                const player = players.find((candidate) => normalizeName(candidate.name) === normalizeName(sleeperPlayerName(id, info)));
+                return { pos: normalizePosition(info?.position ?? player?.pos ?? "?"), avg: player?.avg_pts ?? null };
+              }),
+            };
+          });
+          const ownTeam = peerTeams.find((peer) => peer.isOwn);
+          if (!ownTeam) {
+            comparisons.set(savedRoster.id, { positions: [], error: "Your roster could not be matched to the current Sleeper league rosters. Sync the league again and retry." });
+            return;
+          }
+          const positions = POSITIONS.map((pos) => {
+            const starterCount = pos === "RB" || pos === "WR" ? 2 : 1;
+            const pointsFor = (roster: typeof peerTeams[number]) => roster.players
+              .filter((player) => player.pos === pos && player.avg != null)
+              .map((player) => player.avg!)
+              .sort((a, b) => b - a)
+              .slice(0, starterCount)
+              .reduce((sum, points) => sum + points, 0);
+            const points = pointsFor(ownTeam);
+            const leagueValues = peerTeams.map(pointsFor);
+            return {
+              pos,
+              points,
+              rank: leagueValues.filter((value) => value > points).length + 1,
+              teams: peerTeams.length,
+              leagueAverage: leagueValues.reduce((sum, value) => sum + value, 0) / Math.max(leagueValues.length, 1),
+            };
+          });
+          comparisons.set(savedRoster.id, { positions });
+        } catch (error) {
+          const message = error instanceof SleeperApiError ? error.message : "Sleeper league rosters could not be loaded.";
+          comparisons.set(savedRoster.id, { positions: [], error: message });
+        }
+      }));
+    }
+  }
+  teams.forEach((team) => {
+    if (team.platform === "Sleeper") {
+      const roster = sleeperRosterRows.find((row) => `sleeper-${row.id}` === team.id);
+      if (roster) team.positionalComparison = comparisons.get(roster.id);
+    }
+  });
 
   return <div className="space-y-6">
     <header>

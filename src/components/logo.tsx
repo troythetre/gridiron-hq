@@ -11,11 +11,11 @@ export function Logo({ className, height = 28 }: { className?: string; height?: 
         width={height}
         height={height}
         style={{ height, width: "auto" }}
-        className="object-contain"
+        className="object-contain brightness-0 saturate-100 invert-[54%] sepia-[79%] saturate-[1395%] hue-rotate-[232deg] brightness-[102%] contrast-[101%]"
         priority
       />
       <span
-        className="font-display font-semibold uppercase tracking-wide text-foreground"
+        className="font-display font-semibold uppercase tracking-wide text-violet-300"
         style={{ fontSize: height * 0.62 }}
       >
         Gridiron
