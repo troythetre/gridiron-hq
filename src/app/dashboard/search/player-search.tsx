@@ -56,7 +56,7 @@ export function PlayerSearch({ players, catalog }: { players: PlayerRow[]; catal
           <SelectTrigger className="sm:w-44" aria-label="Sort search results"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="points">{mode === "dynasty" ? "Dynasty outlook" : "Fantasy points"}</SelectItem><SelectItem value="name">Player name</SelectItem><SelectItem value="team">NFL team</SelectItem></SelectContent>
         </Select>
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex flex-wrap gap-1">
           {positions.map((value) => <button key={value} type="button" onClick={() => setPosition(value)} className={`rounded-xl px-3 text-xs font-black transition ${position === value ? "bg-primary text-primary-foreground" : "text-muted hover:bg-border/50 hover:text-foreground"}`}>{value === "ALL" ? "ALL" : value}</button>)}
         </div>
       </div>

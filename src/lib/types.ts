@@ -8,6 +8,7 @@ export interface PlayerRow {
   name: string;
   pos: Position;
   team: string;
+  photoUrl?: string | null;
   wk1_pts: number | null;
   wk2_pts: number | null;
   total_pts: number;
@@ -73,6 +74,7 @@ export interface PlayerMarketRow {
   name: string;
   pos: string;
   team: string;
+  photoUrl?: string | null;
   price: number;
   changePct: number;
   history: MarketHistoryPoint[];

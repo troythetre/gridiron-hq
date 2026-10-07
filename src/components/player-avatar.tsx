@@ -7,6 +7,7 @@ export function PlayerAvatar({
   team,
   number,
   position,
+  photoUrl,
   size = 140,
   className = "",
 }: {
@@ -14,6 +15,7 @@ export function PlayerAvatar({
   team: string;
   number?: number | null;
   position: string;
+  photoUrl?: string | null;
   size?: number;
   className?: string;
 }) {
@@ -22,7 +24,7 @@ export function PlayerAvatar({
   const jersey = number && number > 0 ? number : position === "QB" ? 1 : 0;
   const initials = name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("");
   const nameSeed = [...name].reduce((seed, character) => seed + character.charCodeAt(0), 0);
-  const photo = PLAYER_PHOTOS[name];
+  const photo = PLAYER_PHOTOS[name] ?? photoUrl;
   const skinTone = ["#f1c6a5", "#d7a17e", "#ba8060", "#8e5d49", "#704633"][nameSeed % 5];
   const fieldId = `field-${instanceId}`;
   const jerseyId = `jersey-${instanceId}`;

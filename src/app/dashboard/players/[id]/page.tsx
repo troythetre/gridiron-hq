@@ -4,6 +4,7 @@ import { PlayerProfile } from "./player-profile";
 import profileData from "@/data/player-profiles.json";
 import type { PlayerProfileData } from "@/lib/player-profile-types";
 import type { Position } from "@/lib/types";
+import { getCatalogPlayerRanks } from "@/lib/current-player-catalog";
 
 export default async function PlayerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id: idParam } = await params;
@@ -19,6 +20,9 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
     getNews(),
     getInjuries(),
   ]);
+  const catalogRanks = catalogProfile
+    ? getCatalogPlayerRanks(catalogProfile, profileData as PlayerProfileData[])
+    : null;
   const player = databasePlayer ?? (catalogProfile ? (() => {
     const weeks = catalogProfile.weeks.filter((week) => week.fantasyPoints != null);
     const total = weeks.reduce((sum, week) => sum + (week.fantasyPoints ?? 0), 0);
@@ -32,8 +36,8 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
       total_pts: total,
       games: weeks.length,
       avg_pts: weeks.length ? total / weeks.length : 0,
-      pos_rank: null,
-      overall_rank: null,
+      pos_rank: catalogRanks?.pos_rank ?? null,
+      overall_rank: catalogRanks?.overall_rank ?? null,
     };
   })() : null);
   if (!player) notFound();

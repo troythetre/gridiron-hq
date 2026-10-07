@@ -5,6 +5,7 @@ const FEATURE_COUNT = 10;
 const RIDGE_PENALTY = 0.25;
 
 type ModelObservation = {
+  week: number;
   points: number;
   opportunities: number;
   snapShare: number | null;
@@ -269,6 +270,7 @@ export function forecastFantasyScore(
     .filter((week) => week.fantasyPoints != null && Number.isFinite(week.fantasyPoints))
     .sort((a, b) => a.week - b.week)
     .map((week) => ({
+      week: week.week,
       points: week.fantasyPoints!,
       opportunities: (week.targets ?? 0) + (week.carries ?? 0),
       snapShare: week.snapShare ?? null,

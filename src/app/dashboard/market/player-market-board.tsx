@@ -84,8 +84,8 @@ export function PlayerMarketBoard({ market }: { market: MarketData }) {
   return <div className="space-y-5">
     <div className="grid gap-3 sm:grid-cols-3">
       <MarketBreadthCard spectrum={breadthSpectrum} total={players.length} advancing={advancers} declining={decliners} />
-      <MarketStat label="Top riser" value={topRiser ? `${topRiser.name} +${topRiser.changePct.toFixed(1)}%` : "—"} detail={topRiser?.catalyst ?? "Awaiting market signals"} tone="positive" />
-      <MarketStat label="Top decliner" value={topFaller ? `${topFaller.name} ${topFaller.changePct.toFixed(1)}%` : "—"} detail={topFaller?.catalyst ?? "No negative signals"} tone="negative" />
+      <MarketStat label="Top riser" value={topRiser ? `${topRiser.name} +${topRiser.changePct.toFixed(1)}%` : "—"} detail={topRiser?.catalyst ?? "Awaiting market signals"} tone="positive" player={topRiser} />
+      <MarketStat label="Top decliner" value={topFaller ? `${topFaller.name} ${topFaller.changePct.toFixed(1)}%` : "—"} detail={topFaller?.catalyst ?? "No negative signals"} tone="negative" player={topFaller} />
     </div>
 
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-3 lg:flex-row lg:items-center lg:justify-between">
@@ -96,7 +96,7 @@ export function PlayerMarketBoard({ market }: { market: MarketData }) {
       <span className="text-xs text-muted">{format.note}</span>
     </div>
 
-    <div className="flex gap-2 overflow-x-auto pb-1">
+    <div className="flex flex-wrap gap-2 pb-1">
       {[ ["all", "All players"], ["risers", "Risers"], ["fallers", "Fallers"], ["practice", "Practice & news"] ].map(([id, label]) => <button key={id} type="button" onClick={() => setFilter(id as typeof filter)} className={`shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-wider ${filter === id ? "border-primary/50 bg-primary/10 text-primary" : "border-border text-muted hover:text-foreground"}`}>{label}</button>)}
     </div>
 
@@ -146,7 +146,16 @@ function MarketBreadthCard({
   </div>;
 }
 
-function MarketStat({ label, value, detail, tone }: { label: string; value: string; detail: string; tone?: "positive" | "negative" }) {
+function MarketStat({ label, value, detail, tone, player }: { label: string; value: string; detail: string; tone?: "positive" | "negative"; player?: PlayerMarketRow }) {
   const valueColor = tone === "positive" ? "text-emerald-400" : tone === "negative" ? "text-red-400" : "";
-  return <div className="min-w-0 rounded-2xl border border-border bg-surface p-4"><p className="text-[9px] font-black uppercase tracking-[.17em] text-muted">{label}</p><p className={`mt-2 truncate font-display text-lg font-black ${valueColor}`}>{value}</p><p className="mt-1 truncate text-[10px] text-muted">{detail}</p></div>;
+  return <div className="min-w-0 rounded-2xl border border-border bg-surface p-4">
+    <p className="text-[9px] font-black uppercase tracking-[.17em] text-muted">{label}</p>
+    <div className="mt-2 flex min-w-0 items-center gap-3">
+      {player && <PlayerAvatar name={player.name} team={player.team} position={player.pos} photoUrl={player.photoUrl} size={52} className="shrink-0" />}
+      <div className="min-w-0">
+        <p className={`truncate font-display text-lg font-black ${valueColor}`}>{value}</p>
+        <p className="mt-1 line-clamp-2 text-[10px] text-muted">{detail}</p>
+      </div>
+    </div>
+  </div>;
 }

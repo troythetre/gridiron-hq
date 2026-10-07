@@ -131,6 +131,7 @@ export function PlayerProfile({
                 team={player.team}
                 position={player.pos}
                 number={profile?.jerseyNumber}
+                photoUrl={profile?.headshotUrl}
                 size={164}
                 className="relative drop-shadow-[0_20px_24px_rgba(0,0,0,.4)] sm:h-[190px] sm:w-[190px]"
               />
@@ -182,7 +183,7 @@ export function PlayerProfile({
       </section>
 
       <Tabs value={tab} onValueChange={(value) => setTab(value as ProfileTab)}>
-        <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-2xl border-white/10 bg-surface/85 p-1.5 sm:w-fit">
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-2xl border-white/10 bg-surface/85 p-1.5 sm:w-fit">
           {PROFILE_TABS.map(({ id, label, icon: Icon }) => (
             <TabsTrigger
               key={id}
@@ -368,8 +369,8 @@ function HeroStat({ label, value, hint, color }: { label: string; value: string;
 
 function SectionHeading({ eyebrow, title, compact = false }: { eyebrow: string; title: string; compact?: boolean }) {
   return <div className={cn(!compact && "mb-1")}>
-    <p className="text-[9px] font-black uppercase tracking-[.2em]" style={{ color: "var(--team-accent)" }}>{eyebrow}</p>
-    <h2 className={cn("mt-1 font-display font-bold", compact ? "text-lg" : "text-2xl sm:text-3xl")} style={{ color: "var(--team-color)" }}>{title}</h2>
+    <p className="text-[9px] font-black uppercase tracking-[.2em] text-white/80">{eyebrow}</p>
+    <h2 className={cn("mt-1 font-display font-bold text-white", compact ? "text-lg" : "text-2xl sm:text-3xl")}>{title}</h2>
   </div>;
 }
 

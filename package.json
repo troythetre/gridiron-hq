@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
     "news:fetch": "node scripts/fetch-fantasy-news.mjs",
     "videos:fetch": "node scripts/fetch-fantasy-videos.mjs",
     "matchup:export": "node scripts/export-player-matchup-analysis.mjs",
@@ -45,16 +46,17 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vinext/cloudflare": "^1.0.1",
     "@vitejs/plugin-react": "^6.1.2",
     "@vitejs/plugin-rsc": "^0.5.36",
-    "@vinext/cloudflare": "^1.0.1",
     "cf": "^1.0.0-beta.12",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vinext": "^1.0.1",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "vitest": "^4.1.0"
   },
   "overrides": {
     "fflate": "0.7.5",

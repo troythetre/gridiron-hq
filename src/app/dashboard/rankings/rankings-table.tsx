@@ -77,7 +77,34 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
         </Select>
       </div>
 
-      <div className="overflow-x-auto rounded-[var(--radius)] border border-border bg-surface">
+      <div className="space-y-2 md:hidden">
+        {filtered.map((p) => <Link
+          key={p.id}
+          href={p.profileHref ?? `/dashboard/players/${p.id}`}
+          className="block rounded-2xl border border-border bg-surface p-3 transition hover:border-primary/40"
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="w-6 shrink-0 text-center text-xs font-bold text-muted">{p.overallRank}</span>
+            <PlayerAvatar name={p.name} team={p.team} position={p.pos} photoUrl={p.photoUrl} size={46} className="shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-bold">{p.name}</span>
+              <span className="mt-1 flex items-center gap-2 text-[10px] text-muted"><PosBadge pos={p.pos} />{p.team}</span>
+            </span>
+            <span className="shrink-0 text-right">
+              <span className="block font-display text-lg font-bold">{p.displayAvg.toFixed(1)}</span>
+              <span className="text-[9px] uppercase tracking-wider text-muted">Avg</span>
+            </span>
+          </div>
+          <div className="mt-3 flex justify-between border-t border-border/70 pt-2 text-[10px] text-muted">
+            <span>Total <strong className="text-foreground">{p.displayTotal.toFixed(1)}</strong></span>
+            <span>Pos rank <strong className="text-foreground">#{p.positionRank}</strong></span>
+            <span>W1/W2 <strong className="text-foreground">{p.displayWk1?.toFixed(1) ?? "—"} / {p.displayWk2?.toFixed(1) ?? "—"}</strong></span>
+          </div>
+        </Link>)}
+        {filtered.length === 0 && <p className="rounded-2xl border border-border bg-surface p-6 text-center text-sm text-muted">No players match your filters.</p>}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-[var(--radius)] border border-border bg-surface md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase text-muted">
@@ -98,7 +125,7 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
                 <td className="px-4 py-2.5 text-muted">{p.overallRank}</td>
                 <td className="px-4 py-2.5 font-medium">
                   <Link href={p.profileHref ?? `/dashboard/players/${p.id}`} className="group inline-flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                    <PlayerAvatar name={p.name} team={p.team} position={p.pos} size={38} className="shrink-0 rounded-full transition duration-200 group-hover:scale-105" />
+                    <PlayerAvatar name={p.name} team={p.team} position={p.pos} photoUrl={p.photoUrl} size={38} className="shrink-0 rounded-full transition duration-200 group-hover:scale-105" />
                     <span className="transition group-hover:text-primary">{p.name}</span>
                   </Link>
                 </td>

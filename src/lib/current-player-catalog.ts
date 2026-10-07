@@ -7,6 +7,36 @@ function playerKey(name: string, team: string) {
   return `${name.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]/g, "")}|${team}`;
 }
 
+export function getCatalogPlayerRanks(
+  profile: PlayerProfileData,
+  profiles: PlayerProfileData[],
+): { pos_rank: number | null; overall_rank: number | null } {
+  const candidates = profiles.filter((candidate) =>
+    candidate.season === profile.season &&
+    POSITIONS.has(candidate.position as Position) &&
+    candidate.weeks.some((week) => week.fantasyPoints != null)
+  );
+  const averagePoints = (candidate: PlayerProfileData) => {
+    const scoredWeeks = candidate.weeks.filter((week) => week.fantasyPoints != null);
+    return scoredWeeks.length
+      ? scoredWeeks.reduce((total, week) => total + (week.fantasyPoints ?? 0), 0) / scoredWeeks.length
+      : null;
+  };
+  const targetAverage = averagePoints(profile);
+  if (targetAverage == null) return { pos_rank: null, overall_rank: null };
+
+  const higherRanked = (candidate: PlayerProfileData) => {
+    const candidateAverage = averagePoints(candidate);
+    return candidateAverage != null && candidateAverage > targetAverage;
+  };
+  return {
+    pos_rank: 1 + candidates.filter(
+      (candidate) => candidate.position === profile.position && higherRanked(candidate),
+    ).length,
+    overall_rank: 1 + candidates.filter(higherRanked).length,
+  };
+}
+
 function profileRow(profile: PlayerProfileData, id: number): PlayerRow {
   const games = profile.weeks.filter((week) => week.fantasyPoints != null);
   const total = games.reduce((sum, week) => sum + (week.fantasyPoints ?? 0), 0);
@@ -15,6 +45,7 @@ function profileRow(profile: PlayerProfileData, id: number): PlayerRow {
     name: profile.name,
     pos: profile.position as Position,
     team: profile.team,
+    photoUrl: profile.headshotUrl,
     wk1_pts: games.find((week) => week.week === 1)?.fantasyPoints ?? null,
     wk2_pts: games.find((week) => week.week === 2)?.fantasyPoints ?? null,
     total_pts: total,
@@ -33,6 +64,11 @@ export function mergeCurrentPlayerCatalog(players: PlayerRow[], profiles: Player
       .filter((profile) => profile.season === activeSeason && POSITIONS.has(profile.position as Position))
       .map((profile) => [playerKey(profile.name, profile.team), profile]),
   );
+  const ranksByKey = new Map(
+    profiles
+      .filter((profile) => profile.season === activeSeason)
+      .map((profile) => [playerKey(profile.name, profile.team), getCatalogPlayerRanks(profile, profiles)]),
+  );
   const usedProfiles = new Set<string>();
   const merged = players.map((player) => {
     const key = playerKey(player.name, player.team);
@@ -42,10 +78,16 @@ export function mergeCurrentPlayerCatalog(players: PlayerRow[], profiles: Player
     if (!profile.weeks.some((week) => week.fantasyPoints != null)) {
       return {
         ...player,
+        photoUrl: profile.headshotUrl,
         profileHref: profile.gsisId ? `/dashboard/players/nfl-${encodeURIComponent(profile.gsisId)}` : "/dashboard/search",
       };
     }
-    return { ...profileRow(profile, player.id), pos_rank: player.pos_rank, overall_rank: player.overall_rank };
+    const ranks = ranksByKey.get(key);
+    return {
+      ...profileRow(profile, player.id),
+      pos_rank: player.pos_rank ?? ranks?.pos_rank ?? null,
+      overall_rank: player.overall_rank ?? ranks?.overall_rank ?? null,
+    };
   });
 
   profiles.forEach((profile, index) => {
@@ -56,7 +98,12 @@ export function mergeCurrentPlayerCatalog(players: PlayerRow[], profiles: Player
       usedProfiles.has(key) ||
       !profile.weeks.some((week) => week.fantasyPoints != null)
     ) return;
-    merged.push(profileRow(profile, -(index + 1)));
+    const ranks = ranksByKey.get(key);
+    merged.push({
+      ...profileRow(profile, -(index + 1)),
+      pos_rank: ranks?.pos_rank ?? null,
+      overall_rank: ranks?.overall_rank ?? null,
+    });
     usedProfiles.add(key);
   });
 

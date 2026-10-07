@@ -40,18 +40,22 @@ export function DashboardHome({
     .slice(0, 6);
 
   return <div className="mx-auto max-w-7xl space-y-6 pb-8">
-    <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_85%_0%,rgba(245,158,11,.14),transparent_42%),linear-gradient(130deg,#171717,#090909_60%,#151515)] p-6 sm:p-9">
-      <div className="absolute -right-10 -top-24 h-72 w-72 rounded-full border border-white/10" />
-      <p className="text-[10px] font-black uppercase tracking-[.22em] text-primary">Your fantasy command center</p>
-      <h1 className="mt-2 font-display text-4xl font-black uppercase tracking-tight sm:text-6xl">The huddle starts here.</h1>
-      <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Your teams, player movement, stories, stats, and film study in one personalized feed.</p>
-      <div className="mt-5 flex flex-wrap gap-2">
-        <Button asChild size="sm"><Link href="/dashboard/start-sit">Make a lineup call <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
-        <Button asChild variant="secondary" size="sm"><Link href="/dashboard/search"><Search className="mr-2 h-4 w-4" />Find a player</Link></Button>
+    <header className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-[#090909] p-6 sm:p-9">
+      <Image src="/super-bowl-hero.webp" alt="" fill priority sizes="(max-width: 1024px) 100vw, 1280px" className="absolute inset-0 z-0 object-cover object-[center_40%] opacity-25" />
+      <div className="absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(9,9,9,.94)_0%,rgba(9,9,9,.84)_54%,rgba(9,9,9,.62)_100%),linear-gradient(0deg,rgba(9,9,9,.58),transparent_72%)]" />
+      <div className="absolute -right-10 -top-24 z-20 h-72 w-72 rounded-full border border-white/10" />
+      <div className="relative z-20">
+        <p className="text-[10px] font-black uppercase tracking-[.22em] text-primary">Your fantasy command center</p>
+        <h1 className="mt-2 font-display text-4xl font-black uppercase tracking-tight sm:text-6xl">The huddle starts here.</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Your teams, player movement, stories, stats, and film study in one personalized feed.</p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button asChild size="sm"><Link href="/dashboard/start-sit">Make a lineup call <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+          <Button asChild variant="secondary" size="sm"><Link href="/dashboard/search"><Search className="mr-2 h-4 w-4" />Find a player</Link></Button>
+        </div>
       </div>
     </header>
 
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <StatTile label="Players tracked" value={players.length.toLocaleString()} detail={`${scoringLabel(scoring)} rankings`} icon={<Sparkles className="h-4 w-4" />} color="#38bdf8" />
       <StatTile label="Your teams" value={teams.length.toString()} detail={teams.length ? "ESPN + Sleeper" : "Connect a roster"} icon={<ShieldAlert className="h-4 w-4" />} color="#a78bfa" />
       <StatTile label="Roster news" value={onTeamNews.length.toString()} detail="Stories tied to your players" icon={<Newspaper className="h-4 w-4" />} color="#f59e0b" />
@@ -211,7 +215,7 @@ function DashboardNewsCard({
   const storyHref = safeStoryUrl(item.article_url);
   const fallbackHref = safeStoryUrl(item.source_url);
   const playerNames = players.slice(0, 2).map((player) => player.name);
-  const bodyColor = `color-mix(in srgb, ${teamSecondary} 62%, white)`;
+  const bodyColor = `color-mix(in srgb, ${teamSecondary} 35%, white)`;
   const panelId = `news-story-${item.id}`;
 
   return (
@@ -240,12 +244,12 @@ function DashboardNewsCard({
         )}
         <span className="min-w-0 flex-1">
           <span className="mb-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-            <span className="text-[9px] font-black uppercase tracking-wider" style={{ color: teamPrimary }}>
+            <span className="text-[9px] font-black uppercase tracking-wider text-white/90">
               {item.onTeam ? `Your team${playerNames.length ? ` · ${playerNames.join(", ")}` : ""}` : item.source ?? "Fantasy news"}
             </span>
             <time className="text-[10px] text-muted">{item.item_date ?? "Latest"}</time>
           </span>
-          <span className="block font-display text-base font-bold leading-5" style={{ color: teamPrimary }}>{item.headline}</span>
+          <span className="block font-display text-base font-bold leading-5 text-white">{item.headline}</span>
           {item.body && <span className="mt-1 block line-clamp-2 text-xs leading-5" style={{ color: bodyColor }}>{item.body}</span>}
         </span>
         <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted transition-transform ${expanded ? "rotate-180" : ""}`} />
@@ -254,7 +258,7 @@ function DashboardNewsCard({
         <div id={panelId} className="space-y-3 px-3 pb-4 pl-[4.5rem]">
           {players.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {players.slice(0, 3).map((player) => <Link key={`${player.name}-${player.team}`} href={player.playerId ? `/dashboard/players/${player.playerId}` : "/dashboard/search"} className="inline-flex items-center gap-2 rounded-full border px-2 py-1 text-[10px] font-semibold hover:brightness-125" style={{ borderColor: `${teamColors(player.team)[0]}66`, color: teamColors(player.team)[0] }}>
+              {players.slice(0, 3).map((player) => <Link key={`${player.name}-${player.team}`} href={player.playerId ? `/dashboard/players/${player.playerId}` : "/dashboard/search"} className="inline-flex items-center gap-2 rounded-full border px-2 py-1 text-[10px] font-semibold text-white hover:brightness-125" style={{ borderColor: `${teamColors(player.team)[0]}66` }}>
                 <PlayerAvatar name={player.name} team={player.team ?? "FA"} position={player.pos} size={24} />
                 {player.name} · {player.pos}
               </Link>)}
@@ -262,7 +266,7 @@ function DashboardNewsCard({
           )}
           {item.body && <p className="max-w-2xl whitespace-pre-line text-sm leading-6" style={{ color: bodyColor }}>{item.body}</p>}
           {(storyHref || fallbackHref) && (
-            <a href={storyHref ?? fallbackHref!} target="_blank" rel="noopener noreferrer" className="inline-flex text-xs font-bold hover:underline" style={{ color: teamPrimary }}>
+            <a href={storyHref ?? fallbackHref!} target="_blank" rel="noopener noreferrer" className="inline-flex text-xs font-bold text-white hover:underline">
               Read full story <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
             </a>
           )}

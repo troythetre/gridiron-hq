@@ -6,7 +6,7 @@ import { PosBadge, StatusBadge } from "@/components/pos-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link2, ShieldAlert, Target, TrendingUp } from "lucide-react";
+import { ArrowRight, Link2, ShieldAlert, Target, TrendingUp } from "lucide-react";
 import { hasActiveMembership } from "@/lib/membership";
 import { MembershipWall } from "@/components/membership-wall";
 import { RosterBrowser } from "./roster-browser";
@@ -82,7 +82,11 @@ function TeamReview({ team, players, injuries, waiverPicks }: { team: TeamRoster
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><Target className="h-4 w-4 text-primary" />Waiver fits</CardTitle><CardDescription>Available targets at your thinner positions.</CardDescription></CardHeader>
             <CardContent className="space-y-2">
-              {recommendedPicks.length ? recommendedPicks.map((pick) => <div key={pick.id} className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"><div className="flex items-center gap-2"><PosBadge pos={pick.pos ?? "?"} /><span className="text-sm font-medium">{pick.name}</span></div><span className="text-xs text-muted">~{pick.pct_rostered_est}% rostered</span></div>) : <p className="text-sm text-muted">No matching waiver targets for {thinPositions.length ? thinPositions.join(", ") : "your current depth"}.</p>}
+              {recommendedPicks.length ? recommendedPicks.map((pick) => <div key={pick.id} className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"><div className="flex items-center gap-2"><PosBadge pos={pick.pos ?? "?"} /><span className="text-sm font-medium">{pick.name}</span></div><span className="text-xs text-muted">~{pick.pct_rostered_est}% rostered</span></div>) : <div className="rounded-xl border border-dashed border-border bg-background/30 p-3">
+                <p className="text-sm font-medium text-foreground">{thinPositions.length ? `No ${thinPositions.join(" or ")} picks in the current waiver feed` : "Your roster meets the basic depth targets"}</p>
+                <p className="mt-1 text-xs leading-5 text-muted">{thinPositions.length ? "Browse the full waiver list for other available players; targets depend on the latest imported waiver data." : "You can still browse waiver targets for potential upgrades."}</p>
+                <Link href="/dashboard/waiver" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">Browse waiver targets <ArrowRight className="h-3.5 w-3.5" /></Link>
+              </div>}
             </CardContent>
           </Card>
         </div>

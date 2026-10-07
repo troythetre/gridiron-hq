@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { PosBadge, StatusBadge } from "@/components/pos-badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { InjuryRow } from "@/lib/types";
 
 type RosterBrowserPlayer = {
@@ -51,21 +52,36 @@ export function RosterBrowser({ players }: { players: RosterBrowserPlayer[] }) {
 
   return <div className="space-y-3">
     <div className="flex flex-wrap gap-2">
-      <select aria-label="Filter roster by position" value={position} onChange={(event) => setPosition(event.target.value)} className="h-9 rounded-lg border border-border bg-background px-3 text-xs">
-        <option value="ALL">All positions</option>
-        {positions.map((pos) => <option key={pos} value={pos}>{pos}</option>)}
-      </select>
-      <select aria-label="Sort roster players" value={sort} onChange={(event) => setSort(event.target.value)} className="h-9 rounded-lg border border-border bg-background px-3 text-xs">
-        <option value="points">Sort: PPG</option>
-        <option value="trend">Sort: weekly trend</option>
-        <option value="rank">Sort: position rank</option>
-        <option value="name">Sort: name</option>
-      </select>
-      <select aria-label="Group roster players" value={groupBy} onChange={(event) => setGroupBy(event.target.value)} className="h-9 rounded-lg border border-border bg-background px-3 text-xs">
-        <option value="none">Group: none</option>
-        <option value="position">Group: position</option>
-        <option value="trend">Group: trend</option>
-      </select>
+      <Select value={position} onValueChange={setPosition}>
+        <SelectTrigger aria-label="Filter roster by position" className="h-10 w-auto min-w-36 bg-background text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">All positions</SelectItem>
+          {positions.map((pos) => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={sort} onValueChange={setSort}>
+        <SelectTrigger aria-label="Sort roster players" className="h-10 w-auto min-w-44 bg-background text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="points">Sort: PPG</SelectItem>
+          <SelectItem value="trend">Sort: weekly trend</SelectItem>
+          <SelectItem value="rank">Sort: position rank</SelectItem>
+          <SelectItem value="name">Sort: name</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={groupBy} onValueChange={setGroupBy}>
+        <SelectTrigger aria-label="Group roster players" className="h-10 w-auto min-w-40 bg-background text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">Group: none</SelectItem>
+          <SelectItem value="position">Group: position</SelectItem>
+          <SelectItem value="trend">Group: trend</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
     {rows.length ? groups.map((group) => <section key={group.label || "all"} className="space-y-2">
       {group.label && <h3 className="flex justify-between px-1 text-xs font-bold uppercase tracking-wider text-muted"><span>{group.label}</span><span>{group.players.length}</span></h3>}

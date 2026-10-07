@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   ArrowLeftRight,
   BarChart3,
-  CalendarDays,
   ChartCandlestick,
   ChevronDown,
   CircleDot,
@@ -65,7 +64,7 @@ const groups: NavGroup[] = [
       { label: "Leaderboard", icon: Medal, soon: true },
       { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
       { label: "Stats", icon: BarChart3, soon: true },
-      { href: "/dashboard/parlay?tab=mock-draft", label: "Mock draft", icon: ClipboardList },
+      { href: "/dashboard/parlay?tab=mock-draft", label: "Latest mock draft", icon: ClipboardList },
     ],
   },
   {
@@ -78,7 +77,7 @@ const groups: NavGroup[] = [
       { href: "/dashboard/parlay?tab=college", label: "Rankings", icon: Trophy },
       { label: "Stats", icon: BarChart3, soon: true },
       { label: "Transfer portal", icon: Users, soon: true },
-      { label: "Rivalry & bowl tracker", icon: CalendarDays, soon: true },
+      { href: "/dashboard/parlay?tab=rivalries", label: "Rivalry history", icon: Swords },
     ],
   },
 ];
@@ -156,19 +155,19 @@ export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
       </details>
     </nav>;
   }
-  return <nav aria-label="Mobile dashboard navigation" className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-2 py-2">
+  return <nav aria-label="Mobile dashboard navigation" className="flex flex-wrap items-center gap-1 border-b border-border bg-surface px-2 py-2">
       <ItemLink item={homeItem} pathname={pathname} mobile />
-      {groups.map((group) => <details key={group.label} className="group/mobile relative shrink-0">
+      {groups.map((group) => <details key={group.label} className="group/mobile relative">
         <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-muted hover:bg-border/40 [&::-webkit-details-marker]:hidden">
           <group.icon className="h-3.5 w-3.5" />{group.label}<ChevronDown className="h-3 w-3" />
         </summary>
-        <div className="absolute left-0 top-full z-30 mt-1 max-h-[70vh] min-w-56 overflow-y-auto rounded-xl border border-border bg-surface p-2 shadow-xl">
+        <div className="absolute left-0 top-full z-30 mt-1 max-h-[70vh] w-[min(18rem,calc(100vw-1rem))] overflow-y-auto rounded-xl border border-border bg-surface p-2 shadow-xl">
           {group.items.map((item) => <ItemLink key={item.label} item={item} pathname={pathname} mobile />)}
         </div>
       </details>)}
-      <details className="group/mobile relative shrink-0">
+      <details className="group/mobile relative">
         <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-muted hover:bg-border/40 [&::-webkit-details-marker]:hidden"><CircleDot className="h-3.5 w-3.5" />More<ChevronDown className="h-3 w-3" /></summary>
-        <div className="absolute right-0 top-full z-30 mt-1 max-h-[70vh] min-w-56 overflow-y-auto rounded-xl border border-border bg-surface p-2 shadow-xl">
+        <div className="absolute right-0 top-full z-30 mt-1 max-h-[70vh] w-[min(18rem,calc(100vw-1rem))] overflow-y-auto rounded-xl border border-border bg-surface p-2 shadow-xl">
           {moreItems.map((item) => <ItemLink key={item.label} item={item} pathname={pathname} mobile />)}
         </div>
       </details>

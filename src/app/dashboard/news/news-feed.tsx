@@ -70,7 +70,7 @@ export function NewsFeed({ news, teamPlayerNames }: { news: NewsItemRow[]; teamP
   return (
     <div className="space-y-5">
       <label className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 focus-within:border-primary/50"><Search className="h-4 w-4 shrink-0 text-muted" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search headlines, players, teams, or sources..." aria-label="Search news keywords" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted" /><span className="shrink-0 text-[10px] text-muted">{visible.length} stories</span></label>
-      <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Filter fantasy news">
+      <div className="flex flex-wrap gap-2 pb-1" role="tablist" aria-label="Filter fantasy news">
         {filters.map((filter) => <button key={filter.id} type="button" role="tab" aria-selected={active === filter.id} onClick={() => setActive(filter.id)} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black uppercase tracking-wider transition ${active === filter.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-muted hover:border-primary/40 hover:text-foreground"}`}>{filter.label}</button>)}
       </div>
       {active === "my_team" && teamPlayerNames.length > 0 && <p className="text-xs text-muted">Prioritizing stories that mention a player on your synced rosters.</p>}

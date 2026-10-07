@@ -7,16 +7,20 @@ import { GridironAssistant } from "@/components/gridiron-assistant";
 import { FantasyPreferenceControls, FantasyPreferencesProvider } from "@/components/fantasy-preferences";
 import { LogOut } from "lucide-react";
 import { DashboardNavigation } from "./dashboard-navigation";
+import { getCollegeFootballRankings } from "@/lib/college-football-live";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const [{ data: { user } }, collegeRankings] = await Promise.all([
+    supabase.auth.getUser(),
+    getCollegeFootballRankings(),
+  ]);
   const displayName =
     (user?.user_metadata?.display_name as string | undefined) ?? user?.email ?? "Guest";
 
   return (
     <FantasyPreferencesProvider>
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen min-w-0 bg-background">
       <aside className="hidden w-60 flex-col border-r border-border bg-surface px-4 py-6 sm:flex">
         <Link href="/dashboard" className="mb-8 px-2">
           <Logo height={34} />
@@ -33,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </aside>
 
       {/* Mobile top nav */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-4 py-3 sm:hidden">
           <Link href="/dashboard">
             <Logo height={26} />
@@ -45,12 +49,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </form>
         </div>
         <DashboardNavigation mobile />
-        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8">
+        <main className="min-w-0 flex-1 px-4 py-5 sm:px-8 sm:py-8">
           <div className="mb-5 flex justify-end"><FantasyPreferenceControls /></div>
           {children}
         </main>
       </div>
-      <GridironAssistant />
+      <GridironAssistant collegeRankings={collegeRankings} />
     </div>
     </FantasyPreferencesProvider>
   );

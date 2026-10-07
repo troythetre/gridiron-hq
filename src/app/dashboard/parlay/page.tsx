@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { hasActiveMembership } from "@/lib/membership";
 import { MEMBERSHIP_PLANS } from "@/lib/membership-plans";
+import { getCollegeFootballRankings } from "@/lib/college-football-live";
+import { getNflMockDraft } from "@/lib/nfl-mock-draft";
 import { ParlayLab } from "./parlay-lab";
 
 export default async function ParlayPage({
@@ -11,7 +13,10 @@ export default async function ParlayPage({
 }) {
   const params = await searchParams;
   const initialSport = params.sport === "CFB" ? "CFB" : "NFL";
-  const initialTab = params.tab === "mock-draft" || params.tab === "college" ? params.tab : "parlay";
+  const initialTab =
+    params.tab === "mock-draft" || params.tab === "college" || params.tab === "rivalries"
+      ? params.tab
+      : "parlay";
 
   if (initialTab === "parlay") {
     const supabase = await createClient();
@@ -32,5 +37,18 @@ export default async function ParlayPage({
     }
   }
 
-  return <ParlayLab key={`${initialSport}:${initialTab}`} initialSport={initialSport} initialTab={initialTab} />;
+  const [mockDraft, collegeRankings] = await Promise.all([
+    initialTab === "mock-draft" ? getNflMockDraft() : Promise.resolve(null),
+    initialTab === "college" ? getCollegeFootballRankings() : Promise.resolve(null),
+  ]);
+
+  return (
+    <ParlayLab
+      key={`${initialSport}:${initialTab}`}
+      initialSport={initialSport}
+      initialTab={initialTab}
+      mockDraft={mockDraft}
+      collegeRankings={collegeRankings}
+    />
+  );
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, Activity, AlertTriangle, BarChart3, ChevronDown, HeartPulse, Newspaper, ShieldCheck, Sparkles, Target, TrendingUp, Users, Zap } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Activity, AlertTriangle, BarChart3, ChevronDown, HeartPulse, Newspaper, ShieldCheck, Shuffle, Sparkles, Target, TrendingUp, Users, Zap } from "lucide-react";
 import { useFantasyPreferences, pointsForFormat } from "@/components/fantasy-preferences";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { PosBadge, StatusBadge } from "@/components/pos-badge";
@@ -10,8 +10,20 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { InjuryRow, WaiverPickRow } from "@/lib/types";
 import { forecastFantasyScore, type FantasyScoreModel } from "@/lib/fantasy-ml";
+import { compareScoringTrend } from "@/lib/player-trends";
 
-type WeekStat = { week: number; points: number | null; receptions: number; targets: number; carries: number; yards: number; touchdowns: number };
+type WeekStat = {
+  week: number;
+  points: number | null;
+  receptions: number;
+  targets: number;
+  carries: number;
+  yards: number;
+  touchdowns: number;
+  snapShare?: number | null;
+  injuryStatus?: string | null;
+  practiceStatus?: string | null;
+};
 type MatchupSplit = { targets: number; receptions: number; yards: number; touchdowns: number; catchRate: number; yardsPerTarget: number; averageAirYards: number; [key: string]: string | number };
 type PlayerMatchup = { coverage: MatchupSplit[]; blitz: MatchupSplit[]; personnel: MatchupSplit[] };
 export type AnalysisPlayer = {
@@ -27,6 +39,125 @@ export type AnalysisTeam = {
   leagueComparison?: { teams: { name: string; isOwn: boolean; players: { pos: string; avgPts: number | null }[] }[]; error?: string };
 };
 
+type SpotlightRecord = { teamId: string; playerKey: string; shuffled: boolean };
+const spotlightEvent = "gridiron:daily-player-change";
+const storageUnavailable = "__gridiron_storage_unavailable__";
+const unavailableStorageKeys = new Set<string>();
+const reportedStorageErrors = new Set<string>();
+
+function spotlightSnapshot(key: string) {
+  if (unavailableStorageKeys.has(key)) return storageUnavailable;
+  try {
+    return localStorage.getItem(key) ?? "";
+  } catch (error) {
+    if (!reportedStorageErrors.has(key)) {
+      console.error("Could not read the daily player spotlight from browser storage.", error);
+      reportedStorageErrors.add(key);
+    }
+    unavailableStorageKeys.add(key);
+    return storageUnavailable;
+  }
+}
+
+function parseSpotlight(snapshot: string): SpotlightRecord | null {
+  try {
+    const value: unknown = JSON.parse(snapshot);
+    if (!value || typeof value !== "object") return null;
+    const record = value as Record<string, unknown>;
+    return typeof record.teamId === "string" && typeof record.playerKey === "string" && typeof record.shuffled === "boolean"
+      ? { teamId: record.teamId, playerKey: record.playerKey, shuffled: record.shuffled }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function subscribeToSpotlight(key: string, callback: () => void) {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === key || event.key === null) callback();
+  };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(spotlightEvent, callback);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(spotlightEvent, callback);
+  };
+}
+
+function saveSpotlight(key: string, record: SpotlightRecord) {
+  try {
+    localStorage.setItem(key, JSON.stringify(record));
+    unavailableStorageKeys.delete(key);
+  } catch (error) {
+    console.error("Could not persist the daily player spotlight.", error);
+    unavailableStorageKeys.add(key);
+  }
+  window.dispatchEvent(new Event(spotlightEvent));
+}
+
+function localDateKey() {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function DailyPlayerSpotlight({ userId, teamId, players }: { userId: string; teamId: string; players: AnalysisPlayer[] }) {
+  const [today, setToday] = useState(localDateKey);
+  const storageKey = `gridiron-daily-player:${userId}:${today}`;
+  const snapshot = useSyncExternalStore(
+    (callback) => subscribeToSpotlight(storageKey, callback),
+    () => spotlightSnapshot(storageKey),
+    () => "",
+  );
+  const stored = useMemo(() => parseSpotlight(snapshot), [snapshot]);
+  const selected = stored?.teamId === teamId
+    ? players.find((player) => player.key === stored.playerKey) ?? players[0]
+    : players[0];
+  const hasShuffled = stored?.shuffled ?? false;
+  const storageAvailable = snapshot !== storageUnavailable;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setToday(localDateKey()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!players.length || !storageAvailable) return;
+    const hasSavedPlayer = stored?.teamId === teamId && players.some((player) => player.key === stored.playerKey);
+    if (hasSavedPlayer) return;
+    const nextPlayer = players[Math.floor(Math.random() * players.length)];
+    if (nextPlayer) saveSpotlight(storageKey, {
+      teamId,
+      playerKey: nextPlayer.key,
+      shuffled: stored?.shuffled ?? false,
+    });
+  }, [players, storageAvailable, storageKey, stored, teamId]);
+
+  function shuffleOnce() {
+    if (hasShuffled || !storageAvailable || players.length < 2) return;
+    const alternatives = players.filter((player) => player.key !== selected?.key);
+    const nextPlayer = alternatives[Math.floor(Math.random() * alternatives.length)];
+    if (nextPlayer) saveSpotlight(storageKey, { teamId, playerKey: nextPlayer.key, shuffled: true });
+  }
+
+  if (!selected) return null;
+  return <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background/30 p-2">
+    <PlayerAvatar name={selected.name} team={selected.team} position={selected.pos} size={42} />
+    <div className="min-w-0 flex-1">
+      <p className="text-[9px] font-black uppercase tracking-wider text-amber-300">Daily player</p>
+      <p className="truncate text-xs font-bold">{selected.name}</p>
+      <p className="text-[10px] text-muted">{selected.pos} · {selected.team}</p>
+    </div>
+    <button
+      type="button"
+      onClick={shuffleOnce}
+      disabled={hasShuffled || !storageAvailable || players.length < 2}
+      aria-label={hasShuffled ? "Daily shuffle used" : "Shuffle daily player"}
+      title={hasShuffled ? "You can shuffle again tomorrow" : storageAvailable ? "Shuffle once today" : "Browser storage is unavailable"}
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border text-muted transition hover:border-amber-300/50 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-40"
+    ><Shuffle className="h-3.5 w-3.5" /></button>
+  </div>;
+}
+
 const positions = ["QB", "RB", "WR", "TE", "K", "DST"];
 const depthTarget: Record<string, number> = { QB: 2, RB: 4, WR: 4, TE: 2, K: 1, DST: 1 };
 
@@ -35,10 +166,11 @@ function normalize(value: string) {
 }
 function normalizePos(value: string) { const pos = value.toUpperCase(); return pos === "DEF" || pos === "D/ST" ? "DST" : pos; }
 function fmt(value: number) { return Number.isFinite(value) ? value.toFixed(1) : "0.0"; }
+function trendClass(delta: number | null) { return delta == null ? "text-muted" : delta >= 0.5 ? "text-amber-300" : delta <= -0.5 ? "text-orange-400" : "text-muted"; }
 function average(values: number[]) { return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0; }
 
 function weeklyPoints(player: AnalysisPlayer, scoring: "standard" | "half_ppr" | "ppr") {
-  const games = player.weeks.filter((week) => week.points != null);
+  const games = player.weeks.filter((week) => week.points != null).sort((a, b) => a.week - b.week);
   if (!games.length) return [];
   return games.map((week) => ({ ...week, score: pointsForFormat(week.points ?? 0, week.receptions, scoring) }));
 }
@@ -56,7 +188,7 @@ function selectLineup<T extends { player: AnalysisPlayer; points: number }>(play
   return picked;
 }
 
-export function MyTeamAnalysis({ teams, waiver, matchupSeasons, fantasyScoreModel }: { teams: AnalysisTeam[]; waiver: WaiverPickRow[]; matchupSeasons: [number, number]; fantasyScoreModel: FantasyScoreModel }) {
+export function MyTeamAnalysis({ userId, teams, waiver, matchupSeasons, fantasyScoreModel }: { userId: string; teams: AnalysisTeam[]; waiver: WaiverPickRow[]; matchupSeasons: [number, number]; fantasyScoreModel: FantasyScoreModel }) {
   const { scoring, mode } = useFantasyPreferences();
   const [activeTeamId, setActiveTeamId] = useState(teams[0]?.id ?? "");
   const team = teams.find((candidate) => candidate.id === activeTeamId) ?? teams[0];
@@ -67,15 +199,22 @@ export function MyTeamAnalysis({ teams, waiver, matchupSeasons, fantasyScoreMode
   const enriched = useMemo(() => team.players.map((player) => {
     const games = weeklyPoints(player, scoring);
     const points = games.length ? games.map((week) => week.score) : [pointsForFormat(player.avgPts, 0, scoring)];
-    const recent = games.slice(-3).map((week) => week.score);
-    const previous = games.slice(-6, -3).map((week) => week.score);
     const avg = average(points);
-    const recentAvg = recent.length ? average(recent) : avg;
-    const delta = recentAvg - (previous.length ? average(previous) : avg);
+    const recentAvg = games.length ? average(games.slice(-3).map((week) => week.score)) : avg;
+    const trend = compareScoringTrend(games.map((week) => week.score));
+    const delta = trend.delta ?? 0;
     const std = Math.sqrt(average(points.map((value) => (value - avg) ** 2)));
     const opportunity = games.length ? average(games.map((week) => week.targets + week.carries)) : 0;
     const modelForecast = forecastFantasyScore(
-      player.weeks.map((week) => ({ week: week.week, fantasyPoints: week.points })),
+      player.weeks.map((week) => ({
+        week: week.week,
+        fantasyPoints: week.points,
+        targets: week.targets,
+        carries: week.carries,
+        snapShare: week.snapShare,
+        injuryStatus: week.injuryStatus,
+        practiceStatus: week.practiceStatus,
+      })),
       player.pos,
       fantasyScoreModel,
     );
@@ -83,7 +222,7 @@ export function MyTeamAnalysis({ teams, waiver, matchupSeasons, fantasyScoreMode
     const forecast = modelForecast
       ? { points: pointsForFormat(modelForecast.points, recentReceptions, scoring) }
       : null;
-    return { player, games, points, avg, recentAvg, delta, std, opportunity, forecast, high: Math.max(...points), low: Math.min(...points) };
+    return { player, games, points, avg, recentAvg, delta, trend, std, opportunity, forecast, high: Math.max(...points), low: Math.min(...points) };
   }), [team, scoring, fantasyScoreModel]);
 
   const positionSummary = positions.map((pos) => {
@@ -136,42 +275,47 @@ export function MyTeamAnalysis({ teams, waiver, matchupSeasons, fantasyScoreMode
   });
   const recentTeamAverage = average(weeklyLineup.slice(-3).map((week) => week.points));
   const previousTeamAverage = average(weeklyLineup.slice(-6, -3).map((week) => week.points));
-  const teamTrend = recentTeamAverage - (previousTeamAverage || recentTeamAverage);
-  const trends = enriched.filter(({ games }) => games.length >= 2).sort((a, b) => b.delta - a.delta);
+  const teamTrend = weeklyLineup.length >= 6 ? recentTeamAverage - previousTeamAverage : null;
+  const trends = enriched.filter(({ trend }) => trend.direction !== "limited").sort((a, b) => b.delta - a.delta);
   const topMovers = [...trends.slice(0, 3), ...trends.slice(-3).reverse()].filter((item, index, rows) => rows.findIndex((other) => other.player.key === item.player.key) === index);
   const rosterNames = new Set(team.players.map((player) => normalize(player.name)));
   const thinPositions = positionSummary.filter((row) => row.count < row.target).sort((a, b) => a.count / a.target - b.count / b.target);
   const waiverFits = waiver.filter((pick) => pick.pos && thinPositions.some((row) => row.pos === normalizePos(pick.pos!)) && !rosterNames.has(normalize(pick.name))).slice(0, 5);
   const sortedPlayers = [...enriched].sort((a, b) => {
-    if (sortBy === "trend") return b.delta - a.delta;
+    if (sortBy === "trend") {
+      if (a.trend.delta == null) return b.trend.delta == null ? b.avg - a.avg : 1;
+      return b.trend.delta == null ? -1 : b.trend.delta - a.trend.delta;
+    }
     if (sortBy === "rank") return (a.player.posRank ?? 999) - (b.player.posRank ?? 999);
     if (sortBy === "opportunity") return b.opportunity - a.opportunity;
     if (mode === "dynasty" && (a.player.yearsExperience ?? 99) !== (b.player.yearsExperience ?? 99)) return (a.player.yearsExperience ?? 99) - (b.player.yearsExperience ?? 99);
     return b.avg - a.avg;
   }).filter(({ player }) => positionFilter === "ALL" || normalizePos(player.pos) === positionFilter);
-  const trendGroup = (delta: number, games: number) => games < 2 ? "Limited data" : delta >= 0.5 ? "Rising" : delta <= -0.5 ? "Falling" : "Steady";
+  const trendGroup = (direction: "rising" | "falling" | "steady" | "limited") => direction === "rising" ? "Rising"
+    : direction === "falling" ? "Falling"
+      : direction === "steady" ? "Steady" : "Limited data";
   const playerGroups = groupBy === "position"
     ? positions.map((pos) => ({ label: pos, rows: sortedPlayers.filter(({ player }) => normalizePos(player.pos) === pos) })).filter((group) => group.rows.length)
     : groupBy === "trend"
       ? ["Rising", "Steady", "Falling", "Limited data"].map((label) => ({
         label,
-        rows: sortedPlayers.filter((row) => trendGroup(row.delta, row.games.length) === label),
+        rows: sortedPlayers.filter((row) => trendGroup(row.trend.direction) === label),
       })).filter((group) => group.rows.length)
       : [{ label: "", rows: sortedPlayers }];
   const maxWeekly = Math.max(1, ...weeklyLineup.map((week) => week.points));
   const scoringName = scoring === "ppr" ? "PPR" : scoring === "standard" ? "Standard" : "Half-PPR";
 
   return <div className="space-y-5">
-    {teams.length > 1 && <div className="flex gap-2 overflow-x-auto pb-1">{teams.map((item) => <button key={item.id} onClick={() => { setActiveTeamId(item.id); setPositionFilter("ALL"); }} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition ${item.id === team.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-muted hover:text-foreground"}`}>{item.teamName} · {item.platform}</button>)}</div>}
+    {teams.length > 1 && <div className="flex flex-wrap gap-2 pb-1">{teams.map((item) => <button key={item.id} onClick={() => { setActiveTeamId(item.id); setPositionFilter("ALL"); }} className={`rounded-full border px-4 py-2 text-xs font-bold transition ${item.id === team.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-muted hover:text-foreground"}`}>{item.teamName} · {item.platform}</button>)}</div>}
     <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex flex-wrap items-center gap-2"><h2 className="font-display text-xl font-black uppercase">{team.teamName}</h2><Badge variant="outline">{team.leagueName}</Badge><Badge variant="secondary">{team.platform}</Badge></div><p className="mt-1 text-xs text-muted">{team.wins}-{team.losses}{team.ties ? `-${team.ties}` : ""} · {team.players.length} players · {scoringName} · {mode}</p></div><p className="text-[10px] text-muted">Synced {new Date(team.syncedAt).toLocaleDateString()}</p></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><div className="flex flex-wrap items-center gap-2"><h2 className="font-display text-xl font-black uppercase">{team.teamName}</h2><Badge variant="outline">{team.leagueName}</Badge><Badge variant="secondary">{team.platform}</Badge></div><p className="mt-1 text-xs text-muted">{team.wins}-{team.losses}{team.ties ? `-${team.ties}` : ""} · {team.players.length} players · {scoringName} · {mode}</p><p className="mt-1 text-[10px] text-muted">Synced {new Date(team.syncedAt).toLocaleDateString()}</p></div><DailyPlayerSpotlight userId={userId} teamId={team.id} players={team.players} /></div>
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
         <Metric label="Lineup projection" value={`${fmt(projectedPoints)} PPG`} detail="Best available 1QB lineup" icon={<Zap />} />
         <Metric label="Rostered players" value={String(team.players.length)} detail={`${positions.filter((pos) => enriched.some(({ player }) => normalizePos(player.pos) === pos)).length} positions represented`} icon={<Users />} />
-        <Metric label="Roster health" value={`${injuryRows.length} flagged`} detail={`${fmt(atRiskPoints)} PPG across flagged players`} icon={<HeartPulse />} tone={injuryRows.length ? "warning" : "good"} />
-        <Metric label="Recent lineup" value={`${fmt(recentTeamAverage)} PPG`} detail={teamTrend > 0.05 ? `+${fmt(teamTrend)} vs prior 3 weeks` : `${fmt(teamTrend)} vs prior 3 weeks`} icon={<Activity />} tone={teamTrend >= 0 ? "good" : "warning"} />
-        <Metric label="Top roster rank" value={enriched.filter((row) => row.player.posRank != null).length ? `#${Math.min(...enriched.map((row) => row.player.posRank ?? 999))}` : "—"} detail="Best positional rank" icon={<Target />} />
-        <Metric label="Roster gaps" value={String(thinPositions.length)} detail={thinPositions.length ? thinPositions.map((row) => row.pos).join(" · ") : "Depth targets met"} icon={<AlertTriangle />} tone={thinPositions.length ? "warning" : "good"} />
+        <Metric label="Roster health" value={`${injuryRows.length} flagged`} detail={`${fmt(atRiskPoints)} PPG across flagged players`} icon={<HeartPulse />} tone={injuryRows.length ? "bad" : "good"} />
+        <Metric label="Recent lineup" value={`${fmt(recentTeamAverage)} PPG`} detail={teamTrend == null ? "Need 6 weeks to compare" : `${teamTrend > 0 ? "+" : ""}${fmt(teamTrend)} vs prior 3 weeks`} icon={<Activity />} tone={teamTrend == null ? "default" : teamTrend > 0.05 ? "up" : teamTrend < -0.05 ? "down" : "default"} />
+        <Metric label="Top roster rank" value={enriched.filter((row) => row.player.posRank != null).length ? `#${Math.min(...enriched.map((row) => row.player.posRank ?? 999))}` : "—"} detail="Best positional rank" icon={<Target />} tone={enriched.some((row) => row.player.posRank != null) ? "good" : "default"} />
+        <Metric label="Roster gaps" value={String(thinPositions.length)} detail={thinPositions.length ? thinPositions.map((row) => row.pos).join(" · ") : "Depth targets met"} icon={<AlertTriangle />} tone={thinPositions.length ? "bad" : "good"} />
       </div>
     </section>
 
@@ -220,15 +364,15 @@ export function MyTeamAnalysis({ teams, waiver, matchupSeasons, fantasyScoreMode
     </CardContent></Card>
 
     <div className="grid gap-4 xl:grid-cols-2">
-      <Card><CardHeader><CardTitle className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" />Recent player trends</CardTitle><CardDescription>Last three logged games versus the previous three; requires at least two games.</CardDescription></CardHeader><CardContent className="space-y-2">{topMovers.length ? topMovers.map(({ player, recentAvg, delta, games }) => <Link key={player.key} href={player.playerId ? `/dashboard/players/${player.playerId}` : "/dashboard/search"} className="flex items-center gap-3 rounded-xl border border-border bg-background/30 p-3 transition hover:border-primary/30"><PlayerAvatar name={player.name} team={player.team} position={player.pos} size={42} /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold">{player.name}</span><span className="text-[10px] text-muted">{games.length} games · {fmt(recentAvg)} recent PPG</span></span><span className={`flex items-center text-sm font-black ${delta >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{delta >= 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}{delta >= 0 ? "+" : ""}{fmt(delta)}</span></Link>) : <p className="text-sm text-muted">Trend analysis appears after at least two weeks of player game logs.</p>}</CardContent></Card>
+      <Card><CardHeader><CardTitle className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" />Recent player trends</CardTitle><CardDescription>Directional change only: three games versus three previous games. Fewer than six scored games is labeled limited data, not a trend.</CardDescription></CardHeader><CardContent className="space-y-2">{topMovers.length ? topMovers.map(({ player, recentAvg, delta, games }) => <Link key={player.key} href={player.playerId ? `/dashboard/players/${player.playerId}` : "/dashboard/search"} className="flex items-center gap-3 rounded-xl border border-border bg-background/30 p-3 transition hover:border-primary/30"><PlayerAvatar name={player.name} team={player.team} position={player.pos} size={42} /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold">{player.name}</span><span className="text-[10px] text-muted">{games.length} games · {fmt(recentAvg)} recent PPG</span></span><span className={`flex items-center text-sm font-black ${trendClass(delta)}`}>{delta >= 0.5 ? <ArrowUpRight className="h-4 w-4" /> : delta <= -0.5 ? <ArrowDownRight className="h-4 w-4" /> : null}{delta > 0 ? "+" : ""}{fmt(delta)}</span></Link>) : <p className="text-sm text-muted">Trend analysis requires six scored games (three recent and three prior); smaller samples remain limited data.</p>}</CardContent></Card>
 
       <Card><CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" />Waiver fits for this roster</CardTitle><CardDescription>Available targets matched to the thinnest positions; players already rostered are excluded.</CardDescription></CardHeader><CardContent className="space-y-2">{waiverFits.length ? waiverFits.map((pick) => <div key={pick.id} className="flex items-center gap-3 rounded-xl border border-border bg-background/30 p-3"><PosBadge pos={pick.pos ?? "?"} /><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{pick.name}</p><p className="text-[10px] text-muted">{pick.team ?? "FA"} · ~{pick.pct_rostered_est ?? "—"}% rostered</p></div><span className="max-w-48 text-right text-xs text-muted">{pick.note}</span></div>) : <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted">{thinPositions.length ? `No waiver picks currently match your ${thinPositions.map((row) => row.pos).join("/")} depth needs.` : "Your roster meets the basic depth targets across all positions."}<Link className="ml-1 font-bold text-primary hover:underline" href="/dashboard/waiver">Open waiver wire</Link></div>}</CardContent></Card>
     </div>
 
     {injuryRows.length > 0 && <Card className="border-rose-500/20"><CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-rose-400" />Injury exposure</CardTitle><CardDescription>{injuryRows.length} rostered players match the current report · {fmt(atRiskPoints)} combined PPG affected.</CardDescription></CardHeader><CardContent className="grid gap-2 sm:grid-cols-2">{injuryRows.map(({ player }) => <div key={player.key} className="flex items-center gap-3 rounded-xl border border-rose-500/15 bg-rose-500/[.04] p-3"><PlayerAvatar name={player.name} team={player.team} position={player.pos} size={40} /><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{player.name}</p><p className="text-xs text-muted">{player.injury?.injury} · {fmt(enriched.find((item) => item.player.key === player.key)?.avg ?? 0)} PPG</p></div><StatusBadge status={player.injury!.status} /></div>)}</CardContent></Card>}
 
-    <Card><CardHeader><div className="flex flex-wrap items-end justify-between gap-3"><div><CardTitle>Full roster breakdown</CardTitle><CardDescription>Production, usage, consistency, rank, and player news for every rostered player.</CardDescription></div><div className="flex flex-wrap gap-2"><select aria-label="Filter by position" value={positionFilter} onChange={(event) => setPositionFilter(event.target.value)} className="h-9 rounded-lg border border-border bg-background px-3 text-xs"><option value="ALL">All positions</option>{positions.map((pos) => <option key={pos}>{pos}</option>)}</select><select aria-label="Sort roster" value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="h-9 rounded-lg border border-border bg-background px-3 text-xs"><option value="points">Sort: points</option><option value="trend">Sort: recent trend</option><option value="opportunity">Sort: usage</option><option value="rank">Sort: position rank</option></select><select aria-label="Group roster" value={groupBy} onChange={(event) => setGroupBy(event.target.value as typeof groupBy)} className="h-9 rounded-lg border border-border bg-background px-3 text-xs"><option value="none">Group: none</option><option value="position">Group: position</option><option value="trend">Group: trend</option></select></div></div></CardHeader><CardContent className="space-y-3">{playerGroups.map((group) => <section key={group.label || "all"} className="space-y-2">{group.label && <h3 className="flex items-center justify-between px-1 text-xs font-black uppercase tracking-wider text-muted"><span>{group.label}</span><span>{group.rows.length}</span></h3>}<div className="space-y-2">{group.rows.map(({ player, games, avg, recentAvg, delta, std, opportunity, high, low }) => <details key={player.key} className="group rounded-2xl border border-border bg-background/25 open:bg-background/45"><summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 p-3 sm:p-4"><PlayerAvatar name={player.name} team={player.team} position={player.pos} size={46} /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-extrabold">{player.name}</span><span className="mt-1 flex flex-wrap items-center gap-1.5"><PosBadge pos={player.pos} /><span className="text-[10px] text-muted">{player.team} · {player.posRank ? `Pos #${player.posRank}` : "Rank pending"}</span>{mode === "dynasty" && <span className="text-[10px] text-muted">{player.yearsExperience ?? "Rookie"} yrs exp</span>}</span></span><span className="text-right"><strong className="block text-base tabular-nums">{fmt(avg)}</strong><span className="text-[9px] uppercase text-muted">PPG</span></span><span className={`hidden min-w-20 text-right text-xs font-bold sm:block ${delta >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{delta >= 0 ? "+" : ""}{fmt(delta)} recent</span><span className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted transition group-open:rotate-180"><ChevronDown className="h-4 w-4" /></span></summary>
-      <div className="grid gap-3 border-t border-border p-3 sm:grid-cols-2 sm:p-4 xl:grid-cols-4"><MiniStat label="Season high / low" value={`${fmt(high)} / ${fmt(low)} pts`} /><MiniStat label="Consistency" value={`${fmt(std)} pt std dev`} /><MiniStat label="Opportunity" value={games.length ? `${fmt(opportunity)} targets + carries/game` : "Usage data pending"} /><MiniStat label="Recent form" value={games.length ? `${fmt(recentAvg)} PPG · ${delta >= 0 ? "+" : ""}${fmt(delta)} vs prior` : "Weekly logs pending"} />
+    <Card><CardHeader><div className="flex flex-wrap items-end justify-between gap-3"><div><CardTitle>Full roster breakdown</CardTitle><CardDescription>Production, usage, consistency, rank, and player news for every rostered player.</CardDescription></div><div className="flex flex-wrap gap-2"><select aria-label="Filter by position" value={positionFilter} onChange={(event) => setPositionFilter(event.target.value)} className="h-9 rounded-lg border border-border bg-background px-3 text-xs"><option value="ALL">All positions</option>{positions.map((pos) => <option key={pos}>{pos}</option>)}</select><select aria-label="Sort roster" value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="h-9 rounded-lg border border-border bg-background px-3 text-xs"><option value="points">Sort: points</option><option value="trend">Sort: recent trend</option><option value="opportunity">Sort: usage</option><option value="rank">Sort: position rank</option></select><select aria-label="Group roster" value={groupBy} onChange={(event) => setGroupBy(event.target.value as typeof groupBy)} className="h-9 rounded-lg border border-border bg-background px-3 text-xs"><option value="none">Group: none</option><option value="position">Group: position</option><option value="trend">Group: trend</option></select></div></div></CardHeader><CardContent className="space-y-3">{playerGroups.map((group) => <section key={group.label || "all"} className="space-y-2">{group.label && <h3 className="flex items-center justify-between px-1 text-xs font-black uppercase tracking-wider text-muted"><span>{group.label}</span><span>{group.rows.length}</span></h3>}<div className="space-y-2">{group.rows.map(({ player, games, avg, recentAvg, delta, trend, std, opportunity, high, low }) => <details key={player.key} className="group rounded-2xl border border-border bg-background/25 open:bg-background/45"><summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 p-3 sm:p-4"><PlayerAvatar name={player.name} team={player.team} position={player.pos} size={46} /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-extrabold">{player.name}</span><span className="mt-1 flex flex-wrap items-center gap-1.5"><PosBadge pos={player.pos} /><span className="text-[10px] text-muted">{player.team} · {player.posRank ? `Pos #${player.posRank}` : "Rank pending"}</span>{mode === "dynasty" && <span className="text-[10px] text-muted">{player.yearsExperience ?? "Rookie"} yrs exp</span>}</span></span><span className="text-right"><strong className="block text-base tabular-nums">{fmt(avg)}</strong><span className="text-[9px] uppercase text-muted">PPG</span></span><span className={`hidden min-w-20 text-right text-xs font-bold sm:block ${trendClass(trend.delta)}`}>{trend.delta == null ? `Limited · ${trend.recentSamples + trend.priorSamples}/6 games` : `${trend.delta > 0 ? "+" : ""}${fmt(trend.delta)} recent`}</span><span className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted transition group-open:rotate-180"><ChevronDown className="h-4 w-4" /></span></summary>
+      <div className="grid gap-3 border-t border-border p-3 sm:grid-cols-2 sm:p-4 xl:grid-cols-4"><MiniStat label="Season high / low" value={`${fmt(high)} / ${fmt(low)} pts`} /><MiniStat label="Consistency" value={`${fmt(std)} pt std dev`} /><MiniStat label="Opportunity" value={games.length ? `${fmt(opportunity)} targets + carries/game` : "Usage data pending"} /><MiniStat label="Recent form" value={trend.delta == null ? `Limited data · ${games.length}/6 games` : `${fmt(recentAvg)} PPG · ${trend.delta > 0 ? "+" : ""}${fmt(trend.delta)} vs prior`} />
         {games.length > 0 && <div className="sm:col-span-2 xl:col-span-4"><p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted">Weekly scores · {scoringName}</p><div className="flex h-20 items-end gap-1.5">{games.slice(-8).map((game) => <div key={game.week} className="flex min-w-0 flex-1 flex-col items-center gap-1"><div title={`Week ${game.week}: ${fmt(game.score)} pts`} className="w-full max-w-10 rounded-t bg-gradient-to-t from-sky-700 to-sky-400" style={{ height: `${Math.max(6, game.score / Math.max(1, high) * 72)}%` }} /><span className="text-[9px] text-muted">W{game.week}</span></div>)}</div></div>}
         {player.injury && <div className="sm:col-span-2 xl:col-span-4 flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/[.05] p-2 text-xs"><StatusBadge status={player.injury.status} /><span>{player.injury.injury} · {player.injury.note}</span></div>}
         {player.news.length > 0 && <div className="sm:col-span-2 xl:col-span-4"><p className="mb-1 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-muted"><Newspaper className="h-3.5 w-3.5" />Recent player news</p>{player.news.map((item, index) => <p key={`${item.headline}-${index}`} className="text-xs leading-5 text-foreground/80">{item.date ? `${item.date} · ` : ""}{item.headline}</p>)}</div>}
@@ -238,8 +382,15 @@ export function MyTeamAnalysis({ teams, waiver, matchupSeasons, fantasyScoreMode
   </div>;
 }
 
-function Metric({ label, value, detail, icon, tone = "default" }: { label: string; value: string; detail: string; icon: React.ReactNode; tone?: "default" | "warning" | "good" }) {
-  return <div className="rounded-xl border border-border bg-background/35 p-3"><div className={`flex items-center justify-between ${tone === "warning" ? "text-amber-400" : tone === "good" ? "text-emerald-400" : "text-primary"}`}><span className="[&>svg]:h-4 [&>svg]:w-4">{icon}</span><span className="text-[9px] font-black uppercase tracking-wider text-muted">{label}</span></div><p className="mt-2 text-xl font-black tabular-nums">{value}</p><p className="mt-1 truncate text-[10px] text-muted">{detail}</p></div>;
+function Metric({ label, value, detail, icon, tone = "default" }: { label: string; value: string; detail: string; icon: React.ReactNode; tone?: "default" | "good" | "up" | "down" | "bad" }) {
+  const toneClass = {
+    default: "text-primary",
+    good: "text-emerald-400",
+    up: "text-amber-300",
+    down: "text-orange-400",
+    bad: "text-rose-400",
+  }[tone];
+  return <div className="rounded-xl border border-border bg-background/35 p-3"><div className={`flex items-center justify-between ${toneClass}`}><span className="[&>svg]:h-4 [&>svg]:w-4">{icon}</span><span className="text-[9px] font-black uppercase tracking-wider text-muted">{label}</span></div><p className={`mt-2 text-xl font-black tabular-nums ${toneClass}`}>{value}</p><p className="mt-1 truncate text-[10px] text-muted">{detail}</p></div>;
 }
 function MatchupPanel({ title, rows, label }: { title: string; rows: MatchupSplit[]; label: (row: MatchupSplit) => string }) {
   return <section className="rounded-lg border border-border bg-background/35 p-3"><h4 className="mb-2 text-[9px] font-black uppercase tracking-wider text-muted">{title}</h4>{rows.length ? <div className="space-y-2">{rows.slice(0, 6).map((row, index) => <div key={`${label(row)}-${index}`} className="border-b border-border/70 pb-2 last:border-0 last:pb-0"><p className="line-clamp-2 text-[10px] font-semibold leading-4">{label(row)}</p><div className="mt-1 flex flex-wrap gap-x-2 text-[9px] text-muted"><span>{row.targets} tgt</span><span>{(row.catchRate * 100).toFixed(0)}% catch</span><span>{row.yardsPerTarget.toFixed(1)} YPT</span><span>{row.touchdowns} TD</span></div></div>)}</div> : <p className="text-[10px] leading-4 text-muted">No matchup split reached the target sample threshold.</p>}</section>;

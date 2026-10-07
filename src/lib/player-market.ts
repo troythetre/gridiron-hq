@@ -106,6 +106,7 @@ export function buildPlayerMarket(
       name: profile.name,
       pos: profile.position,
       team: profile.team,
+      photoUrl: profile.headshotUrl,
       price: Number(price.toFixed(2)),
       changePct: Number(currentMove.toFixed(1)),
       history: history.slice(-6),
