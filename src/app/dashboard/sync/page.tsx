@@ -11,6 +11,7 @@ import {
   SleeperLeagueList,
   RemoveRosterButton,
 } from "./sleeper-sync-client";
+import { EspnConnectForm, EspnRosterControls } from "./espn-sync-client";
 import { Link2 } from "lucide-react";
 import Link from "next/link";
 import profileData from "@/data/player-profiles.json";
@@ -24,13 +25,14 @@ export default async function SyncPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: link }, { data: syncedRosters }, players, injuries] = await Promise.all([
+  const [{ data: link }, { data: syncedRosters }, { data: espnRosters }, players, injuries] = await Promise.all([
     supabase.from("sleeper_links").select("*").eq("profile_id", user!.id).maybeSingle(),
     supabase
       .from("sleeper_rosters")
       .select("*")
       .eq("profile_id", user!.id)
       .order("synced_at", { ascending: false }),
+    supabase.from("espn_rosters").select("*").eq("profile_id", user!.id).order("synced_at", { ascending: false }),
     getPlayers(),
     getInjuries(),
   ]);
@@ -57,9 +59,7 @@ export default async function SyncPage() {
       <div>
         <h1 className="text-2xl font-bold">Sync</h1>
         <p className="text-sm text-muted">
-          Connect your Sleeper account to see a real roster next to your Gridiron HQ data. ESPN and
-          NFL Fantasy sync are coming later - both require pasting a private session cookie since
-          neither has a public API, so they&apos;ll ship as a clearly-labeled advanced option.
+          Connect Sleeper or ESPN Fantasy to compare your real roster with Gridiron HQ player data.
         </p>
       </div>
 
@@ -80,6 +80,32 @@ export default async function SyncPage() {
           </Card>
         </div>
       )}
+
+      <EspnConnectForm />
+
+      {espnRosters && espnRosters.length > 0 && <div className="space-y-4">
+        <h2 className="font-display text-lg font-semibold uppercase tracking-wide text-muted">ESPN rosters</h2>
+        {espnRosters.map((roster) => <Card key={roster.id}>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <div><CardTitle className="flex flex-wrap items-center gap-2">{roster.team_name}<Badge variant="outline">{roster.league_name}</Badge><Badge variant="secondary">ESPN · {roster.season}</Badge></CardTitle><CardDescription>{roster.wins}-{roster.losses}{roster.ties > 0 ? `-${roster.ties}` : ""} · synced {new Date(roster.synced_at).toLocaleString()}</CardDescription></div>
+            <EspnRosterControls leagueId={roster.espn_league_id} />
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {roster.roster_json.length === 0 && <p className="text-sm text-muted">ESPN returned an empty roster.</p>}
+            {roster.roster_json.map((p: { espn_player_id: string; name: string; pos: string; team: string | null }) => {
+              const match = playersByName.get(p.name.toLowerCase());
+              const profile = profilesByNameAndTeam.get(`${normalizeName(p.name)}|${p.team ?? ""}`) ?? profiles.find((candidate) => normalizeName(candidate.name) === normalizeName(p.name));
+              const gameWeeks = profile?.weeks.filter((week) => week.fantasyPoints != null) ?? [];
+              const profileAverage = gameWeeks.length ? gameWeeks.reduce((sum, week) => sum + (week.fantasyPoints ?? 0), 0) / gameWeeks.length : null;
+              const injury = injuriesByNameLower.get(p.name.toLowerCase());
+              return <Link key={p.espn_player_id} href={match ? `/dashboard/players/${match.id}` : profile?.gsisId ? `/dashboard/players/nfl-${encodeURIComponent(profile.gsisId)}` : "/dashboard/search"} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-border/20">
+                <div className="flex items-center gap-2"><PosBadge pos={p.pos} /><span className="text-sm font-medium">{p.name}</span><span className="text-xs text-muted">{p.team ?? "FA"}</span></div>
+                <div className="flex items-center gap-2">{injury && <StatusBadge status={injury.status} />}{profileAverage != null ? <span className="text-sm text-muted">{profileAverage.toFixed(1)} avg · {gameWeeks.length} games</span> : match && match.games > 0 ? <span className="text-sm text-muted">{match.avg_pts.toFixed(1)} avg</span> : <span className="text-xs text-muted">{profile ? "No 2026 games yet" : "Open player search"}</span>}</div>
+              </Link>;
+            })}
+          </CardContent>
+        </Card>)}
+      </div>}
 
       {syncedRosters && syncedRosters.length > 0 && (
         <div className="space-y-4">

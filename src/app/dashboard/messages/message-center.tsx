@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 type Contact = { id: string; display_name: string };
 type Message = { id: string; sender_id: string; recipient_id: string; body: string; created_at: string };
 
-export function MessageCenter({ currentUserId, contacts, messages, selectedRecipientId }: {
-  currentUserId: string; contacts: Contact[]; messages: Message[]; selectedRecipientId: string | null;
+export function MessageCenter({ setupReady, currentUserId, contacts, messages, selectedRecipientId }: {
+  setupReady: boolean; currentUserId: string; contacts: Contact[]; messages: Message[]; selectedRecipientId: string | null;
 }) {
   const [query, setQuery] = useState("");
   const selected = contacts.find((contact) => contact.id === selectedRecipientId) ?? null;
@@ -18,7 +18,7 @@ export function MessageCenter({ currentUserId, contacts, messages, selectedRecip
   const thread = selected ? messages.filter((message) => message.sender_id === selected.id || message.recipient_id === selected.id) : [];
 
   return <div className="mx-auto max-w-6xl space-y-5">
-    <header><p className="text-[10px] font-bold uppercase tracking-[.2em] text-muted">Private · mutual follows</p><h1 className="mt-1 font-display text-4xl font-black">Messages</h1></header>
+    <header><p className="text-[10px] font-bold uppercase tracking-[.2em] text-muted">Private · mutual follows</p><h1 className="mt-1 font-display text-4xl font-black">Messages</h1>{!setupReady && <p className="mt-2 text-sm text-muted">Apply the community migration to enable follows and private messages.</p>}</header>
     <div className="grid min-h-[620px] overflow-hidden rounded-3xl border border-border bg-surface md:grid-cols-[280px_minmax(0,1fr)]">
       <aside className={`border-b border-border p-4 md:border-b-0 md:border-r ${selected ? "hidden md:block" : ""}`}>
         <label className="block"><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search mutual follows" className="rounded-full bg-background" /></label>

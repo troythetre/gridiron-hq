@@ -18,9 +18,9 @@ function timeAgo(value: string) {
 }
 
 export function CommunityHub({
-  posts, replies, people, followingIds, followerIds,
+  setupReady, posts, replies, people, followingIds, followerIds,
 }: {
-  posts: Post[]; replies: Reply[]; people: Person[]; followingIds: string[]; followerIds: string[];
+  setupReady: boolean; posts: Post[]; replies: Reply[]; people: Person[]; followingIds: string[]; followerIds: string[];
 }) {
   const [query, setQuery] = useState("");
   const filteredPeople = useMemo(() => people.filter((person) => person.display_name.toLowerCase().includes(query.trim().toLowerCase())), [people, query]);
@@ -34,13 +34,14 @@ export function CommunityHub({
 
     <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,.8fr)]">
       <section className="space-y-4">
-        <form action={createAnonymousForumPost} className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+        {!setupReady && <div className="rounded-2xl border border-white/15 bg-white/[.04] p-4 text-sm leading-6 text-muted">Community storage isn&apos;t set up yet. Apply <code className="rounded bg-white/10 px-1.5 py-0.5 text-white">supabase/migrations/202610070002_community_and_fantasy_feed.sql</code> to enable posting, following, and DMs.</div>}
+        {setupReady && <form action={createAnonymousForumPost} className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
           <label htmlFor="post-body" className="mb-3 flex items-center gap-2 text-sm font-bold"><Feather className="h-4 w-4 text-muted" />Drop a thought in the huddle</label>
           <textarea id="post-body" name="body" required minLength={1} maxLength={4000} rows={4} placeholder="Start a debate. Ask for advice. Celebrate the W. Your post will appear as Anonymous Manager." className="w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6 outline-none transition placeholder:text-muted/70 focus:border-white/30 focus:ring-2 focus:ring-white/10" />
           <div className="mt-3 flex flex-col justify-between gap-3 text-xs text-muted sm:flex-row sm:items-center"><span>Anonymous to other managers · up to 4,000 characters</span><button className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-5 text-xs font-black uppercase tracking-wider text-black transition hover:bg-white/85"><Send className="h-3.5 w-3.5" />Post anonymously</button></div>
-        </form>
+        </form>}
 
-        {posts.length ? posts.map((post) => {
+        {setupReady && posts.length ? posts.map((post) => {
           const postReplies = replies.filter((reply) => reply.post_id === post.id);
           return <article key={post.id} className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/[.06]"><AtSign className="h-4 w-4 text-muted" /></span><span className="text-sm font-semibold">Anonymous Manager</span></div><time className="text-xs text-muted" dateTime={post.created_at}>{timeAgo(post.created_at)}</time></div>
@@ -71,7 +72,7 @@ export function CommunityHub({
               return <div key={person.id} className="flex items-center gap-3 py-3">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[.05] text-xs font-bold">{person.display_name.slice(0, 1).toUpperCase()}</span>
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{person.display_name}</span><span className="block text-[10px] text-muted">{mutual ? "Mutual follow · DMs open" : followsYou ? "Follows you" : "Gridiron manager"}</span></span>
-                {mutual ? <Link href={`/dashboard/messages?to=${person.id}`} aria-label={`Message ${person.display_name}`} className="grid h-9 w-9 place-items-center rounded-full border border-white/10 hover:bg-white/10"><MessageCircle className="h-4 w-4" /></Link> : <form action={toggleFollow}><input type="hidden" name="targetId" value={person.id} /><button aria-label={`${follows ? "Unfollow" : "Follow"} ${person.display_name}`} className={`grid h-9 w-9 place-items-center rounded-full border transition ${follows ? "border-white/25 bg-white text-black" : "border-white/10 hover:bg-white/10"}`}>{follows ? <span className="text-sm">✓</span> : <UserRoundPlus className="h-4 w-4" />}</button></form>}
+                {setupReady && (mutual ? <Link href={`/dashboard/messages?to=${person.id}`} aria-label={`Message ${person.display_name}`} className="grid h-9 w-9 place-items-center rounded-full border border-white/10 hover:bg-white/10"><MessageCircle className="h-4 w-4" /></Link> : <form action={toggleFollow}><input type="hidden" name="targetId" value={person.id} /><button aria-label={`${follows ? "Unfollow" : "Follow"} ${person.display_name}`} className={`grid h-9 w-9 place-items-center rounded-full border transition ${follows ? "border-white/25 bg-white text-black" : "border-white/10 hover:bg-white/10"}`}>{follows ? <span className="text-sm">✓</span> : <UserRoundPlus className="h-4 w-4" />}</button></form>)}
               </div>;
             })}
             {filteredPeople.length === 0 && <p className="py-8 text-center text-sm text-muted">No managers found.</p>}
