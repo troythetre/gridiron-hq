@@ -4,6 +4,7 @@ import { logout } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { GridironAssistant } from "@/components/gridiron-assistant";
+import { FantasyPreferenceControls, FantasyPreferencesProvider } from "@/components/fantasy-preferences";
 import {
   LayoutDashboard, Trophy, Swords, Users2, Siren, Newspaper, ShieldAlert, LogOut, Search, ChartCandlestick, MessagesSquare, Video,
   RefreshCw, ArrowLeftRight, ClipboardList,
@@ -34,6 +35,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     (user?.user_metadata?.display_name as string | undefined) ?? user?.email ?? "Guest";
 
   return (
+    <FantasyPreferencesProvider>
     <div className="flex min-h-screen bg-background">
       <aside className="hidden w-60 flex-col border-r border-border bg-surface px-4 py-6 sm:flex">
         <Link href="/dashboard" className="mb-8 px-2">
@@ -85,9 +87,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </Link>
           ))}
         </nav>
-        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8">{children}</main>
+        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8">
+          <div className="mb-5 flex justify-end"><FantasyPreferenceControls /></div>
+          {children}
+        </main>
       </div>
       <GridironAssistant />
     </div>
+    </FantasyPreferencesProvider>
   );
 }

@@ -7,20 +7,47 @@ import { PosBadge } from "@/components/pos-badge";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { pointsForFormat, useFantasyPreferences } from "@/components/fantasy-preferences";
 
 const POSITIONS = ["ALL", "QB", "RB", "WR", "TE", "K", "DST"] as const;
+type ReceptionStats = { wk1: number; wk2: number; avg: number; total: number; experience: number | null };
 
-export function RankingsTable({ players }: { players: PlayerRow[] }) {
+export function RankingsTable({ players, receptionsByPlayer }: { players: PlayerRow[]; receptionsByPlayer: Record<number, ReceptionStats> }) {
   const [pos, setPos] = useState<string>("ALL");
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("points");
+  const { scoring, mode } = useFantasyPreferences();
+
+  const scoredPlayers = useMemo(() => players.map((player) => {
+    const receptions = receptionsByPlayer[player.id] ?? { wk1: 0, wk2: 0, avg: 0, total: 0, experience: null };
+    return {
+      ...player,
+      displayWk1: player.wk1_pts == null ? null : pointsForFormat(player.wk1_pts, receptions.wk1, scoring),
+      displayWk2: player.wk2_pts == null ? null : pointsForFormat(player.wk2_pts, receptions.wk2, scoring),
+      displayTotal: pointsForFormat(player.total_pts, receptions.total, scoring),
+      displayAvg: pointsForFormat(player.avg_pts, receptions.avg, scoring),
+      yearsExperience: receptions.experience,
+    };
+  }), [players, receptionsByPlayer, scoring]);
 
   const filtered = useMemo(() => {
-    return players.filter((p) => {
+    const rankOrder = (a: (typeof scoredPlayers)[number], b: (typeof scoredPlayers)[number]) => {
+      if (mode === "dynasty" && (a.yearsExperience ?? 99) !== (b.yearsExperience ?? 99)) return (a.yearsExperience ?? 99) - (b.yearsExperience ?? 99);
+      return b.displayAvg - a.displayAvg;
+    };
+    const overallRanks = new Map([...scoredPlayers].sort(rankOrder).map((player, index) => [player.id, index + 1]));
+    const byPosition = new Map<string, typeof scoredPlayers>();
+    for (const player of scoredPlayers) byPosition.set(player.pos, [...(byPosition.get(player.pos) ?? []), player]);
+    const posRanks = new Map<number, number>();
+    for (const group of byPosition.values()) [...group].sort(rankOrder).forEach((player, index) => posRanks.set(player.id, index + 1));
+    const sorted = [...scoredPlayers].sort((a, b) => sort === "name" ? a.name.localeCompare(b.name) : sort === "team" ? a.team.localeCompare(b.team) || a.name.localeCompare(b.name) : rankOrder(a, b));
+    return sorted.filter((p) => {
       if (pos !== "ALL" && p.pos !== pos) return false;
       if (query && !p.name.toLowerCase().includes(query.toLowerCase())) return false;
       return true;
-    });
-  }, [players, pos, query]);
+    }).map((player) => ({ ...player, overallRank: overallRanks.get(player.id) ?? 0, positionRank: posRanks.get(player.id) ?? 0 }));
+  }, [scoredPlayers, pos, query, sort, mode]);
 
   return (
     <div className="space-y-4">
@@ -40,6 +67,14 @@ export function RankingsTable({ players }: { players: PlayerRow[] }) {
           onChange={(e) => setQuery(e.target.value)}
           className="sm:w-64"
         />
+        <Select value={sort} onValueChange={setSort}>
+          <SelectTrigger className="sm:w-48" aria-label="Sort rankings"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="points">{mode === "dynasty" ? "Dynasty outlook" : "Fantasy points"}</SelectItem>
+            <SelectItem value="name">Player name</SelectItem>
+            <SelectItem value="team">NFL team</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="overflow-x-auto rounded-[var(--radius)] border border-border bg-surface">
@@ -60,7 +95,7 @@ export function RankingsTable({ players }: { players: PlayerRow[] }) {
           <tbody>
             {filtered.map((p) => (
               <tr key={p.id} className="border-b border-border/60 last:border-0 hover:bg-border/10">
-                <td className="px-4 py-2.5 text-muted">{p.overall_rank}</td>
+                <td className="px-4 py-2.5 text-muted">{p.overallRank}</td>
                 <td className="px-4 py-2.5 font-medium">
                   <Link href={`/dashboard/players/${p.id}`} className="group inline-flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary">
                     <PlayerAvatar name={p.name} team={p.team} position={p.pos} size={38} className="shrink-0 rounded-full transition duration-200 group-hover:scale-105" />
@@ -71,11 +106,11 @@ export function RankingsTable({ players }: { players: PlayerRow[] }) {
                   <PosBadge pos={p.pos} />
                 </td>
                 <td className="px-4 py-2.5 text-muted">{p.team}</td>
-                <td className="px-4 py-2.5 text-right text-muted">{p.wk1_pts?.toFixed(1) ?? "-"}</td>
-                <td className="px-4 py-2.5 text-right text-muted">{p.wk2_pts?.toFixed(1) ?? "-"}</td>
-                <td className="px-4 py-2.5 text-right font-semibold">{p.total_pts.toFixed(1)}</td>
-                <td className="px-4 py-2.5 text-right text-muted">{p.avg_pts.toFixed(1)}</td>
-                <td className="px-4 py-2.5 text-right text-muted">{p.pos_rank}</td>
+                <td className="px-4 py-2.5 text-right text-muted">{p.displayWk1?.toFixed(1) ?? "-"}</td>
+                <td className="px-4 py-2.5 text-right text-muted">{p.displayWk2?.toFixed(1) ?? "-"}</td>
+                <td className="px-4 py-2.5 text-right font-semibold">{p.displayTotal.toFixed(1)}</td>
+                <td className="px-4 py-2.5 text-right text-muted">{p.displayAvg.toFixed(1)}</td>
+                <td className="px-4 py-2.5 text-right text-muted">{p.positionRank}</td>
               </tr>
             ))}
             {filtered.length === 0 && (

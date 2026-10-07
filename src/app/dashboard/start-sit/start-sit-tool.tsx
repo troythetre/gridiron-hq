@@ -12,15 +12,19 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { pointsForFormat, useFantasyPreferences } from "@/components/fantasy-preferences";
 
-function toScoreInput(p: PlayerRow, injury?: InjuryRow) {
+type ReceptionStats = { wk1: number; wk2: number; avg: number };
+
+function toScoreInput(p: PlayerRow, injury: InjuryRow | undefined, receptions: ReceptionStats | undefined, scoring: "standard" | "half_ppr" | "ppr") {
+  const stats = receptions ?? { wk1: 0, wk2: 0, avg: 0 };
   return {
     name: p.name,
     pos: p.pos,
     team: p.team,
-    wk1_pts: p.wk1_pts,
-    wk2_pts: p.wk2_pts,
-    avg_pts: p.avg_pts,
+    wk1_pts: p.wk1_pts == null ? null : pointsForFormat(p.wk1_pts, stats.wk1, scoring),
+    wk2_pts: p.wk2_pts == null ? null : pointsForFormat(p.wk2_pts, stats.wk2, scoring),
+    avg_pts: pointsForFormat(p.avg_pts, stats.avg, scoring),
     injuryStatus: (injury?.status as InjuryStatus) ?? null,
     injuryNote: injury?.note ?? undefined,
   };
@@ -30,10 +34,12 @@ export function StartSitTool({
   players,
   injuriesByName,
   rosterPlayerNames,
+  receptionsByPlayer,
 }: {
   players: PlayerRow[];
   injuriesByName: Record<string, InjuryRow>;
   rosterPlayerNames: string[];
+  receptionsByPlayer: Record<string, ReceptionStats>;
 }) {
   const sorted = useMemo(() => [...players].sort((a, b) => a.name.localeCompare(b.name)), [players]);
   const rosterNameSet = useMemo(() => new Set(rosterPlayerNames.map(normalizeName)), [rosterPlayerNames]);
@@ -42,6 +48,7 @@ export function StartSitTool({
   const [aName, setAName] = useState<string>(rosterPlayers[0]?.name ?? sorted[0]?.name ?? "");
   const [bName, setBName] = useState<string>(rosterPlayers[1]?.name ?? sorted.find((player) => player.name !== (rosterPlayers[0]?.name ?? sorted[0]?.name))?.name ?? "");
   const [searchQuery, setSearchQuery] = useState("");
+  const { scoring } = useFantasyPreferences();
 
   const searchResults = useMemo(() => {
     const needle = searchQuery.trim().toLowerCase();
@@ -58,10 +65,10 @@ export function StartSitTool({
   const result = useMemo(() => {
     if (!playerA || !playerB) return null;
     return compare(
-      toScoreInput(playerA, injuriesByName[playerA.name]),
-      toScoreInput(playerB, injuriesByName[playerB.name])
+      toScoreInput(playerA, injuriesByName[playerA.name], receptionsByPlayer[playerA.name], scoring),
+      toScoreInput(playerB, injuriesByName[playerB.name], receptionsByPlayer[playerB.name], scoring)
     );
-  }, [playerA, playerB, injuriesByName]);
+  }, [playerA, playerB, injuriesByName, receptionsByPlayer, scoring]);
 
   return (
     <div className="space-y-6">
@@ -140,7 +147,7 @@ export function StartSitTool({
                       <PosBadge pos={player.pos} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold">{player.name}{rosterNameSet.has(normalizeName(player.name)) && <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-primary">Your team</span>}</p>
-                        <p className="text-xs text-muted">{player.team} · {player.avg_pts.toFixed(1)} avg pts</p>
+                        <p className="text-xs text-muted">{player.team} · {pointsForFormat(player.avg_pts, receptionsByPlayer[player.name]?.avg ?? 0, scoring).toFixed(1)} avg pts</p>
                       </div>
                       <div className="flex gap-2">
                         <Button

@@ -16,6 +16,8 @@ export default async function SearchPage() {
       headshotUrl: profile.headshotUrl,
       games: weeks.length,
       avgPts: weeks.length ? weeks.reduce((sum, week) => sum + (week.fantasyPoints ?? 0), 0) / weeks.length : null,
+      avgReceptions: weeks.length ? weeks.reduce((sum, week) => sum + (week.receptions ?? 0), 0) / weeks.length : 0,
+      yearsExperience: profile.yearsExperience,
       ranked: rankedKeys.has(`${profile.name.toLowerCase()}|${profile.team}`),
     };
   }).filter((player) => ["QB", "RB", "WR", "TE", "K", "DST"].includes(player.pos));
