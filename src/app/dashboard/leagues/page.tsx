@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
-import { CreateLeagueForm, JoinLeagueForm } from "./create-join-forms";
-import { Users2, ArrowRight } from "lucide-react";
+import { Users2, ArrowRight, Link2 } from "lucide-react";
 
 export default async function LeaguesPage() {
   const supabase = await createClient();
@@ -17,7 +16,7 @@ export default async function LeaguesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">My Team</h1>
-        <p className="text-sm text-muted">Your leagues, rosters, and lineups.</p>
+        <p className="text-sm text-muted">Your fantasy teams and rosters.</p>
       </div>
 
       {memberships && memberships.length > 0 && (
@@ -34,7 +33,7 @@ export default async function LeaguesPage() {
                       <div>
                         <p className="font-semibold">{m.team_name}</p>
                         <p className="text-sm text-muted">
-                          {league.name} · {league.num_teams} teams · code {league.invite_code}
+                          {league.name} · {league.num_teams} teams
                         </p>
                       </div>
                     </div>
@@ -47,10 +46,22 @@ export default async function LeaguesPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <CreateLeagueForm />
-        <JoinLeagueForm />
-      </div>
+      {(!memberships || memberships.length === 0) && (
+        <Card>
+          <CardContent className="flex flex-col items-start gap-3 p-6">
+            <Link2 className="h-5 w-5 text-primary" />
+            <div>
+              <p className="font-semibold">Bring in a team you already play with</p>
+              <p className="mt-1 text-sm text-muted">
+                Sync a Sleeper or ESPN roster to keep your team details alongside your fantasy tools.
+              </p>
+            </div>
+            <Link href="/dashboard/sync" className="text-sm font-medium text-primary hover:underline">
+              Sync an existing roster <span aria-hidden="true">→</span>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

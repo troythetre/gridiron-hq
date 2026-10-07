@@ -8,7 +8,7 @@ import { Trophy, Swords, Users2, Siren, Newspaper, ShieldAlert } from "lucide-re
 const FEATURES = [
   { icon: Trophy, title: "Rankings", body: "Live positional and overall rankings built from real weekly scoring." },
   { icon: Swords, title: "Start/Sit", body: "A transparent engine scores any two players and explains why one wins." },
-  { icon: Users2, title: "Manage Your Team", body: "Build a roster, set your lineup, and see it validated slot by slot." },
+  { icon: Users2, title: "Your Team", body: "Bring in a roster from a league you already play in and keep your team details close at hand." },
   { icon: Siren, title: "Waiver Wire", body: "The week's top pickups, ranked by opportunity, not just name recognition." },
   { icon: Newspaper, title: "Fantasy News", body: "Short, sourced blurbs on what actually moves your lineup." },
   { icon: ShieldAlert, title: "Injury Tracker", body: "Status, context, and who steps in next - color-coded by severity." },
@@ -48,8 +48,8 @@ export default function Home() {
             Your fantasy football <span className="text-primary">command center.</span>
           </h1>
           <p className="mt-5 text-lg text-neutral-200">
-            Rankings, start/sit calls, waiver targets, injuries, and your whole roster -
-            in one fast, no-nonsense dashboard. Free to use, any league, any team.
+            Rankings, start/sit calls, waiver targets, and injury context to help with
+            the fantasy decisions you make each week. Built for the leagues you already play in.
           </p>
           <div className="mt-8 flex items-center justify-center gap-3">
             <Button asChild size="lg">

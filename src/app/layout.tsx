@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Gridiron HQ - Fantasy Football Command Center",
   description:
-    "Rankings, start/sit calls, waiver pickups, injury tracking, and league management in one place.",
+    "Fantasy football rankings, start/sit advice, waiver pickups, injury updates, and roster tools for the leagues you already play in.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
