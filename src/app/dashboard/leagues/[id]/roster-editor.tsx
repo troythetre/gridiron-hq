@@ -28,7 +28,6 @@ export function RosterEditor({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Handlers for assigning and clearing roster slots
   function handleAssign(slot: RosterSlotName, playerId: string) {
     setError(null);
     startTransition(async () => {
@@ -37,7 +36,6 @@ export function RosterEditor({
     });
   }
 
-  // Handler for clearing a roster slot
   function handleClear(slot: RosterSlotName) {
     setError(null);
     startTransition(async () => {

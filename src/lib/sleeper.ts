@@ -100,6 +100,7 @@ export function getLeagueUsers(leagueId: string): Promise<SleeperLeagueUser[]> {
 let playersCache: { data: SleeperPlayerDict; fetchedAt: number } | null = null;
 const PLAYERS_TTL_MS = 12 * 60 * 60 * 1000;
 
+// Fetch the full player dictionary from Sleeper, caching it in memory for a
 export async function getAllPlayers(): Promise<SleeperPlayerDict> {
   if (playersCache && Date.now() - playersCache.fetchedAt < PLAYERS_TTL_MS) {
     return playersCache.data;
@@ -114,6 +115,7 @@ export function normalizeSleeperPos(pos: string | undefined): string {
   return pos === "DEF" ? "DST" : pos ?? "?";
 }
 
+/** Returns a player's name based on their ID and info, defaulting to the ID if info is missing. */
 export function sleeperPlayerName(playerId: string, info: SleeperPlayerInfo | undefined): string {
   if (!info) return playerId;
   return info.full_name ?? ([info.first_name, info.last_name].filter(Boolean).join(" ") || playerId);

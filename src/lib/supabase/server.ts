@@ -16,14 +16,16 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
+        //  setAll is called from a Server Action, which is safe to ignore because the proxy (middleware) below refreshes the session on every request.
         setAll(cookiesToSet) {
           try {
+            // setAll called from a Server Action - safe to ignore because
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Server Components cannot write response cookies during rendering.
-            // The proxy refreshes the session and persists updated cookies per request.
+            // setAll called from a Server Component - safe to ignore because
+            // the proxy (middleware) below refreshes the session on every request.
           }
         },
       },

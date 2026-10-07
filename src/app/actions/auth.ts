@@ -23,7 +23,6 @@ export type AuthFormState = {
   fieldErrors?: Record<string, string[]>;
 } | undefined;
 
-// Action to handle user signup
 export async function signup(_prevState: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const parsed = SignupSchema.safeParse({
     displayName: formData.get("displayName"),
@@ -34,7 +33,6 @@ export async function signup(_prevState: AuthFormState, formData: FormData): Pro
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  // Create a Supabase client and attempt to sign up the user
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
@@ -51,7 +49,6 @@ export async function signup(_prevState: AuthFormState, formData: FormData): Pro
   redirect("/login?confirmEmail=1");
 }
 
-// Action to handle user login
 export async function login(_prevState: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const parsed = LoginSchema.safeParse({
     email: formData.get("email"),
@@ -61,7 +58,6 @@ export async function login(_prevState: AuthFormState, formData: FormData): Prom
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  // Create a Supabase client and attempt to log in the user
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) return { error: error.message };

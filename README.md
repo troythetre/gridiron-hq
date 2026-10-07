@@ -1,92 +1,36 @@
-# Gridiron HQ
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Gridiron HQ is a fantasy-football platform built with Next.js 16, React 19, and
-Supabase. The web app runs locally; authentication and database requests use the
-Supabase project configured for the app.
+## Getting Started
 
-## Run the platform locally
-
-### Requirements
-
-- Node.js compatible with Next.js 16
-- npm
-- A Supabase project with access to its URL and public anon/publishable key
-
-### Configure Supabase
-
-1. Create a Supabase project, or use a development project you can safely modify.
-2. In the Supabase SQL Editor, run [`supabase/schema.sql`](./supabase/schema.sql)
-   to create the app tables, row-level security policies, and signup trigger.
-3. In Supabase Authentication URL Configuration, set the site URL to
-   `http://localhost:3000` and allow that URL for redirects.
-4. Create `.env.local` in the repository root:
-
-   ```dotenv
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-public-anon-or-publishable-key
-   ```
-
-   These are public client credentials; never put a Supabase service-role key in
-   a `NEXT_PUBLIC_` variable or commit real credentials.
-
-5. The app reads rankings, injuries, waiver picks, and news from Supabase. The
-   sample JSON in [`src/data/`](./src/data/) is not loaded automatically. To
-   exercise those pages and roster editing, import the sample records into the
-   matching `players`, `injuries`, `waiver_picks`, and `news_items` tables. Use
-   the Supabase Table Editor's CSV import (convert the JSON records to CSV if
-   needed) or insert equivalent rows. Omit generated `id` values when loading
-   records.
-
-> This repository does not currently include Supabase CLI configuration,
-> migrations, or a seed command. With the setup above, Next.js runs on your
-> machine but Supabase Auth/Postgres are provided by the configured Supabase
-> project; an entirely offline/local backend is not configured yet.
-
-### Install and start
+First, run the development server:
 
 ```bash
-npm ci
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Test the main user flows
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-There is currently no automated test script or test suite in `package.json`.
-Use the following manual smoke test after configuring the database and sample
-records:
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-1. Open `/` and verify the public landing page loads.
-2. Sign up at `/signup`, then sign in at `/login`. If email confirmation is
-   enabled in Supabase, confirm the email before logging in.
-3. Visit `/dashboard` while signed in. Verify rankings, injuries, waiver picks,
-   news, and start/sit pages load their Supabase-backed data.
-4. Sign out and visit `/dashboard` directly; verify the app redirects to login.
-5. Create a league, add or join a second account using its invite code, and
-   verify both teams appear.
-6. Add and remove roster players; verify that only eligible positions can fill
-   each roster slot.
+## Learn More
 
-Run the available static checks and production build:
+To learn more about Next.js, take a look at the following resources:
 
-```bash
-npm run lint
-npm run build
-npm start
-```
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-After `npm start`, open `http://localhost:3000` to smoke-test the production
-build. The local app needs the same Supabase environment variables in each
-mode.
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Technical documentation
+## Deploy on Vercel
 
-- This README contains local setup, platform smoke tests, and available
-  validation commands.
-- [`AGENTS.md`](./AGENTS.md) contains repository-specific development guidance.
-- [`supabase/schema.sql`](./supabase/schema.sql) documents the database schema,
-  row-level security policies, and signup trigger.
-- Implementation-specific comments live beside the relevant code, including
-  the scoring rationale in [`src/lib/scoring.ts`](./src/lib/scoring.ts) and
-  Supabase session handling in [`src/lib/supabase/`](./src/lib/supabase/).
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

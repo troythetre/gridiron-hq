@@ -12,6 +12,13 @@ import {
   RemoveRosterButton,
 } from "./sleeper-sync-client";
 import { Link2 } from "lucide-react";
+import Link from "next/link";
+import profileData from "@/data/player-profiles.json";
+import type { PlayerProfileData } from "@/lib/player-profile-types";
+
+function normalizeName(name: string) {
+  return name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
 
 export default async function SyncPage() {
   const supabase = await createClient();
@@ -29,6 +36,8 @@ export default async function SyncPage() {
   ]);
 
   const playersByName = new Map(players.map((p) => [p.name.toLowerCase(), p]));
+  const profiles = profileData as PlayerProfileData[];
+  const profilesByNameAndTeam = new Map(profiles.map((profile) => [`${normalizeName(profile.name)}|${profile.team}`, profile]));
   const injuriesByNameLower = new Map(injuries.map((i) => [i.name.toLowerCase(), i]));
 
   let leagues: SleeperLeague[] = [];
@@ -98,10 +107,17 @@ export default async function SyncPage() {
                 )}
                 {roster.roster_json.map((p) => {
                   const match = playersByName.get(p.name.toLowerCase());
+                  const profile = profilesByNameAndTeam.get(`${normalizeName(p.name)}|${p.team ?? ""}`)
+                    ?? profiles.find((candidate) => normalizeName(candidate.name) === normalizeName(p.name));
+                  const gameWeeks = profile?.weeks.filter((week) => week.fantasyPoints != null) ?? [];
+                  const profileAverage = gameWeeks.length
+                    ? gameWeeks.reduce((sum, week) => sum + (week.fantasyPoints ?? 0), 0) / gameWeeks.length
+                    : null;
                   const injury = injuriesByNameLower.get(p.name.toLowerCase());
                   return (
-                    <div
+                    <Link
                       key={p.sleeper_player_id}
+                      href={match ? `/dashboard/players/${match.id}` : profile?.gsisId ? `/dashboard/players/nfl-${encodeURIComponent(profile.gsisId)}` : "/dashboard/search"}
                       className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-border/20"
                     >
                       <div className="flex items-center gap-2">
@@ -111,13 +127,15 @@ export default async function SyncPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {injury && <StatusBadge status={injury.status} />}
-                        {match ? (
+                        {profileAverage != null ? (
+                          <span className="text-sm text-muted">{profileAverage.toFixed(1)} avg · {gameWeeks.length} games</span>
+                        ) : match && match.games > 0 ? (
                           <span className="text-sm text-muted">{match.avg_pts.toFixed(1)} avg</span>
                         ) : (
-                          <span className="text-xs text-muted">no local data</span>
+                          <span className="text-xs text-muted">{profile ? "No 2026 games yet" : "Open player search"}</span>
                         )}
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </CardContent>

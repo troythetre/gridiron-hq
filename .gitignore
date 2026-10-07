@@ -20,6 +20,10 @@
 # production
 /build
 
+# Downloaded NFL research data (large, redistributable source snapshots)
+/data/nflverse/
+/.Rlib/
+
 # misc
 .DS_Store
 *.pem

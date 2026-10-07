@@ -28,6 +28,7 @@ export function TradeBlockPanel({
   myMemberId: string;
   myRoster: PlayerRow[];
 }) {
+  // Form state
   const [pendingId, setPendingId] = useState<number | string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -37,6 +38,7 @@ export function TradeBlockPanel({
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [note, setNote] = useState("");
 
+  // Handle listing a player on the trade block, sending the request to the server and updating state based on the response.
   function handleList() {
     if (!selectedPlayerId) return;
     setError(null);
@@ -50,6 +52,7 @@ export function TradeBlockPanel({
     });
   }
 
+  // Handle unlisting a player from the trade block, sending the request to the server and updating state based on the response.
   function handleUnlist(playerId: number) {
     setError(null);
     setPendingId(playerId);

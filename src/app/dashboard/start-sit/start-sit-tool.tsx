@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { PlayerRow, InjuryRow } from "@/lib/types";
 import { compare, scorePlayer, type InjuryStatus } from "@/lib/scoring";
 import { PosBadge, StatusBadge } from "@/components/pos-badge";
@@ -36,6 +37,7 @@ export function StartSitTool({
   const playerA = sorted.find((p) => p.name === aName);
   const playerB = sorted.find((p) => p.name === bName);
 
+  // Compare the two players using the scoring logic.
   const result = useMemo(() => {
     if (!playerA || !playerB) return null;
     return compare(
@@ -133,7 +135,9 @@ function ResultCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <PosBadge pos={player.pos} />
-            <span className="font-semibold">{player.name}</span>
+            <Link href={`/dashboard/players/${player.id}`} className="font-semibold transition hover:text-primary hover:underline">
+              {player.name}
+            </Link>
           </div>
           <span
             className={cn(

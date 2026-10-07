@@ -88,6 +88,7 @@ export function ProposeTradeForm({
   otherMembers: TradeMember[];
   injuriesByName: Map<string, InjuryRow>;
 }) {
+  // Form state
   const [recipientId, setRecipientId] = useState<string>(otherMembers[0]?.id ?? "");
   const [giving, setGiving] = useState<Set<number>>(new Set());
   const [receiving, setReceiving] = useState<Set<number>>(new Set());
@@ -98,6 +99,7 @@ export function ProposeTradeForm({
 
   const recipient = otherMembers.find((m) => m.id === recipientId);
 
+  // Toggle a player ID in a Set, creating a new Set to trigger re-render.
   function toggle(set: Set<number>, setFn: (s: Set<number>) => void, id: number) {
     const next = new Set(set);
     if (next.has(id)) next.delete(id);
@@ -105,6 +107,7 @@ export function ProposeTradeForm({
     setFn(next);
   }
 
+  // Evaluate the trade based on the selected players, memoizing the result for performance.
   const evaluation = useMemo(() => {
     const givingPlayers = myMember.roster.filter((p) => giving.has(p.id));
     const receivingPlayers = (recipient?.roster ?? []).filter((p) => receiving.has(p.id));
@@ -115,6 +118,7 @@ export function ProposeTradeForm({
     );
   }, [giving, receiving, myMember.roster, recipient, injuriesByName]);
 
+  // Handle form submission, sending the trade proposal to the server and updating state based on the response.
   function handleSubmit() {
     if (!recipient) return;
     setError(null);
@@ -139,6 +143,7 @@ export function ProposeTradeForm({
     });
   }
 
+  // If there are no other members in the league, show a message instead of the form.
   if (otherMembers.length === 0) {
     return (
       <Card>
@@ -150,6 +155,7 @@ export function ProposeTradeForm({
     );
   }
 
+  // Render the trade proposal form, including player selection, trade evaluation, and submission controls.
   return (
     <Card>
       <CardHeader>

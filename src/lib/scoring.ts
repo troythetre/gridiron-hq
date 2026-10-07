@@ -37,6 +37,7 @@ const INJURY_PENALTY: Record<Exclude<InjuryStatus, null>, number> = {
   MONITOR: 1,
 };
 
+
 export function scorePlayer(input: {
   name: string;
   pos: string;
@@ -47,12 +48,14 @@ export function scorePlayer(input: {
   injuryStatus?: InjuryStatus;
   injuryNote?: string;
 }): ScoredPlayer {
+  // Trend is the difference between Week 2 and Week 1 points, if both are available.
   const trend =
     input.wk1_pts != null && input.wk2_pts != null ? input.wk2_pts - input.wk1_pts : 0;
   const injuryStatus = input.injuryStatus ?? null;
   const penalty = injuryStatus ? INJURY_PENALTY[injuryStatus] : 0;
   const score = Math.round((input.avg_pts + trend * TREND_WEIGHT - penalty) * 100) / 100;
 
+  // Reasons are a human-readable explanation of the score, shown in the UI.
   const reasons: string[] = [
     `${input.avg_pts.toFixed(1)} pts/game average`,
   ];

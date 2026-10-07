@@ -11,6 +11,13 @@ export async function getPlayers(): Promise<PlayerRow[]> {
   return data ?? [];
 }
 
+export async function getPlayerById(id: number): Promise<PlayerRow | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("players").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function getInjuries(): Promise<InjuryRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("injuries").select("*").order("id");

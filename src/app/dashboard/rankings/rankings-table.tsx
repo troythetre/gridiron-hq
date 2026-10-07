@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { PlayerRow } from "@/lib/types";
 import { PosBadge } from "@/components/pos-badge";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -59,7 +61,12 @@ export function RankingsTable({ players }: { players: PlayerRow[] }) {
             {filtered.map((p) => (
               <tr key={p.id} className="border-b border-border/60 last:border-0 hover:bg-border/10">
                 <td className="px-4 py-2.5 text-muted">{p.overall_rank}</td>
-                <td className="px-4 py-2.5 font-medium">{p.name}</td>
+                <td className="px-4 py-2.5 font-medium">
+                  <Link href={`/dashboard/players/${p.id}`} className="group inline-flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                    <PlayerAvatar name={p.name} team={p.team} position={p.pos} size={38} className="shrink-0 rounded-full transition duration-200 group-hover:scale-105" />
+                    <span className="transition group-hover:text-primary">{p.name}</span>
+                  </Link>
+                </td>
                 <td className="px-4 py-2.5">
                   <PosBadge pos={p.pos} />
                 </td>

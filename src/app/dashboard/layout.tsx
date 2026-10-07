@@ -3,14 +3,16 @@ import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
+import { GridironAssistant } from "@/components/gridiron-assistant";
 import {
-  LayoutDashboard, Trophy, Swords, Users2, Siren, Newspaper, ShieldAlert, LogOut,
+  LayoutDashboard, Trophy, Swords, Users2, Siren, Newspaper, ShieldAlert, LogOut, Search,
   RefreshCw, ArrowLeftRight, ClipboardList,
 } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
+  { href: "/dashboard/search", label: "Search", icon: Search },
   { href: "/dashboard/start-sit", label: "Start/Sit", icon: Swords },
   { href: "/dashboard/leagues", label: "My Team", icon: Users2 },
   { href: "/dashboard/team-review", label: "Team Review", icon: ClipboardList },
@@ -81,6 +83,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </nav>
         <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8">{children}</main>
       </div>
+      <GridironAssistant />
     </div>
   );
 }
