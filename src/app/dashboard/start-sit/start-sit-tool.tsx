@@ -7,7 +7,10 @@ import { compare, scorePlayer, type InjuryStatus } from "@/lib/scoring";
 import { PosBadge, StatusBadge } from "@/components/pos-badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Swords } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function toScoreInput(p: PlayerRow, injury?: InjuryRow) {
@@ -33,6 +36,15 @@ export function StartSitTool({
   const sorted = useMemo(() => [...players].sort((a, b) => a.name.localeCompare(b.name)), [players]);
   const [aName, setAName] = useState<string>(sorted[0]?.name ?? "");
   const [bName, setBName] = useState<string>(sorted[1]?.name ?? "");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const searchResults = useMemo(() => {
+    const needle = searchQuery.trim().toLowerCase();
+    if (!needle) return sorted.slice(0, 50);
+    return sorted
+      .filter((player) => `${player.name} ${player.team} ${player.pos}`.toLowerCase().includes(needle))
+      .slice(0, 50);
+  }, [sorted, searchQuery]);
 
   const playerA = sorted.find((p) => p.name === aName);
   const playerB = sorted.find((p) => p.name === bName);
@@ -48,42 +60,108 @@ export function StartSitTool({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <PlayerPicker label="Player A" value={aName} onChange={setAName} players={sorted} />
-        <PlayerPicker label="Player B" value={bName} onChange={setBName} players={sorted} />
-      </div>
+      <Tabs defaultValue="compare">
+        <TabsList aria-label="Start/Sit tools">
+          <TabsTrigger value="compare">Compare</TabsTrigger>
+          <TabsTrigger value="search">Search</TabsTrigger>
+        </TabsList>
 
-      {result && playerA && playerB && (
-        <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-[1fr_auto_1fr]">
-          <ResultCard
-            player={playerA}
-            scored={result.winner.name === playerA.name ? result.winner : result.loser}
-            isWinner={result.winner.name === playerA.name}
-            injury={injuriesByName[playerA.name]}
-          />
-          <div className="flex flex-col items-center justify-center gap-1 text-muted">
-            <Swords className="h-6 w-6" />
-            <span className="text-xs">margin: {Math.abs(result.margin).toFixed(1)} pts</span>
+        <TabsContent value="compare" className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <PlayerPicker label="Player A" value={aName} onChange={setAName} players={sorted} />
+            <PlayerPicker label="Player B" value={bName} onChange={setBName} players={sorted} />
           </div>
-          <ResultCard
-            player={playerB}
-            scored={result.winner.name === playerB.name ? result.winner : result.loser}
-            isWinner={result.winner.name === playerB.name}
-            injury={injuriesByName[playerB.name]}
-          />
-        </div>
-      )}
 
-      <Card>
-        <CardContent className="p-4 text-sm text-muted">
-          <p className="font-medium text-foreground">How this works</p>
-          <p className="mt-1">
-            Score = season avg points/game + (Week-over-week trend × 0.3) − an injury-status penalty.
-            It&apos;s intentionally simple and shown in full above each player&apos;s card, so you can
-            see exactly why the engine picked a winner instead of trusting a black box.
-          </p>
-        </CardContent>
-      </Card>
+          {result && playerA && playerB && (
+            <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-[1fr_auto_1fr]">
+              <ResultCard
+                player={playerA}
+                scored={result.winner.name === playerA.name ? result.winner : result.loser}
+                isWinner={result.winner.name === playerA.name}
+                injury={injuriesByName[playerA.name]}
+              />
+              <div className="flex flex-col items-center justify-center gap-1 text-muted">
+                <Swords className="h-6 w-6" />
+                <span className="text-xs">margin: {Math.abs(result.margin).toFixed(1)} pts</span>
+              </div>
+              <ResultCard
+                player={playerB}
+                scored={result.winner.name === playerB.name ? result.winner : result.loser}
+                isWinner={result.winner.name === playerB.name}
+                injury={injuriesByName[playerB.name]}
+              />
+            </div>
+          )}
+
+          <Card>
+            <CardContent className="p-4 text-sm text-muted">
+              <p className="font-medium text-foreground">How this works</p>
+              <p className="mt-1">
+                Score = season avg points/game + (Week-over-week trend × 0.3) − an injury-status penalty.
+                It&apos;s intentionally simple and shown in full above each player&apos;s card, so you can
+                see exactly why the engine picked a winner instead of trusting a black box.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="search">
+          <Card>
+            <CardContent className="space-y-4 p-4">
+              <label className="relative block">
+                <Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search player, team, or position…"
+                  className="h-11 rounded-full bg-background pl-10"
+                  aria-label="Search players by name, team, or position"
+                />
+              </label>
+              <p className="text-xs text-muted">
+                {searchQuery.trim() ? `${searchResults.length} matching players` : `Showing up to ${searchResults.length} players`}
+              </p>
+              {searchResults.length > 0 ? (
+                <div className="divide-y divide-border rounded-xl border border-border">
+                  {searchResults.map((player) => (
+                    <div key={player.id} className="flex flex-wrap items-center gap-3 p-3 sm:flex-nowrap">
+                      <PosBadge pos={player.pos} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold">{player.name}</p>
+                        <p className="text-xs text-muted">{player.team} · {player.avg_pts.toFixed(1)} avg pts</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={aName === player.name ? "default" : "secondary"}
+                          aria-pressed={aName === player.name}
+                          onClick={() => setAName(player.name)}
+                        >
+                          Player A
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={bName === player.name ? "default" : "secondary"}
+                          aria-pressed={bName === player.name}
+                          onClick={() => setBName(player.name)}
+                        >
+                          Player B
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">
+                  No players match that search. Try a name, team abbreviation, or position.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
