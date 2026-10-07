@@ -126,8 +126,9 @@ export default async function DashboardOverview() {
           <CardContent className="space-y-2">
             {latestNews.map((n) => (
               <div key={n.id} className="rounded-md px-2 py-1.5 hover:bg-border/20">
-                <p className="text-sm font-medium">{n.headline}</p>
+                <p className="text-sm font-medium">{n.article_url ? <a href={n.article_url} target="_blank" rel="noreferrer" className="hover:text-primary">{n.headline}</a> : n.headline}</p>
                 <p className="text-xs text-muted">{n.item_date}</p>
+                {n.source && <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">{n.article_url ? n.source : n.source_url ? <a href={n.source_url} target="_blank" rel="noreferrer">{n.source}</a> : n.source}</p>}
               </div>
             ))}
           </CardContent>

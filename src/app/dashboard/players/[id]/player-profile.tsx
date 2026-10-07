@@ -60,7 +60,7 @@ export function PlayerProfile({
   const totalTds = sum(weeks, "passingTds") + sum(weeks, "rushingTds") + sum(weeks, "receivingTds");
   const targets = sum(weeks, "targets");
   const carries = sum(weeks, "carries");
-  const [teamPrimary, teamSecondary] = teamColors(player.team);
+  const [teamPrimary, teamSecondary] = teamColors();
   const photo = PLAYER_PHOTOS[player.name] ?? profile?.headshotUrl ?? null;
   const heroStyle: CSSProperties = {
     "--team-color": teamPrimary,
@@ -221,7 +221,7 @@ export function PlayerProfile({
             <Card className="border-white/10 bg-surface/75">
               <CardContent className="p-5">
                 <SectionHeading eyebrow="Usage profile" title="Touches & targets" compact />
-                <TrendChart weeks={weeks} valueFor={(week) => (week.carries ?? 0) + (week.targets ?? 0)} unit="opps" tone="blue" />
+                <TrendChart weeks={weeks} valueFor={(week) => (week.carries ?? 0) + (week.targets ?? 0)} unit="opps" tone="muted" />
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <MiniStat label="Carries" value={carries.toString()} />
                   <MiniStat label="Targets" value={targets.toString()} />
@@ -240,11 +240,11 @@ export function PlayerProfile({
           <div className="grid gap-5 xl:grid-cols-2">
             <Card className="border-white/10 bg-surface/75"><CardContent className="p-5 sm:p-6">
               <div className="flex items-start justify-between"><SectionHeading eyebrow="Fantasy output" title="Weekly half-PPR" compact /><span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-black text-primary">PTS</span></div>
-              <TrendChart weeks={weeks} valueFor={(week) => week.fantasyPoints ?? 0} unit="pts" tone="gold" tall />
+              <TrendChart weeks={weeks} valueFor={(week) => week.fantasyPoints ?? 0} unit="pts" tone="bright" tall />
             </CardContent></Card>
             <Card className="border-white/10 bg-surface/75"><CardContent className="p-5 sm:p-6">
               <div className="flex items-start justify-between"><SectionHeading eyebrow="Opportunity" title="Yards from scrimmage" compact /><span className="rounded-full bg-sky-400/10 px-2.5 py-1 text-[10px] font-black text-sky-300">YDS</span></div>
-              <TrendChart weeks={weeks} valueFor={(week) => (week.rushingYards ?? 0) + (week.receivingYards ?? 0)} unit="yds" tone="blue" tall />
+              <TrendChart weeks={weeks} valueFor={(week) => (week.rushingYards ?? 0) + (week.receivingYards ?? 0)} unit="yds" tone="muted" tall />
             </CardContent></Card>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
@@ -355,7 +355,7 @@ function TrendChart({ weeks, valueFor, unit, tone, tall = false }: {
   weeks: PlayerWeekStat[];
   valueFor: (week: PlayerWeekStat) => number;
   unit: string;
-  tone: "gold" | "blue";
+  tone: "bright" | "muted";
   tall?: boolean;
 }) {
   const values = weeks.map((week) => Math.max(0, valueFor(week)));
@@ -366,7 +366,7 @@ function TrendChart({ weeks, valueFor, unit, tone, tall = false }: {
   const baseY = chartHeight - 24;
   const startX = 30;
   const step = (chartWidth - 60) / weeks.length;
-  const color = tone === "gold" ? "#ffd400" : "#60a5fa";
+  const color = tone === "bright" ? "#f5f5f5" : "#737373";
   const points = values.map((value, i) => `${startX + step * i + step / 2},${baseY - (value / maxValue) * (chartHeight - 55)}`).join(" ");
 
   return <div className="mt-4 overflow-x-auto">
@@ -375,7 +375,7 @@ function TrendChart({ weeks, valueFor, unit, tone, tall = false }: {
         const y = baseY - fraction * (chartHeight - 55);
         return <g key={fraction}><line x1="22" x2={chartWidth - 12} y1={y} y2={y} stroke="rgba(255,255,255,.09)" strokeDasharray="3 5" /><text x="0" y={y + 3} fill="rgba(255,255,255,.35)" fontSize="9">{Math.round(maxValue * fraction)}</text></g>;
       })}
-      <polyline points={points} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity={tone === "gold" ? ".72" : ".55"} />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity={tone === "bright" ? ".72" : ".55"} />
       {weeks.map((week, index) => {
         const value = values[index];
         const x = startX + step * index + step / 2;
@@ -455,9 +455,9 @@ function NewsCard({ item }: { item: NewsItemRow }) {
   return <Card className="group border-white/10 bg-surface/75 transition hover:border-primary/30">
     <CardContent className="p-5">
       <div className="flex items-start justify-between gap-4"><span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-primary">Player update</span><span className="text-[10px] text-muted">{item.item_date ?? "Recent"}</span></div>
-      <h3 className="mt-4 text-lg font-bold leading-snug transition group-hover:text-primary">{item.headline}</h3>
+      <h3 className="mt-4 text-lg font-bold leading-snug transition group-hover:text-primary">{item.article_url ? <a href={item.article_url} target="_blank" rel="noreferrer">{item.headline}<ArrowUpRight className="ml-1 inline h-4 w-4" /></a> : item.headline}</h3>
       {item.body && <p className="mt-2 line-clamp-4 text-sm leading-6 text-muted">{item.body}</p>}
-      {item.source && <p className="mt-4 border-t border-border/70 pt-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Source · {item.source}</p>}
+      {item.source && <p className="mt-4 border-t border-border/70 pt-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Source · {item.article_url ? item.source : item.source_url ? <a href={item.source_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">{item.source}</a> : item.source}</p>}
     </CardContent>
   </Card>;
 }

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "news:fetch": "node scripts/fetch-fantasy-news.mjs",
+    "videos:fetch": "node scripts/fetch-fantasy-videos.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

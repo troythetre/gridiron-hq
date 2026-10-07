@@ -44,6 +44,41 @@ export interface NewsItemRow {
   body: string | null;
   item_date: string | null;
   source: string | null;
+  article_url?: string | null;
+  source_url?: string | null;
+  topics?: string[] | null;
+}
+
+export interface MarketHistoryPoint {
+  week: number;
+  price: number;
+}
+
+export interface PlayerMarketRow {
+  id: string;
+  name: string;
+  pos: string;
+  team: string;
+  price: number;
+  changePct: number;
+  history: MarketHistoryPoint[];
+  catalyst: string | null;
+  catalystUrl: string | null;
+  games: number;
+  averagePoints: number;
+  volatility: "LOW" | "MEDIUM" | "HIGH";
+  isRanked: boolean;
+}
+
+export interface FantasyVideoRow {
+  video_id: string;
+  title: string;
+  description: string | null;
+  channel_title: string;
+  published_at: string;
+  thumbnail_url: string;
+  watch_url: string;
+  topics: string[];
 }
 
 export interface LeagueRow {

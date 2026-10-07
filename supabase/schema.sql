@@ -51,8 +51,15 @@ create table if not exists public.news_items (
   body text,
   item_date date,
   source text,
+  article_url text,
+  source_url text,
+  topics text[] not null default '{}',
   created_at timestamptz not null default now()
 );
+
+create unique index if not exists idx_news_items_article_url
+  on public.news_items (article_url);
+create index if not exists idx_news_items_topics on public.news_items using gin (topics);
 
 -- ============================================================================
 -- User / league / roster tables

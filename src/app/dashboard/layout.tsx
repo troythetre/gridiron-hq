@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { GridironAssistant } from "@/components/gridiron-assistant";
 import {
-  LayoutDashboard, Trophy, Swords, Users2, Siren, Newspaper, ShieldAlert, LogOut, Search,
+  LayoutDashboard, Trophy, Swords, Users2, Siren, Newspaper, ShieldAlert, LogOut, Search, ChartCandlestick, MessagesSquare, Video,
   RefreshCw, ArrowLeftRight, ClipboardList,
 } from "lucide-react";
 
@@ -13,6 +13,7 @@ const NAV = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
   { href: "/dashboard/search", label: "Search", icon: Search },
+  { href: "/dashboard/market", label: "Player Market", icon: ChartCandlestick },
   { href: "/dashboard/start-sit", label: "Start/Sit", icon: Swords },
   { href: "/dashboard/leagues", label: "My Team", icon: Users2 },
   { href: "/dashboard/team-review", label: "Team Review", icon: ClipboardList },
@@ -20,6 +21,9 @@ const NAV = [
   { href: "/dashboard/sync", label: "Sync", icon: RefreshCw },
   { href: "/dashboard/waiver", label: "Waiver Wire", icon: Siren },
   { href: "/dashboard/news", label: "News", icon: Newspaper },
+  { href: "/dashboard/fantasy-feed", label: "Fantasy Feed", icon: Video },
+  { href: "/dashboard/community", label: "The Huddle", icon: MessagesSquare },
+  { href: "/dashboard/messages", label: "Messages", icon: MessagesSquare },
   { href: "/dashboard/injuries", label: "Injuries", icon: ShieldAlert },
 ];
 

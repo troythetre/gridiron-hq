@@ -17,7 +17,7 @@ export function PlayerAvatar({
   className?: string;
 }) {
   const instanceId = useId().replace(/:/g, "");
-  const [primary, secondary] = teamColors(team);
+  const [primary, secondary] = teamColors();
   const jersey = number && number > 0 ? number : position === "QB" ? 1 : 0;
   const initials = name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("");
   const nameSeed = [...name].reduce((seed, character) => seed + character.charCodeAt(0), 0);

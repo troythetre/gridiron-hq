@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { PlayerRow, InjuryRow, WaiverPickRow, NewsItemRow } from "@/lib/types";
+import type { PlayerRow, InjuryRow, WaiverPickRow, NewsItemRow, FantasyVideoRow } from "@/lib/types";
 
 export async function getPlayers(): Promise<PlayerRow[]> {
   const supabase = await createClient();
@@ -40,7 +40,20 @@ export async function getNews(): Promise<NewsItemRow[]> {
   const { data, error } = await supabase
     .from("news_items")
     .select("*")
-    .order("item_date", { ascending: false });
+    .order("item_date", { ascending: false })
+    .limit(200);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getFantasyVideos(): Promise<FantasyVideoRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("fantasy_videos")
+    .select("*")
+    .order("published_at", { ascending: false })
+    .limit(60);
+  if (error?.code === "42P01") return [];
   if (error) throw error;
   return data ?? [];
 }
