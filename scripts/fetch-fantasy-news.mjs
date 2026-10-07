@@ -9,6 +9,7 @@ if (!supabaseUrl || !serviceKey) {
 const feeds = [
   { name: "ESPN", feed: "https://www.espn.com/espn/rss/nfl/news", homepage: "https://www.espn.com/nfl/" },
   { name: "FantasyPros", feed: "https://www.fantasypros.com/feed/", homepage: "https://www.fantasypros.com/" },
+  { name: "CBS Sports", feed: "https://www.cbssports.com/xml/rss", homepage: "https://www.cbssports.com/nfl/" },
 ];
 
 const teamTerms = [
@@ -87,15 +88,14 @@ function topicsFor(item) {
 }
 
 function cleanExcerpt(value) {
-  return decodeXml(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 420);
+  return decodeXml(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 5000);
 }
 
 const results = await Promise.allSettled(feeds.map(async (feed) => {
   const response = await fetch(feed.feed, { headers: { "user-agent": "GridironHQ-NewsBot/1.0 (+https://github.com/troythetre/gridiron-hq)" }, signal: AbortSignal.timeout(15000) });
   if (!response.ok) throw new Error(`${feed.name} feed returned HTTP ${response.status}`);
   const xml = await response.text();
-  const items = parseItems(xml).slice(0, 40).map((item) => ({ ...item, topics: topicsFor(item) }))
-    .filter((item) => item.topics.length > 0)
+  const items = parseItems(xml).slice(0, 100).map((item) => ({ ...item, topics: topicsFor(item) }))
     .map((item) => ({
       headline: item.headline.slice(0, 300),
       body: cleanExcerpt(item.excerpt),

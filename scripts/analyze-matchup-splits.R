@@ -58,6 +58,7 @@ for (season in parse_seasons(seasons_arg)) {
     next
   }
 
+  # Check that the required columns are present in the PBP data
   required_pbp <- c("game_id", "play_id", "season", "week", "season_type", "posteam", "defteam",
                     "receiver_player_id", "receiver_player_name", "pass_attempt", "complete_pass",
                     "yards_gained", "pass_touchdown", "air_yards")
@@ -66,6 +67,7 @@ for (season in parse_seasons(seasons_arg)) {
     stop(sprintf("PBP season %s is missing columns: %s", season, paste(missing_pbp, collapse = ", ")))
   }
 
+  # Check that the required columns are present in the participation data
   targets <- dplyr::filter(
     pbp,
     season_type == "REG",
@@ -88,6 +90,7 @@ for (season in parse_seasons(seasons_arg)) {
     )
   targets <- dplyr::left_join(targets, matchup, by = c("game_id", "play_id"))
 
+  # Check that the required columns are present in the charting data
   if (!is.null(charting)) {
     ftn <- charting |>
       dplyr::transmute(
@@ -105,6 +108,7 @@ for (season in parse_seasons(seasons_arg)) {
     targets$is_rpo <- NA
   }
 
+# Create a blitz bucket variable to categorize plays based on the number of blitzers
   targets$blitz_bucket <- ifelse(
     is.na(targets$ftn_blitzers), "UNKNOWN",
     ifelse(targets$ftn_blitzers > 0, "BLITZ", "NO_BLITZ")
@@ -117,6 +121,7 @@ for (season in parse_seasons(seasons_arg)) {
 
 if (length(play_rows) == 0) stop("No complete seasons found. Run scripts/fetch-nfl-data.R first.")
 
+# Combine all the play rows into a single data frame and compute the splits
 target_plays <- dplyr::bind_rows(play_rows)
 splits <- target_plays |>
   dplyr::group_by(

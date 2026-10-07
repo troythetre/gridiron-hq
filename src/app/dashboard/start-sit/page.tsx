@@ -9,7 +9,7 @@ import { MembershipWall } from "@/components/membership-wall";
 export default async function StartSitPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !await hasActiveMembership(user.id)) return <MembershipWall feature="Start/Sit" />;
+  if (!user || !await hasActiveMembership(user.id, user.email)) return <MembershipWall feature="Start/Sit" />;
   const [players, injuries, { data: sleeperRosters }, { data: espnRosters }] = await Promise.all([
     getPlayers(),
     getInjuries(),

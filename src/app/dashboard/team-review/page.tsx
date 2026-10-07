@@ -111,7 +111,7 @@ function normalizePosition(value: string) {
 export default async function TeamReviewPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !await hasActiveMembership(user.id)) return <MembershipWall feature="Team Review" />;
+  if (!user || !await hasActiveMembership(user.id, user.email)) return <MembershipWall feature="Team Review" />;
   const [{ data: sleeperRows }, { data: espnRows }, players, injuries, waiverPicks] = await Promise.all([
     supabase.from("sleeper_rosters").select("*").eq("profile_id", user!.id).order("synced_at", { ascending: false }),
     supabase.from("espn_rosters").select("*").eq("profile_id", user!.id).order("synced_at", { ascending: false }),

@@ -110,7 +110,7 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
                 <td className="px-4 py-2.5 text-right text-muted">{p.displayWk2?.toFixed(1) ?? "-"}</td>
                 <td className="px-4 py-2.5 text-right font-semibold">{p.displayTotal.toFixed(1)}</td>
                 <td className="px-4 py-2.5 text-right text-muted">{p.displayAvg.toFixed(1)}</td>
-                <td className="px-4 py-2.5 text-right text-muted">{p.positionRank}</td>
+                <td className="px-4 py-2.5 text-right"><PositionRank rank={p.positionRank} /></td>
               </tr>
             ))}
             {filtered.length === 0 && (
@@ -125,4 +125,23 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
       </div>
     </div>
   );
+}
+
+function PositionRank({ rank }: { rank: number }) {
+  const styles = [
+    "border-amber-300/70 bg-gradient-to-br from-amber-200/25 via-amber-400/15 to-yellow-700/20 text-amber-200 shadow-[0_0_14px_rgba(251,191,36,.2)]",
+    "border-slate-200/60 bg-gradient-to-br from-slate-100/20 to-slate-500/10 text-slate-200",
+    "border-orange-400/60 bg-gradient-to-br from-orange-300/20 to-orange-700/10 text-orange-300",
+    "border-sky-400/40 bg-sky-400/10 text-sky-300",
+    "border-cyan-400/40 bg-cyan-400/10 text-cyan-300",
+    "border-teal-400/40 bg-teal-400/10 text-teal-300",
+    "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
+    "border-violet-400/40 bg-violet-400/10 text-violet-300",
+    "border-fuchsia-400/40 bg-fuchsia-400/10 text-fuchsia-300",
+    "border-rose-400/40 bg-rose-400/10 text-rose-300",
+  ];
+  if (rank < 1 || rank > 10) return <span className="text-muted">{rank}</span>;
+  return <span title={`Position rank ${rank}`} className={`inline-flex min-w-9 items-center justify-center gap-1 rounded-lg border px-2 py-1 font-black tabular-nums ${styles[rank - 1]}`}>
+    {rank === 1 && <span aria-hidden="true">♛</span>}#{rank}
+  </span>;
 }

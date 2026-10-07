@@ -39,6 +39,7 @@ export function PlayerProfile({
   injury: InjuryRow | null;
 }) {
   const [tab, setTab] = useState<ProfileTab>("stats");
+  const [trendSeason, setTrendSeason] = useState(profile?.season ?? new Date().getFullYear());
   const [copied, setCopied] = useState(false);
   const weeks = useMemo(() => {
     if (profile?.weeks?.length) return profile.weeks;
@@ -60,6 +61,10 @@ export function PlayerProfile({
   const totalTds = sum(weeks, "passingTds") + sum(weeks, "rushingTds") + sum(weeks, "receivingTds");
   const targets = sum(weeks, "targets");
   const carries = sum(weeks, "carries");
+  const trendSeasons = (profile?.history?.length
+    ? profile.history
+    : [{ season: profile?.season ?? new Date().getFullYear(), weeks }]).slice(-5);
+  const selectedTrend = trendSeasons.find((season) => season.season === trendSeason) ?? trendSeasons.at(-1)!;
   const [teamPrimary, teamSecondary] = teamColors();
   const photo = PLAYER_PHOTOS[player.name] ?? profile?.headshotUrl ?? null;
   const heroStyle: CSSProperties = {
@@ -237,20 +242,24 @@ export function PlayerProfile({
       {tab === "trends" && (
         <div className="space-y-5">
           <SectionHeading eyebrow="Film room / trend lab" title="How the production is moving" />
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface/60 p-3" aria-label="Trend season filter">
+            <span className="mr-1 text-[10px] font-black uppercase tracking-wider text-muted">Season</span>
+            {trendSeasons.map(({ season }) => <button key={season} type="button" onClick={() => setTrendSeason(season)} aria-pressed={selectedTrend.season === season} className={cn("rounded-full border px-3 py-1.5 text-xs font-bold transition", selectedTrend.season === season ? "border-primary bg-primary/15 text-primary" : "border-border text-muted hover:text-foreground")}>{season}</button>)}
+          </div>
           <div className="grid gap-5 xl:grid-cols-2">
             <Card className="border-white/10 bg-surface/75"><CardContent className="p-5 sm:p-6">
-              <div className="flex items-start justify-between"><SectionHeading eyebrow="Fantasy output" title="Weekly half-PPR" compact /><span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-black text-primary">PTS</span></div>
-              <TrendChart weeks={weeks} valueFor={(week) => week.fantasyPoints ?? 0} unit="pts" tone="bright" tall />
+              <div className="flex items-start justify-between"><SectionHeading eyebrow={`${selectedTrend.season} fantasy output`} title="Weekly half-PPR" compact /><span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-black text-primary">PTS</span></div>
+              <TrendChart weeks={selectedTrend.weeks} valueFor={(week) => week.fantasyPoints ?? 0} unit="pts" tone="bright" tall />
             </CardContent></Card>
             <Card className="border-white/10 bg-surface/75"><CardContent className="p-5 sm:p-6">
-              <div className="flex items-start justify-between"><SectionHeading eyebrow="Opportunity" title="Yards from scrimmage" compact /><span className="rounded-full bg-sky-400/10 px-2.5 py-1 text-[10px] font-black text-sky-300">YDS</span></div>
-              <TrendChart weeks={weeks} valueFor={(week) => (week.rushingYards ?? 0) + (week.receivingYards ?? 0)} unit="yds" tone="muted" tall />
+              <div className="flex items-start justify-between"><SectionHeading eyebrow={`${selectedTrend.season} opportunity`} title="Yards from scrimmage" compact /><span className="rounded-full bg-sky-400/10 px-2.5 py-1 text-[10px] font-black text-sky-300">YDS</span></div>
+              <TrendChart weeks={selectedTrend.weeks} valueFor={(week) => (week.rushingYards ?? 0) + (week.receivingYards ?? 0)} unit="yds" tone="muted" tall />
             </CardContent></Card>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            <InsightCard label="Recent points" value={trendText(weeks)} detail="Last game compared with the prior game" icon={<TrendingUp />} />
-            <InsightCard label="Target share" value={formatPercent(mean(weeks.map((week) => week.targetShare)))} detail="Average weekly share of team targets" icon={<CircleDot />} />
-            <InsightCard label="Air-yards share" value={formatPercent(mean(weeks.map((week) => week.airYardsShare)))} detail="Average weekly share of team air yards" icon={<ArrowUpRight />} />
+            <InsightCard label="Recent points" value={trendText(selectedTrend.weeks)} detail="Last game compared with the prior game" icon={<TrendingUp />} />
+            <InsightCard label="Target share" value={formatPercent(mean(selectedTrend.weeks.map((week) => week.targetShare)))} detail="Average weekly share of team targets" icon={<CircleDot />} />
+            <InsightCard label="Air-yards share" value={formatPercent(mean(selectedTrend.weeks.map((week) => week.airYardsShare)))} detail="Average weekly share of team air yards" icon={<ArrowUpRight />} />
           </div>
           <p className="rounded-xl border border-border/70 bg-surface/50 px-4 py-3 text-xs leading-5 text-muted">
             Trend charts describe the games already played. They are not a projection; use matchup, injury, and role context before making a start/sit call.
@@ -294,7 +303,7 @@ export function PlayerProfile({
           </div>
           <Card className="border-primary/20 bg-primary/[.04]"><CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-primary">Player comparison</p><p className="mt-1 text-sm text-muted">See how {player.name} stacks up against the rest of the field.</p></div>
-            <Link href="/dashboard/rankings" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-black uppercase tracking-wider text-black transition hover:brightness-110">Open rankings <ChevronRight className="h-4 w-4" /></Link>
+            <Link href={player.id > 0 ? `/dashboard/compare?player=${player.id}` : "/dashboard/compare"} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-black uppercase tracking-wider text-black transition hover:brightness-110">Compare players <ChevronRight className="h-4 w-4" /></Link>
           </CardContent></Card>
         </div>
       )}

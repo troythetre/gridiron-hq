@@ -41,4 +41,5 @@ export interface PlayerProfileData {
   draftTeam: string | null;
   status: string | null;
   weeks: PlayerWeekStat[];
+  history?: { season: number; weeks: Pick<PlayerWeekStat, "week" | "fantasyPoints" | "rushingYards" | "receivingYards" | "targetShare" | "airYardsShare">[] }[];
 }

@@ -2,6 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 
 export type Membership = { status: string; current_period_end: string | null };
 
+const OWNER_EMAIL = "troythetre@gmail.com";
+
+export function hasOwnerAccess(email?: string | null) {
+  return email?.trim().toLowerCase() === OWNER_EMAIL;
+}
+
 export async function getMembership(userId: string): Promise<Membership | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -13,7 +19,8 @@ export async function getMembership(userId: string): Promise<Membership | null> 
   return data;
 }
 
-export async function hasActiveMembership(userId: string) {
+export async function hasActiveMembership(userId: string, email?: string | null) {
+  if (hasOwnerAccess(email)) return true;
   // Keep premium routes reviewable in local development before Stripe is configured.
   if (process.env.NODE_ENV !== "production" && !process.env.STRIPE_SECRET_KEY) return true;
   const membership = await getMembership(userId);

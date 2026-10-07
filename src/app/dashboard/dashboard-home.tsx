@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowDownRight, ArrowRight, ArrowUpRight, BookOpen, MessageCircle, Newspaper, Search, ShieldAlert, Sparkles, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, BookOpen, ChevronDown, MessageCircle, Newspaper, Search, ShieldAlert, Sparkles, TrendingUp } from "lucide-react";
 import type { InjuryRow, NewsItemRow, FantasyVideoRow, WaiverPickRow, PlayerMarketRow } from "@/lib/types";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { PosBadge, StatusBadge } from "@/components/pos-badge";
@@ -11,16 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFantasyPreferences, pointsForFormat } from "@/components/fantasy-preferences";
 import type { OverviewPlayer, OverviewPost, OverviewTeam } from "./page";
+import type { RecommendedTrade } from "@/lib/trade-recommendations";
+import { teamColors } from "@/lib/player-visuals";
 
 type PersonalizedNews = NewsItemRow & { onTeam: boolean; matchingPlayers: string[] };
 
 export function DashboardHome({
-  players, injuries, waiver, news, videos, teams, trending, huddlePosts,
+  players, injuries, waiver, news, videos, teams, trending, recommendedTrades, huddlePosts,
 }: {
   players: OverviewPlayer[]; injuries: InjuryRow[]; waiver: WaiverPickRow[]; news: PersonalizedNews[];
-  videos: FantasyVideoRow[]; teams: OverviewTeam[]; trending: PlayerMarketRow[]; huddlePosts: OverviewPost[];
+  videos: FantasyVideoRow[]; teams: OverviewTeam[]; trending: PlayerMarketRow[];
+  recommendedTrades: RecommendedTrade[]; huddlePosts: OverviewPost[];
 }) {
   const { scoring, mode } = useFantasyPreferences();
+  const [expandedNewsId, setExpandedNewsId] = useState<number | null>(null);
   const points = (player: OverviewPlayer) => pointsForFormat(player.avg_pts, player.receptionsPerGame, scoring);
   const leaders = [...players].sort((a, b) => {
     if (mode === "dynasty" && (a.yearsExperience ?? 99) !== (b.yearsExperience ?? 99)) return (a.yearsExperience ?? 99) - (b.yearsExperience ?? 99);
@@ -29,6 +34,10 @@ export function DashboardHome({
   const rosterNames = new Set(teams.flatMap((team) => team.players.map((player) => player.name.toLowerCase())));
   const rosterInjuries = injuries.filter((injury) => rosterNames.has(injury.name.toLowerCase())).slice(0, 4);
   const onTeamNews = news.filter((item) => item.onTeam);
+  const recentTdPlayers = players
+    .filter((player) => player.recentTdLast3 > 0)
+    .sort((a, b) => b.recentTdLast3 - a.recentTdLast3 || (b.latestTdWeek ?? 0) - (a.latestTdWeek ?? 0))
+    .slice(0, 6);
 
   return <div className="mx-auto max-w-7xl space-y-6 pb-8">
     <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_85%_0%,rgba(245,158,11,.14),transparent_42%),linear-gradient(130deg,#171717,#090909_60%,#151515)] p-6 sm:p-9">
@@ -48,6 +57,19 @@ export function DashboardHome({
       <StatTile label="Roster news" value={onTeamNews.length.toString()} detail="Stories tied to your players" icon={<Newspaper className="h-4 w-4" />} />
       <StatTile label="Trending" value={trending.filter((player) => player.changePct > 0).length.toString()} detail="Players gaining momentum" icon={<TrendingUp className="h-4 w-4" />} />
     </div>
+
+    <section className="space-y-4">
+      <SectionHeader title="Recent touchdowns" detail="Scored in the last three logged games" href="/dashboard/rankings" />
+      {recentTdPlayers.length ? (
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {recentTdPlayers.map((player) => <Link key={player.id} href={`/dashboard/players/${player.id}`} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:border-primary/40">
+            <PlayerAvatar name={player.name} team={player.team} position={player.pos} size={46} />
+            <span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold">{player.name}</span><span className="flex items-center gap-2"><PosBadge pos={player.pos} /><span className="text-[10px] text-muted">{player.team}{player.latestTdWeek ? ` · latest TD W${player.latestTdWeek}` : ""}</span></span></span>
+            <span className="font-display text-lg font-black text-primary">{player.recentTdLast3} TD{player.recentTdLast3 === 1 ? "" : "s"}</span>
+          </Link>)}
+        </div>
+      ) : <Card><CardContent className="p-4 text-sm text-muted">Recent touchdown totals will appear when weekly player logs are available.</CardContent></Card>}
+    </section>
 
     <div className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
       <section className="space-y-4">
@@ -70,11 +92,18 @@ export function DashboardHome({
       <section className="space-y-4">
         <SectionHeader title="News for your players" detail="Roster stories first" href="/dashboard/news" />
         <Card><CardContent className="divide-y divide-border p-2">
-          {news.slice(0, 4).map((item) => <Link key={item.id} href="/dashboard/news" className="block rounded-xl p-3 transition hover:bg-border/20">
-            <div className="mb-1 flex items-center justify-between gap-2"><span className="text-[9px] font-black uppercase tracking-wider text-primary">{item.onTeam ? `Your team${item.matchingPlayers.length ? ` · ${item.matchingPlayers.slice(0, 2).join(", ")}` : ""}` : item.source ?? "Fantasy news"}</span><span className="text-[10px] text-muted">{item.item_date ?? "Latest"}</span></div>
-            <p className="text-sm font-semibold leading-5">{item.headline}</p>
-            {item.body && <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">{item.body}</p>}
-          </Link>)}
+          {news.slice(0, 4).map((item) => {
+            const mentionedPlayers = teams.flatMap((team) => team.players)
+              .filter((player) => item.matchingPlayers.some((name) => normalizeName(name) === normalizeName(player.name)))
+              .filter((player, index, rows) => rows.findIndex((other) => normalizeName(other.name) === normalizeName(player.name)) === index);
+            return <DashboardNewsCard
+              key={item.id}
+              item={item}
+              players={mentionedPlayers}
+              expanded={expandedNewsId === item.id}
+              onToggle={() => setExpandedNewsId((current) => current === item.id ? null : item.id)}
+            />;
+          })}
           {news.length === 0 && <p className="p-5 text-sm text-muted">No news stories yet. Check back after the feed refreshes.</p>}
         </CardContent></Card>
       </section>
@@ -99,6 +128,32 @@ export function DashboardHome({
         </CardContent></Card>
       </section>
     </div>
+
+    <section className="space-y-4">
+      <SectionHeader title="Recommended trades" detail="Fair-value ideas based on native league depth and position needs" href="/dashboard/trades" />
+      {recommendedTrades.length ? (
+        <div className="grid gap-3 lg:grid-cols-3">
+          {recommendedTrades.map((trade) => <Card key={trade.key} className="border-cyan-400/20 bg-cyan-400/[.035]">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0"><CardTitle className="truncate text-base">{trade.leagueName}</CardTitle><CardDescription className="mt-1">Possible deal with {trade.otherTeamName}</CardDescription></div>
+                <span className="shrink-0 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-2.5 py-1 text-[10px] font-black text-cyan-200">FAIR · {Math.abs(trade.percentDiff).toFixed(1)}%</span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <TradeSide label="You give" player={trade.giving} />
+              <TradeSide label="You get" player={trade.receiving} />
+              <p className="border-t border-border/70 pt-3 text-xs leading-5 text-muted">{trade.reason}</p>
+            </CardContent>
+          </Card>)}
+        </div>
+      ) : (
+        <Card><CardContent className="p-4 text-sm leading-6 text-muted">
+          Trade ideas appear when you have a native league roster with a position surplus that matches another manager’s roster need. Sleeper and ESPN imports are read-only, so recommendations use leagues created or joined in Gridiron HQ.
+        </CardContent></Card>
+      )}
+      <p className="text-[10px] leading-4 text-muted">These are rule-based suggestions, not trade offers. Values use the app’s positional-scarcity and injury-adjusted trade heuristic.</p>
+    </section>
 
     <section className="space-y-4">
       <SectionHeader title="Film Study" detail="Fresh fantasy analysis and player breakdowns" href="/dashboard/fantasy-feed" />

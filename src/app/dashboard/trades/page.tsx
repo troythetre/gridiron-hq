@@ -20,7 +20,7 @@ export default async function TradesPage({
   const { league: leagueParam } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !await hasActiveMembership(user.id)) return <MembershipWall feature="Trade Calculator" />;
+  if (!user || !await hasActiveMembership(user.id, user.email)) return <MembershipWall feature="Trade Calculator" />;
 
   const { data: memberships } = await supabase
     .from("league_members")

@@ -35,13 +35,13 @@ export async function getWaiverPicks(): Promise<WaiverPickRow[]> {
   return data ?? [];
 }
 
-export async function getNews(): Promise<NewsItemRow[]> {
+export async function getNews(limit = 1000): Promise<NewsItemRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("news_items")
     .select("*")
     .order("item_date", { ascending: false })
-    .limit(200);
+    .limit(limit);
   if (error) throw error;
   return data ?? [];
 }

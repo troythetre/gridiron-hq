@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Logo } from "@/components/logo";
 import { Trophy, Swords, Users2, Siren, Newspaper, ShieldAlert } from "lucide-react";
+import { getNews } from "@/lib/data";
+import { NewsSlideshow } from "@/components/news-slideshow";
 
 const FEATURES = [
   { icon: Trophy, title: "Rankings", body: "Live positional and overall rankings built from real weekly scoring." },
@@ -14,7 +16,9 @@ const FEATURES = [
   { icon: ShieldAlert, title: "Injury Tracker", body: "Status, context, and who steps in next - color-coded by severity." },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const news = await getNews(5);
+
   return (
     <div className="flex-1">
       <header className="relative z-10 flex items-center justify-between px-6 py-5 sm:px-10">
@@ -59,6 +63,21 @@ export default function Home() {
               <Link href="/login">I already have one</Link>
             </Button>
           </div>
+        </div>
+      </section>
+
+      <section className="px-6 py-14 sm:px-10 sm:py-18">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-primary">Around the league</p>
+              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">Latest fantasy news</h2>
+            </div>
+            <Button asChild variant="ghost" className="shrink-0">
+              <Link href="/dashboard/news">All news</Link>
+            </Button>
+          </div>
+          <NewsSlideshow news={news} />
         </div>
       </section>
 
