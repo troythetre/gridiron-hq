@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 import {
   LayoutDashboard, Trophy, Swords, Users2, Siren, Newspaper, ShieldAlert, LogOut,
 } from "lucide-react";
@@ -25,7 +26,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="hidden w-60 flex-col border-r border-border bg-surface px-4 py-6 sm:flex">
-        <div className="mb-8 px-2 text-lg font-bold">Gridiron HQ</div>
+        <Link href="/dashboard" className="mb-8 px-2">
+          <Logo height={34} />
+        </Link>
         <nav className="flex-1 space-y-1">
           {NAV.map((item) => (
             <Link
@@ -51,7 +54,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* Mobile top nav */}
       <div className="flex flex-1 flex-col">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-4 py-3 sm:hidden">
-          <span className="text-base font-bold">Gridiron HQ</span>
+          <Link href="/dashboard">
+            <Logo height={26} />
+          </Link>
           <form action={logout}>
             <Button type="submit" variant="ghost" size="sm">
               <LogOut className="h-4 w-4" />

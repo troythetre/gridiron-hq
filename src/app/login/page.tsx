@@ -18,6 +18,7 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
+  // Use the useActionState hook to manage the state of the login action
   const [state, formAction, pending] = useActionState<AuthFormState, FormData>(login, undefined);
   const params = useSearchParams();
   const justSignedUp = params.get("confirmEmail") === "1";

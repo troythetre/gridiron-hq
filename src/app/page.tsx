@@ -1,6 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Logo } from "@/components/logo";
 import { Trophy, Swords, Users2, Siren, Newspaper, ShieldAlert } from "lucide-react";
 
 const FEATURES = [
@@ -15,8 +17,10 @@ const FEATURES = [
 export default function Home() {
   return (
     <div className="flex-1">
-      <header className="flex items-center justify-between px-6 py-5 sm:px-10">
-        <div className="text-lg font-bold">Gridiron HQ</div>
+      <header className="relative z-10 flex items-center justify-between px-6 py-5 sm:px-10">
+        <Link href="/">
+          <Logo height={36} />
+        </Link>
         <nav className="flex items-center gap-2">
           <Button asChild variant="ghost">
             <Link href="/login">Sign in</Link>
@@ -27,12 +31,23 @@ export default function Home() {
         </nav>
       </header>
 
-      <section className="px-6 pt-10 pb-16 sm:px-10">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            Your fantasy football command center.
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0">
+          <Image
+            src="/stadium-hero.jpg"
+            alt=""
+            fill
+            priority
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-background" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+        </div>
+        <div className="relative mx-auto max-w-3xl px-6 pt-16 pb-24 text-center sm:px-10 sm:pt-24 sm:pb-32">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
+            Your fantasy football <span className="text-primary">command center.</span>
           </h1>
-          <p className="mt-4 text-lg text-muted">
+          <p className="mt-5 text-lg text-neutral-200">
             Rankings, start/sit calls, waiver targets, injuries, and your whole roster -
             in one fast, no-nonsense dashboard. Free to use, any league, any team.
           </p>

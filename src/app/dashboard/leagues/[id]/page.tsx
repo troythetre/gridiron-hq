@@ -11,13 +11,16 @@ export default async function LeagueDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  // Fetch league and membership data
   const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Fetch league details
   const { data: league } = await supabase.from("leagues").select("*").eq("id", id).maybeSingle();
   if (!league) notFound();
 
+  // Fetch league members
   const { data: members } = await supabase
     .from("league_members")
     .select("id, team_name, profile_id, profiles(display_name)")
