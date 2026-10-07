@@ -86,3 +86,66 @@ export const SLOT_ELIGIBLE_POS: Record<RosterSlotName, Position[]> = {
   K: ["K"],
   BE: ["QB", "RB", "WR", "TE", "K", "DST"],
 };
+
+// ============================================================================
+// Sleeper sync
+// ============================================================================
+export interface SleeperRosterPlayer {
+  sleeper_player_id: string;
+  name: string;
+  pos: string;
+  team: string | null;
+}
+
+export interface SleeperLinkRow {
+  id: string;
+  profile_id: string;
+  sleeper_username: string;
+  sleeper_user_id: string;
+  avatar: string | null;
+  created_at: string;
+}
+
+export interface SleeperRosterRow {
+  id: string;
+  profile_id: string;
+  sleeper_league_id: string;
+  league_name: string;
+  team_name: string | null;
+  wins: number;
+  losses: number;
+  ties: number;
+  roster_json: SleeperRosterPlayer[];
+  synced_at: string;
+}
+
+// ============================================================================
+// Trade system (native leagues only)
+// ============================================================================
+export type TradeOfferStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED";
+
+export interface TradeBlockRow {
+  id: string;
+  league_member_id: string;
+  player_id: number;
+  note: string | null;
+  created_at: string;
+}
+
+export interface TradeOfferRow {
+  id: string;
+  league_id: string;
+  proposer_member_id: string;
+  recipient_member_id: string;
+  status: TradeOfferStatus;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TradeOfferItemRow {
+  id: string;
+  trade_offer_id: string;
+  player_id: number;
+  from_member_id: string;
+}

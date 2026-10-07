@@ -172,3 +172,141 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ============================================================================
+-- Sleeper sync (read-only reference data pulled from the public Sleeper API).
+-- Applied via migration "sleeper_sync_and_trades".
+-- ============================================================================
+create table if not exists public.sleeper_links (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null unique references public.profiles(id) on delete cascade,
+  sleeper_username text not null,
+  sleeper_user_id text not null,
+  avatar text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.sleeper_rosters (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  sleeper_league_id text not null,
+  league_name text not null,
+  team_name text,
+  wins int not null default 0,
+  losses int not null default 0,
+  ties int not null default 0,
+  roster_json jsonb not null default '[]'::jsonb, -- [{sleeper_player_id, name, pos, team}]
+  synced_at timestamptz not null default now(),
+  unique (profile_id, sleeper_league_id)
+);
+
+create index if not exists idx_sleeper_rosters_profile on public.sleeper_rosters(profile_id);
+
+alter table public.sleeper_links enable row level security;
+alter table public.sleeper_rosters enable row level security;
+
+-- Private to the owner only - this is personal sync data, not league-visible.
+create policy "sleeper_links_own" on public.sleeper_links for all to authenticated
+  using (profile_id = auth.uid()) with check (profile_id = auth.uid());
+create policy "sleeper_rosters_own" on public.sleeper_rosters for all to authenticated
+  using (profile_id = auth.uid()) with check (profile_id = auth.uid());
+
+-- ============================================================================
+-- Trade system (native leagues only - operates on roster_slots/players, the
+-- same rows the start/sit and roster-management features already use).
+-- ============================================================================
+create table if not exists public.trade_block (
+  id uuid primary key default gen_random_uuid(),
+  league_member_id uuid not null references public.league_members(id) on delete cascade,
+  player_id bigint not null references public.players(id) on delete cascade,
+  note text,
+  created_at timestamptz not null default now(),
+  unique (league_member_id, player_id)
+);
+
+create table if not exists public.trade_offers (
+  id uuid primary key default gen_random_uuid(),
+  league_id uuid not null references public.leagues(id) on delete cascade,
+  proposer_member_id uuid not null references public.league_members(id) on delete cascade,
+  recipient_member_id uuid not null references public.league_members(id) on delete cascade,
+  status text not null default 'PENDING' check (status in ('PENDING','ACCEPTED','REJECTED','CANCELLED')),
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (proposer_member_id <> recipient_member_id)
+);
+
+create table if not exists public.trade_offer_items (
+  id uuid primary key default gen_random_uuid(),
+  trade_offer_id uuid not null references public.trade_offers(id) on delete cascade,
+  player_id bigint not null references public.players(id) on delete cascade,
+  from_member_id uuid not null references public.league_members(id) on delete cascade,
+  unique (trade_offer_id, player_id)
+);
+
+create index if not exists idx_trade_block_member on public.trade_block(league_member_id);
+create index if not exists idx_trade_offers_league on public.trade_offers(league_id);
+create index if not exists idx_trade_offers_proposer on public.trade_offers(proposer_member_id);
+create index if not exists idx_trade_offers_recipient on public.trade_offers(recipient_member_id);
+create index if not exists idx_trade_offer_items_offer on public.trade_offer_items(trade_offer_id);
+
+alter table public.trade_block enable row level security;
+alter table public.trade_offers enable row level security;
+alter table public.trade_offer_items enable row level security;
+
+-- Trade block: league-visible (like rosters), writable only by the owning member.
+create policy "trade_block_read_all" on public.trade_block for select to authenticated using (true);
+create policy "trade_block_write_own" on public.trade_block for all to authenticated
+  using (
+    exists (
+      select 1 from public.league_members lm
+      where lm.id = trade_block.league_member_id and lm.profile_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.league_members lm
+      where lm.id = trade_block.league_member_id and lm.profile_id = auth.uid()
+    )
+  );
+
+-- Trade offers: visible/updatable only to the two members involved (proposer or
+-- recipient). Insert requires the caller to BE the proposer. Status-transition
+-- correctness (only the recipient accepts/rejects, only the proposer cancels,
+-- only while PENDING) is enforced in the server action layer, not in RLS.
+create policy "trade_offers_read_own" on public.trade_offers for select to authenticated using (
+  exists (
+    select 1 from public.league_members lm
+    where lm.profile_id = auth.uid()
+      and lm.id in (trade_offers.proposer_member_id, trade_offers.recipient_member_id)
+  )
+);
+create policy "trade_offers_insert_as_proposer" on public.trade_offers for insert to authenticated with check (
+  exists (
+    select 1 from public.league_members lm
+    where lm.id = trade_offers.proposer_member_id and lm.profile_id = auth.uid()
+  )
+);
+create policy "trade_offers_update_own" on public.trade_offers for update to authenticated using (
+  exists (
+    select 1 from public.league_members lm
+    where lm.profile_id = auth.uid()
+      and lm.id in (trade_offers.proposer_member_id, trade_offers.recipient_member_id)
+  )
+);
+
+-- Trade offer items: visible/insertable only alongside a trade offer the caller can see.
+create policy "trade_offer_items_read_own" on public.trade_offer_items for select to authenticated using (
+  exists (
+    select 1 from public.trade_offers t
+    join public.league_members lm on lm.id in (t.proposer_member_id, t.recipient_member_id)
+    where t.id = trade_offer_items.trade_offer_id and lm.profile_id = auth.uid()
+  )
+);
+create policy "trade_offer_items_insert_as_proposer" on public.trade_offer_items for insert to authenticated with check (
+  exists (
+    select 1 from public.trade_offers t
+    join public.league_members lm on lm.id = t.proposer_member_id
+    where t.id = trade_offer_items.trade_offer_id and lm.profile_id = auth.uid()
+  )
+);

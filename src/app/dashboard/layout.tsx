@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import {
   LayoutDashboard, Trophy, Swords, Users2, Siren, Newspaper, ShieldAlert, LogOut,
+  RefreshCw, ArrowLeftRight, ClipboardList,
 } from "lucide-react";
 
 const NAV = [
@@ -12,6 +13,9 @@ const NAV = [
   { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
   { href: "/dashboard/start-sit", label: "Start/Sit", icon: Swords },
   { href: "/dashboard/leagues", label: "My Team", icon: Users2 },
+  { href: "/dashboard/team-review", label: "Team Review", icon: ClipboardList },
+  { href: "/dashboard/trades", label: "Trades", icon: ArrowLeftRight },
+  { href: "/dashboard/sync", label: "Sync", icon: RefreshCw },
   { href: "/dashboard/waiver", label: "Waiver Wire", icon: Siren },
   { href: "/dashboard/news", label: "News", icon: Newspaper },
   { href: "/dashboard/injuries", label: "Injuries", icon: ShieldAlert },

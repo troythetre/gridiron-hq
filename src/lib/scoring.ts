@@ -97,3 +97,122 @@ export function compare(
   const [winner, loser] = sa.score >= sb.score ? [sa, sb] : [sb, sa];
   return { winner, loser, margin: Math.round((winner.score - loser.score) * 100) / 100 };
 }
+
+/**
+ * Trade value engine.
+ *
+ * Same philosophy as the start/sit engine above: transparent and shown in full,
+ * not a black box. It differs from scorePlayer() in two ways that matter for a
+ * trade (a season-long decision) rather than a start/sit call (a one-week one):
+ *
+ *   1. Positional scarcity - a point of production from a scarce position (TE,
+ *      RB) is worth a bit more in trade than the same point from a deep one
+ *      (K, DST, and to a lesser extent QB in single-QB leagues).
+ *   2. A much lighter injury discount - a player who is OUT this week has lost
+ *      almost all their start/sit value for THIS week, but a healthy track
+ *      record still makes them valuable in a trade once they're back, so the
+ *      penalty here is a fraction of the start/sit one.
+ *
+ * value = avg_pts * positionMultiplier(pos) - tradeInjuryDiscount(status)
+ */
+
+export interface TradeValuedPlayer {
+  playerId: number;
+  name: string;
+  pos: string;
+  team: string;
+  avg_pts: number;
+  injuryStatus: InjuryStatus;
+  value: number;
+  reasons: string[];
+}
+
+const POSITION_MULTIPLIER: Record<string, number> = {
+  QB: 0.85, // deep position in single-QB leagues - easy to replace on waivers
+  RB: 1.05, // workhorse scarcity
+  WR: 1.0,
+  TE: 1.15, // the shallowest skill position in most leagues
+  K: 0.4,
+  DST: 0.4,
+};
+
+const TRADE_INJURY_DISCOUNT: Record<Exclude<InjuryStatus, null>, number> = {
+  OUT: 4,
+  DOUBTFUL: 2,
+  QUESTIONABLE: 0.75,
+  MONITOR: 0.25,
+};
+
+export function tradeValue(input: {
+  playerId: number;
+  name: string;
+  pos: string;
+  team: string;
+  avg_pts: number;
+  injuryStatus?: InjuryStatus;
+  injuryNote?: string;
+}): TradeValuedPlayer {
+  const multiplier = POSITION_MULTIPLIER[input.pos] ?? 1;
+  const injuryStatus = input.injuryStatus ?? null;
+  const discount = injuryStatus ? TRADE_INJURY_DISCOUNT[injuryStatus] : 0;
+  const value = Math.max(0, Math.round((input.avg_pts * multiplier - discount) * 100) / 100);
+
+  const reasons: string[] = [
+    `${input.avg_pts.toFixed(1)} pts/game x ${multiplier.toFixed(2)} ${input.pos} scarcity`,
+  ];
+  if (injuryStatus) {
+    reasons.push(`-${discount.toFixed(2)} for ${injuryStatus.toLowerCase()} status (${input.injuryNote ?? "injury risk"})`);
+  }
+
+  return {
+    playerId: input.playerId,
+    name: input.name,
+    pos: input.pos,
+    team: input.team,
+    avg_pts: input.avg_pts,
+    injuryStatus,
+    value,
+    reasons,
+  };
+}
+
+export type TradeVerdict = "FAVORS_YOU" | "FAIR" | "FAVORS_THEM";
+
+export interface TradeEvaluation {
+  giving: TradeValuedPlayer[];
+  receiving: TradeValuedPlayer[];
+  givingValue: number;
+  receivingValue: number;
+  delta: number; // receivingValue - givingValue, from the proposer's perspective
+  percentDiff: number;
+  verdict: TradeVerdict;
+}
+
+const FAIRNESS_BAND_PCT = 15; // within +/-15% of the midpoint counts as "fair"
+
+export function evaluateTrade(
+  giving: Parameters<typeof tradeValue>[0][],
+  receiving: Parameters<typeof tradeValue>[0][]
+): TradeEvaluation {
+  const givingScored = giving.map(tradeValue);
+  const receivingScored = receiving.map(tradeValue);
+  const givingValue = Math.round(givingScored.reduce((s, p) => s + p.value, 0) * 100) / 100;
+  const receivingValue = Math.round(receivingScored.reduce((s, p) => s + p.value, 0) * 100) / 100;
+  const delta = Math.round((receivingValue - givingValue) * 100) / 100;
+  const midpoint = (givingValue + receivingValue) / 2 || 1;
+  const percentDiff = Math.round((delta / midpoint) * 1000) / 10;
+
+  let verdict: TradeVerdict = "FAIR";
+  if (percentDiff > FAIRNESS_BAND_PCT) verdict = "FAVORS_YOU";
+  else if (percentDiff < -FAIRNESS_BAND_PCT) verdict = "FAVORS_THEM";
+
+  return {
+    giving: givingScored,
+    receiving: receivingScored,
+    givingValue,
+    receivingValue,
+    delta,
+    percentDiff,
+    verdict,
+  };
+}
