@@ -29,22 +29,27 @@ function toScoreInput(p: PlayerRow, injury?: InjuryRow) {
 export function StartSitTool({
   players,
   injuriesByName,
+  rosterPlayerNames,
 }: {
   players: PlayerRow[];
   injuriesByName: Record<string, InjuryRow>;
+  rosterPlayerNames: string[];
 }) {
   const sorted = useMemo(() => [...players].sort((a, b) => a.name.localeCompare(b.name)), [players]);
-  const [aName, setAName] = useState<string>(sorted[0]?.name ?? "");
-  const [bName, setBName] = useState<string>(sorted[1]?.name ?? "");
+  const rosterNameSet = useMemo(() => new Set(rosterPlayerNames.map(normalizeName)), [rosterPlayerNames]);
+  const rosterPlayers = useMemo(() => sorted.filter((player) => rosterNameSet.has(normalizeName(player.name))), [rosterNameSet, sorted]);
+  const pickerPlayers = useMemo(() => [...rosterPlayers, ...sorted.filter((player) => !rosterNameSet.has(normalizeName(player.name)))], [rosterNameSet, rosterPlayers, sorted]);
+  const [aName, setAName] = useState<string>(rosterPlayers[0]?.name ?? sorted[0]?.name ?? "");
+  const [bName, setBName] = useState<string>(rosterPlayers[1]?.name ?? sorted.find((player) => player.name !== (rosterPlayers[0]?.name ?? sorted[0]?.name))?.name ?? "");
   const [searchQuery, setSearchQuery] = useState("");
 
   const searchResults = useMemo(() => {
     const needle = searchQuery.trim().toLowerCase();
-    if (!needle) return sorted.slice(0, 50);
-    return sorted
+    if (!needle) return pickerPlayers.slice(0, 50);
+    return pickerPlayers
       .filter((player) => `${player.name} ${player.team} ${player.pos}`.toLowerCase().includes(needle))
       .slice(0, 50);
-  }, [sorted, searchQuery]);
+  }, [pickerPlayers, searchQuery]);
 
   const playerA = sorted.find((p) => p.name === aName);
   const playerB = sorted.find((p) => p.name === bName);
@@ -68,8 +73,8 @@ export function StartSitTool({
 
         <TabsContent value="compare" className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <PlayerPicker label="Player A" value={aName} onChange={setAName} players={sorted} />
-            <PlayerPicker label="Player B" value={bName} onChange={setBName} players={sorted} />
+            <PlayerPicker label="Player A" value={aName} onChange={setAName} players={pickerPlayers} rosterPlayerNames={rosterNameSet} />
+            <PlayerPicker label="Player B" value={bName} onChange={setBName} players={pickerPlayers} rosterPlayerNames={rosterNameSet} />
           </div>
 
           {result && playerA && playerB && (
@@ -92,6 +97,13 @@ export function StartSitTool({
               />
             </div>
           )}
+
+          {rosterPlayers.length === 0 && <Card>
+            <CardContent className="p-4 text-sm text-muted">
+              <p className="font-medium text-foreground">Make it roster-specific</p>
+              <p className="mt-1">Connect your ESPN or Sleeper team on the <Link href="/dashboard/sync" className="text-primary hover:underline">Sync page</Link> to put your players first here.</p>
+            </CardContent>
+          </Card>}
 
           <Card>
             <CardContent className="p-4 text-sm text-muted">
@@ -119,7 +131,7 @@ export function StartSitTool({
                 />
               </label>
               <p className="text-xs text-muted">
-                {searchQuery.trim() ? `${searchResults.length} matching players` : `Showing up to ${searchResults.length} players`}
+                {searchQuery.trim() ? `${searchResults.length} matching players` : `${rosterPlayers.length} players on your rosters · showing up to ${searchResults.length} players`}
               </p>
               {searchResults.length > 0 ? (
                 <div className="divide-y divide-border rounded-xl border border-border">
@@ -127,7 +139,7 @@ export function StartSitTool({
                     <div key={player.id} className="flex flex-wrap items-center gap-3 p-3 sm:flex-nowrap">
                       <PosBadge pos={player.pos} />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold">{player.name}</p>
+                        <p className="truncate font-semibold">{player.name}{rosterNameSet.has(normalizeName(player.name)) && <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-primary">Your team</span>}</p>
                         <p className="text-xs text-muted">{player.team} · {player.avg_pts.toFixed(1)} avg pts</p>
                       </div>
                       <div className="flex gap-2">
@@ -171,11 +183,13 @@ function PlayerPicker({
   value,
   onChange,
   players,
+  rosterPlayerNames,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   players: PlayerRow[];
+  rosterPlayerNames: Set<string>;
 }) {
   return (
     <div className="space-y-1.5">
@@ -187,13 +201,17 @@ function PlayerPicker({
         <SelectContent className="max-h-72">
           {players.map((p) => (
             <SelectItem key={p.id} value={p.name}>
-              {p.name} ({p.pos} - {p.team})
+              {rosterPlayerNames.has(normalizeName(p.name)) ? "★ " : ""}{p.name} ({p.pos} - {p.team})
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
     </div>
   );
+}
+
+function normalizeName(value: string) {
+  return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function ResultCard({
