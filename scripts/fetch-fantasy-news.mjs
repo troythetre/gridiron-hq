@@ -73,6 +73,67 @@ function parseItems(xml) {
   }).filter((item) => item.headline && /^https?:\/\//i.test(item.articleUrl));
 }
 
+function articleImageFromHtml(html, articleUrl) {
+  const metaTags = html.match(/<meta\b[^>]*>/gi) ?? [];
+  for (const tag of metaTags) {
+    const attributes = Object.fromEntries(
+      [...tag.matchAll(/([a-zA-Z_:][-a-zA-Z0-9_:]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)]
+        .map((match) => [match[1].toLowerCase(), match[2] ?? match[3] ?? match[4] ?? ""])
+    );
+    const key = (attributes.property ?? attributes.name ?? "").toLowerCase();
+    if (!["og:image", "og:image:url", "twitter:image", "twitter:image:src"].includes(key)) continue;
+    const value = decodeXml(attributes.content ?? "").trim();
+    if (!value || value.startsWith("data:")) continue;
+    try {
+      const imageUrl = new URL(value, articleUrl);
+      if (imageUrl.protocol === "https:" || imageUrl.protocol === "http:") return imageUrl.href;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+function normalizeImageUrl(value, articleUrl) {
+  if (!value) return null;
+  try {
+    const imageUrl = new URL(value, articleUrl);
+    return imageUrl.protocol === "https:" || imageUrl.protocol === "http:" ? imageUrl.href : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readHtmlSnippet(response, maxBytes = 256_000) {
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let html = "";
+  try {
+    while (html.length < maxBytes) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      html += decoder.decode(value, { stream: true });
+    }
+  } finally {
+    await reader.cancel();
+  }
+  return html + decoder.decode();
+}
+
+async function fetchArticleImage(item) {
+  const response = await fetch(item.articleUrl, {
+    headers: {
+      accept: "text/html",
+      "user-agent": "GridironHQ-NewsBot/1.0 (+https://github.com/troythetre/gridiron-hq)",
+    },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.headers.get("content-type")?.includes("text/html")) return null;
+  return articleImageFromHtml(await readHtmlSnippet(response), item.articleUrl);
+}
+
 function topicsFor(item) {
   const text = normalize(`${item.headline} ${item.excerpt}`);
   const topics = new Set();
@@ -95,17 +156,33 @@ const results = await Promise.allSettled(feeds.map(async (feed) => {
   const response = await fetch(feed.feed, { headers: { "user-agent": "GridironHQ-NewsBot/1.0 (+https://github.com/troythetre/gridiron-hq)" }, signal: AbortSignal.timeout(15000) });
   if (!response.ok) throw new Error(`${feed.name} feed returned HTTP ${response.status}`);
   const xml = await response.text();
-  const items = parseItems(xml).slice(0, 100).map((item) => ({ ...item, topics: topicsFor(item) }))
-    .map((item) => ({
-      headline: item.headline.slice(0, 300),
-      body: cleanExcerpt(item.excerpt),
-      item_date: Number.isNaN(Date.parse(item.date)) ? new Date().toISOString().slice(0, 10) : new Date(item.date).toISOString().slice(0, 10),
-      source: feed.name,
-      article_url: item.articleUrl,
-      source_url: feed.homepage,
-      image_url: /^https?:\/\//i.test(item.imageUrl) ? item.imageUrl : null,
-      topics: item.topics,
+  const parsedItems = parseItems(xml).slice(0, 100).map((item) => ({
+    ...item,
+    imageUrl: normalizeImageUrl(item.imageUrl, item.articleUrl),
+    topics: topicsFor(item),
+  }));
+
+  const itemsNeedingImages = parsedItems.filter((item) => !item.imageUrl).slice(0, 6);
+  for (let index = 0; index < itemsNeedingImages.length; index += 3) {
+    await Promise.all(itemsNeedingImages.slice(index, index + 3).map(async (item) => {
+      try {
+        item.imageUrl = await fetchArticleImage(item);
+      } catch (error) {
+        console.warn(`Could not find article image for "${item.headline}": ${error.message}`);
+      }
     }));
+  }
+
+  const items = parsedItems.map((item) => ({
+    headline: item.headline.slice(0, 300),
+    body: cleanExcerpt(item.excerpt),
+    item_date: Number.isNaN(Date.parse(item.date)) ? new Date().toISOString().slice(0, 10) : new Date(item.date).toISOString().slice(0, 10),
+    source: feed.name,
+    article_url: item.articleUrl,
+    source_url: feed.homepage,
+    image_url: item.imageUrl ?? undefined,
+    topics: item.topics,
+  }));
   return { source: feed.name, items };
 }));
 

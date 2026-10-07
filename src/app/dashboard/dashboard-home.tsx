@@ -211,6 +211,9 @@ function DashboardNewsCard({
 
   return (
     <article className="overflow-hidden rounded-xl border-b border-border last:border-b-0" style={{ borderColor: `${teamPrimary}35` }}>
+      {item.image_url && <div className="relative aspect-[16/7] overflow-hidden">
+        <Image src={item.image_url} alt="" fill unoptimized sizes="(max-width: 768px) 100vw, 560px" className="object-cover" />
+      </div>}
       <button
         type="button"
         aria-expanded={expanded}
@@ -250,11 +253,6 @@ function DashboardNewsCard({
                 <PlayerAvatar name={player.name} team={player.team ?? "FA"} position={player.pos} size={24} />
                 {player.name} · {player.pos}
               </Link>)}
-            </div>
-          )}
-          {item.image_url && leadPlayer && (
-            <div className="relative aspect-[16/7] max-w-xl overflow-hidden rounded-xl border border-border">
-              <Image src={item.image_url} alt="" fill unoptimized sizes="(max-width: 768px) 100vw, 560px" className="object-cover" />
             </div>
           )}
           {item.body && <p className="max-w-2xl whitespace-pre-line text-sm leading-6" style={{ color: bodyColor }}>{item.body}</p>}

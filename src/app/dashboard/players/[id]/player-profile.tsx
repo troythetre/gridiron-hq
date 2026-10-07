@@ -582,25 +582,28 @@ function NewsCard({
   const href = item.article_url ?? item.source_url;
   const panelId = `player-news-${item.id}`;
 
-  return <Card className="overflow-hidden bg-surface/75 transition" style={{ borderColor: `${teamPrimary}55`, backgroundImage: `linear-gradient(135deg, ${teamPrimary}0c, transparent 65%)` }}>
+  return <Card className="group overflow-hidden bg-surface/75 transition" style={{ borderColor: `${teamPrimary}55`, backgroundImage: `linear-gradient(135deg, ${teamPrimary}0c, transparent 65%)` }}>
     <CardContent className="p-0">
-      <button type="button" aria-expanded={expanded} aria-controls={panelId} onClick={onToggle} className="flex w-full items-start gap-3 p-4 text-left transition hover:bg-white/[.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset" style={{ outlineColor: teamPrimary }}>
-        <PlayerAvatar name={player.name} team={player.team} position={player.pos} size={48} />
-        <span className="min-w-0 flex-1">
-          <span className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <span className="rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider" style={{ backgroundColor: `${teamPrimary}22`, color: teamPrimary }}>{general ? "League-wide" : `${player.team} · ${player.pos}`}</span>
-            <time className="text-[10px] text-muted">{item.item_date ?? "Recent"}</time>
+      <button type="button" aria-expanded={expanded} aria-controls={panelId} onClick={onToggle} className="block w-full text-left transition hover:bg-white/[.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset" style={{ outlineColor: teamPrimary }}>
+        {item.image_url && <span className="relative block aspect-[16/7] w-full overflow-hidden border-b border-border/60">
+          <Image src={item.image_url} alt="" fill unoptimized sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition duration-500 group-hover:scale-[1.02]" />
+          <span className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+        </span>}
+        <span className="flex items-start gap-3 p-4">
+          <PlayerAvatar name={player.name} team={player.team} position={player.pos} size={48} />
+          <span className="min-w-0 flex-1">
+            <span className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <span className="rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider" style={{ backgroundColor: `${teamPrimary}22`, color: teamPrimary }}>{general ? "League-wide" : `${player.team} · ${player.pos}`}</span>
+              <time className="text-[10px] text-muted">{item.item_date ?? "Recent"}</time>
+            </span>
+            <span className="block font-display text-base font-bold leading-snug sm:text-lg" style={{ color: teamPrimary }}>{item.headline}</span>
+            {item.body && <span className="mt-1 block line-clamp-2 text-xs leading-5" style={{ color: bodyColor }}>{item.body}</span>}
           </span>
-          <span className="block font-display text-base font-bold leading-snug sm:text-lg" style={{ color: teamPrimary }}>{item.headline}</span>
-          {item.body && <span className="mt-1 block line-clamp-2 text-xs leading-5" style={{ color: bodyColor }}>{item.body}</span>}
+          <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted transition-transform ${expanded ? "rotate-180" : ""}`} />
         </span>
-        <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
       {expanded && (
         <div id={panelId} className="space-y-3 px-4 pb-4 pl-[4.75rem]">
-          {item.image_url && <div className="relative aspect-[16/8] max-w-xl overflow-hidden rounded-xl border border-border">
-            <Image src={item.image_url} alt="" fill unoptimized sizes="(max-width: 768px) 100vw, 560px" className="object-cover" />
-          </div>}
           {item.body && <p className="whitespace-pre-line text-sm leading-6" style={{ color: bodyColor }}>{item.body}</p>}
           {item.source && <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Source · {item.source}</p>}
           {href && <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-xs font-bold hover:underline" style={{ color: teamPrimary }}>

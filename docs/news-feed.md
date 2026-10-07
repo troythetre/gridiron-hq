@@ -12,4 +12,6 @@ Stories are tagged by team names, player names from the local player catalog, an
    - `SUPABASE_SERVICE_ROLE_KEY`: the service role key. Keep this only in GitHub Secrets; never expose it as a `NEXT_PUBLIC_` variable.
 3. Run the **Refresh fantasy news** workflow once using its **Run workflow** button. Afterward, GitHub Actions runs it hourly.
 
-The importer can also be run locally with `SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run news:fetch`. It is idempotent by article URL. If one publisher feed is temporarily unavailable, the other source can still be ingested; failures are printed in the workflow log.
+The importer can also be run locally with `SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run news:fetch`. It is idempotent by article URL. Images are taken from RSS media/enclosure metadata first; when that is missing, the importer checks the six newest articles per feed for Open Graph or Twitter image metadata. It stores the publisher's image URL rather than copying the image. If one publisher feed is temporarily unavailable, the other source can still be ingested; feed and image lookup failures are printed in the workflow log.
+
+The homepage slideshow, dashboard news cards, player news cards, and news feed display the stored image when available. A story without publisher image metadata remains text-only.
