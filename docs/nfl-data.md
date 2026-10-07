@@ -43,6 +43,14 @@ Outputs in `data/nflverse/derived/`:
 - `team_personnel_splits.csv`: team-vs-team outcomes by offensive and defensive personnel.
 - `receiver_matchup_splits.csv`: detailed cross-tab of the available contexts.
 
+Export the receiver coverage, blitz, and personnel summaries into the roster analytics bundle:
+
+```sh
+npm run matchup:export
+```
+
+This writes `src/data/player-matchup-analysis.json`, keyed by NFL GSIS player ID. My Team joins the historical splits to your synced roster and shows target counts beside catch rate, yards per target, and touchdowns. The analysis stays descriptive and includes FTN Data via nflverse attribution; it is not a causal estimate or a complete weekly projection.
+
 Summary files aggregate across the requested seasons and include the first/last season in the sample. The detailed cross-tab retains each season. Each includes target count, catch rate, receiving yards per target, receiving touchdowns, and average air yards. Keep target counts beside every rate; small samples are noisy. These are descriptive historical splits and should not be interpreted as causal effects or as a complete pregame matchup projection.
 
 ## Route metric limitation

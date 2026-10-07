@@ -9,6 +9,7 @@
     "lint": "eslint",
     "news:fetch": "node scripts/fetch-fantasy-news.mjs",
     "videos:fetch": "node scripts/fetch-fantasy-videos.mjs",
+    "matchup:export": "node scripts/export-player-matchup-analysis.mjs",
     "dev:vinext": "vite dev --port 3001",
     "build:vinext": "vite build",
     "start:vinext": "vite preview",
