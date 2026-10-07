@@ -1,6 +1,9 @@
+"use client";
+
 import { useId } from "react";
 import Image from "next/image";
-import { PLAYER_PHOTOS, teamColors } from "@/lib/player-visuals";
+import { teamColors } from "@/lib/player-visuals";
+import { usePlayerPhoto } from "@/lib/use-player-photo";
 
 export function PlayerAvatar({
   name,
@@ -8,6 +11,7 @@ export function PlayerAvatar({
   number,
   position,
   photoUrl,
+  selectedPhoto,
   size = 140,
   className = "",
 }: {
@@ -16,6 +20,7 @@ export function PlayerAvatar({
   number?: number | null;
   position: string;
   photoUrl?: string | null;
+  selectedPhoto?: string | null;
   size?: number;
   className?: string;
 }) {
@@ -24,7 +29,8 @@ export function PlayerAvatar({
   const jersey = number && number > 0 ? number : position === "QB" ? 1 : 0;
   const initials = name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("");
   const nameSeed = [...name].reduce((seed, character) => seed + character.charCodeAt(0), 0);
-  const photo = PLAYER_PHOTOS[name] ?? photoUrl;
+  const randomPhoto = usePlayerPhoto(name, photoUrl);
+  const photo = selectedPhoto ?? randomPhoto;
   const skinTone = ["#f1c6a5", "#d7a17e", "#ba8060", "#8e5d49", "#704633"][nameSeed % 5];
   const fieldId = `field-${instanceId}`;
   const jerseyId = `jersey-${instanceId}`;

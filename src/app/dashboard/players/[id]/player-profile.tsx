@@ -13,7 +13,8 @@ import { PosBadge } from "@/components/pos-badge";
 import { PlayerAvatar } from "@/components/player-avatar";
 import type { InjuryRow, NewsItemRow, PlayerRow } from "@/lib/types";
 import type { PlayerProfileData, PlayerWeekStat } from "@/lib/player-profile-types";
-import { PLAYER_PHOTOS, teamColors } from "@/lib/player-visuals";
+import { teamColors } from "@/lib/player-visuals";
+import { usePlayerPhoto } from "@/lib/use-player-photo";
 import { togglePlayerFavorite, usePlayerFavorites } from "@/lib/player-favorites";
 import { cn } from "@/lib/utils";
 
@@ -76,7 +77,7 @@ export function PlayerProfile({
     : [{ season: profile?.season ?? new Date().getFullYear(), weeks }]).slice(-5);
   const selectedTrend = trendSeasons.find((season) => season.season === trendSeason) ?? trendSeasons.at(-1)!;
   const [teamPrimary, teamSecondary] = teamColors(player.team);
-  const photo = PLAYER_PHOTOS[player.name] ?? profile?.headshotUrl ?? null;
+  const photo = usePlayerPhoto(player.name, profile?.headshotUrl);
   const teamStyle = {
     "--team-color": teamPrimary,
     "--team-accent": teamSecondary,
@@ -154,6 +155,7 @@ export function PlayerProfile({
                 position={player.pos}
                 number={profile?.jerseyNumber}
                 photoUrl={profile?.headshotUrl}
+                selectedPhoto={photo}
                 size={164}
                 className="relative drop-shadow-[0_20px_24px_rgba(0,0,0,.4)] sm:h-[190px] sm:w-[190px]"
               />

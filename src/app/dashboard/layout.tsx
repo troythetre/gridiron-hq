@@ -5,14 +5,10 @@ import { GridironAssistant } from "@/components/gridiron-assistant";
 import { FantasyPreferenceControls, FantasyPreferencesProvider } from "@/components/fantasy-preferences";
 import { LogOut } from "lucide-react";
 import { DashboardTopNavigation } from "./dashboard-navigation";
-import { getCollegeFootballRankings } from "@/lib/college-football-live";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const [{ data: { user } }, collegeRankings] = await Promise.all([
-    supabase.auth.getUser(),
-    getCollegeFootballRankings(),
-  ]);
+  const { data: { user } } = await supabase.auth.getUser();
   const displayName =
     (user?.user_metadata?.display_name as string | undefined) ?? user?.email ?? "Guest";
 
@@ -33,7 +29,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {children}
         </main>
       </div>
-      <GridironAssistant collegeRankings={collegeRankings} />
+      <GridironAssistant />
     </div>
     </FantasyPreferencesProvider>
   );

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Bot, ChevronRight, Search, Swords, ClipboardList, Siren, Newspaper, X, GraduationCap } from "lucide-react";
-import type { CollegeFootballRankings } from "@/lib/college-football-live";
 
 const actions = [
   { label: "Find a player", detail: "Search the player catalog", href: "/dashboard/search", icon: Search },
@@ -11,19 +10,11 @@ const actions = [
   { label: "Review my team", detail: "See strengths and roster gaps", href: "/dashboard/team-review", icon: ClipboardList },
   { label: "Find waiver targets", detail: "Browse available pickups", href: "/dashboard/waiver", icon: Siren },
   { label: "Catch up on news", detail: "Latest league updates", href: "/dashboard/news", icon: Newspaper },
+  { label: "Latest college rankings", detail: "Current AP Top 25 poll", href: "/dashboard/parlay?tab=college", icon: GraduationCap },
 ];
 
-export function GridironAssistant({ collegeRankings }: { collegeRankings: CollegeFootballRankings }) {
+export function GridironAssistant() {
   const [open, setOpen] = useState(false);
-  const currentPoll = collegeRankings.teams[0]
-    ? `${collegeRankings.week}: No. 1 ${collegeRankings.teams[0].team}`
-    : collegeRankings.error
-      ? "AP poll temporarily unavailable"
-      : "Latest AP Top 25";
-  const assistantActions = [
-    ...actions,
-    { label: "Latest college rankings", detail: currentPoll, href: "/dashboard/parlay?tab=college", icon: GraduationCap },
-  ];
   return (
     <div className="fixed bottom-5 right-5 z-40">
       {open && (
@@ -37,7 +28,7 @@ export function GridironAssistant({ collegeRankings }: { collegeRankings: Colleg
           </div>
           <div className="p-2">
             <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-[.18em] text-muted">What are we working on?</p>
-            {assistantActions.map(({ label, detail, href, icon: Icon }) => (
+            {actions.map(({ label, detail, href, icon: Icon }) => (
               <Link key={href} href={href} onClick={() => setOpen(false)} className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-primary/10">
                 <Icon className="h-4 w-4 shrink-0 text-primary" />
                 <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{label}</span><span className="block truncate text-xs text-muted">{detail}</span></span>

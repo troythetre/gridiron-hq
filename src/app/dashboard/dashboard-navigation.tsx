@@ -147,7 +147,7 @@ function ItemLink({ item, pathname, mobile = false }: { item: NavItem; pathname:
 function TopNavDropdown({ group, pathname }: { group: NavGroup; pathname: string }) {
   const active = hasActiveItem(pathname, group.items);
   return <details data-dashboard-disclosure className="group/top relative">
-    <summary className={`flex h-11 cursor-pointer list-none items-center gap-1.5 rounded-xl px-3 text-xs font-bold transition-colors hover:bg-white/[.06] [&::-webkit-details-marker]:hidden ${active ? "text-foreground" : "text-muted"}`}>
+    <summary className={`flex h-11 cursor-pointer list-none items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.06] [&::-webkit-details-marker]:hidden ${active ? "text-foreground" : "text-muted"}`}>
       <group.icon className="h-4 w-4 shrink-0 text-primary" />
       <span className="hidden md:inline">{group.label === "Fantasy Football" ? "Fantasy" : group.label}</span>
       <ChevronDown className="hidden h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-open/top:rotate-180 md:block" />
@@ -213,17 +213,17 @@ export function DashboardTopNavigation({ trailing }: { trailing?: ReactNode }) {
   }, [pathname]);
 
   return <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5" style={{ viewTransitionName: "dashboard-header" }}>
-    <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 rounded-full border border-white/15 bg-[linear-gradient(115deg,rgba(21,37,58,.78),rgba(31,25,54,.72),rgba(13,24,39,.78))] px-3 shadow-[0_12px_36px_rgba(0,0,0,.28),inset_0_1px_0_rgba(255,255,255,.12)] backdrop-blur-2xl sm:h-16 sm:gap-4 sm:px-5">
+    <div className="mx-auto flex h-14 max-w-5xl items-center justify-center gap-1 rounded-full border border-white/15 bg-[linear-gradient(115deg,rgba(21,37,58,.78),rgba(31,25,54,.72),rgba(13,24,39,.78))] px-3 shadow-[0_12px_36px_rgba(0,0,0,.28),inset_0_1px_0_rgba(255,255,255,.12)] backdrop-blur-2xl sm:h-16 sm:gap-2 sm:px-5">
       <Link href="/dashboard" onClick={closeDisclosuresOnNavigation} className="shrink-0" aria-label="Gridiron HQ home">
         <Logo height={26} />
       </Link>
-      <nav aria-label="Primary navigation" className="flex min-w-0 flex-1 items-center justify-center gap-0.5 sm:gap-1">
-        <Link href="/dashboard" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, homeItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-2 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-3 ${isActive(pathname, homeItem.href) ? "text-white" : "text-blue-100/65"}`}>
+      <nav aria-label="Primary navigation" className="flex min-w-0 items-center justify-center gap-0 sm:gap-0.5">
+        <Link href="/dashboard" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, homeItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, homeItem.href) ? "text-white" : "text-blue-100/65"}`}>
           <LayoutDashboard className="h-4 w-4 text-sky-200" /><span className="hidden sm:inline">Home</span>
         </Link>
         {groups.map((group) => <TopNavDropdown key={group.label} group={group} pathname={pathname} />)}
         <details data-dashboard-disclosure className="group/top relative">
-          <summary aria-label="More tools" className="flex h-10 cursor-pointer list-none items-center gap-1 rounded-xl px-2 text-xs font-bold text-blue-100/65 transition-colors hover:bg-white/[.08] [&::-webkit-details-marker]:hidden sm:gap-1.5 sm:px-3">
+          <summary aria-label="More tools" className="flex h-10 cursor-pointer list-none items-center gap-1 rounded-xl px-1.5 text-xs font-bold text-blue-100/65 transition-colors hover:bg-white/[.08] [&::-webkit-details-marker]:hidden sm:gap-1 sm:px-1.5">
             <CircleDot className="h-4 w-4 text-sky-200" /><span className="hidden sm:inline">More</span><ChevronDown className="hidden h-3.5 w-3.5 transition-transform duration-300 group-open/top:rotate-180 sm:block" />
           </summary>
           <div className="nav-dropdown-panel fixed right-3 top-24 z-50 max-h-[calc(100dvh-7rem)] w-[min(18rem,calc(100vw-1.5rem))] overflow-y-auto rounded-2xl border border-white/15 bg-slate-950/75 p-2 shadow-2xl shadow-black/40 backdrop-blur-2xl md:absolute md:right-0 md:top-full md:mt-2 md:max-h-[75vh] md:w-64">

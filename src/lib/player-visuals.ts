@@ -12,32 +12,49 @@ export const PLAYER_PHOTOS: Record<string, string> = {
   "CeeDee Lamb": "/player-avatars/ceedee_lamb.jpeg",
   "Chase Brown": "/player-avatars/chase_brown.jpeg",
   "Chris Olave": "/player-avatars/chris_olave.webp",
+  "Chuba Hubbard": "/player-avatars/chubba_hubbard.jpeg",
   "Chubba Hubbard": "/player-avatars/chubba_hubbard.jpeg",
   "D'Andre Swift": "/player-avatars/deandre_swift.jpeg",
   "Dalton Kincaid": "/player-avatars/dalton_kincaid.jpeg",
   "DeVonta Smith": "/player-avatars/devonta_smith.avif",
   "Deebo Samuel": "/player-avatars/deebo_samuel.jpg",
   "Deebo Samuel Sr.": "/player-avatars/deebo_samuel.jpg",
-  "Deshaun Watson": "https://static.www.nfl.com/image/private/f_auto,q_auto/league/otfs2docj6eahaebo5xn",
+  "Deshaun Watson": "/player-avatars/deshaun_watson.jpeg",
   "Denzel Boston": "/player-avatars/denzel_boston.jpeg",
   "Derrick Henry": "/player-avatars/images.jpeg",
   "Dak Prescott": "/player-avatars/dak_prescott.webp",
   "David Montgomery": "/player-avatars/david_montgomery.jpeg",
   "Emmanuel Wilson": "/player-avatars/emmanuel_wilson.jpeg",
   "George Pickens": "/player-avatars/george_pickens.webp",
+  "Geno Smith": "/player-avatars/geno_smith.jpeg",
+  "Garrett Wilson": "/player-avatars/garrett_wilson.webp",
   "Jadarian Price": "/player-avatars/jadarian_price.webp",
+  "James Cook": "/player-avatars/james_cook.jpg",
+  "James Cook III": "/player-avatars/james_cook.jpg",
   "Jalen Coker": "/player-avatars/jalen_coker.jpg",
   "Jalen Hurts": "/player-avatars/jalen_hurts.webp",
   "Jahmyr Gibbs": "/player-avatars/jahmyr_gibbs.jpg",
   "Ja'Marr Chase": "/player-avatars/jamar_chase.avif",
+  "Ja’Marr Chase": "/player-avatars/jamar_chase.avif",
   "Jared Goff": "https://static.www.nfl.com/image/upload/f_auto,q_auto/league/kaicbot8qhzrvddilbtp",
-  "Jaxon Smith-Njigba": "https://static.www.nfl.com/image/upload/f_auto,q_auto/league/yx1xjrupbqdknnjaq4a6",
+  "Jaxon Smith-Njigba": "/player-avatars/jsn.jpeg",
+  "JSN": "/player-avatars/jsn.jpeg",
+  "Jaxon Smith Njigba": "/player-avatars/jsn.jpeg",
+  "Jaxson Smith-Njigba": "/player-avatars/jsn.jpeg",
+  "KC Concepcion": "/player-avatars/kc.webp",
+  "KC": "/player-avatars/kc.webp",
+  "K.C. Concepcion": "/player-avatars/kc.webp",
   "Joe Burrow": "https://static.www.nfl.com/image/upload/f_auto,q_auto/league/gnnvcgui1cijybukk2w7",
   "Jonathan Taylor": "https://static.www.nfl.com/image/upload/f_auto,q_auto/league/yw46ky6akdm7h7siofu8",
   "Justin Jefferson": "/player-avatars/justin_jefferson.avif",
   "Josh Allen": "https://static.www.nfl.com/image/upload/f_auto,q_auto/league/mjwbioajzldkq1vzoz2d",
   "Javonte Williams": "/player-avatars/javonte_williams.webp",
   "Josh Jacobs": "/player-avatars/josh_jacobs.webp",
+  "Josh Downs": "/player-avatars/josh_downs.jpeg",
+  "Jayden Daniels": "/player-avatars/jayden_daniels.jpeg",
+  "Keenan Allen": "/player-avatars/keenan_allen.jpg",
+  "Kyler Murray": "/player-avatars/kyler_murray.jpeg",
+  "Baker Mayfield": "/player-avatars/baker_mayfield.webp",
   "Justin Herbert": "/player-avatars/justin_herbert.jpg",
   "Kirk Cousins": "/player-avatars/kirk_cousins.webp",
   "Kyle Monangai": "/player-avatars/kyle_monangai.jpeg",
@@ -63,10 +80,51 @@ export const PLAYER_PHOTOS: Record<string, string> = {
   "Tucker Kraft": "/player-avatars/tucker_kraft.webp",
   "Kenneth Walker": "/player-avatars/kenneth_walker.jpeg",
   "Kenneth Walker III": "/player-avatars/kenneth_walker.jpeg",
-  "Bryce Young": "https://static.www.nfl.com/image/upload/f_auto,q_auto/league/vcvhmxvxw2a3armle0af",
+  "Bryce Young": "/player-avatars/bryce_young.jpg",
   "C.J. Stroud": "https://static.www.nfl.com/image/upload/f_auto,q_auto/league/tt4zrtxlhifaljhj0rn7",
+  "Terry McLaurin": "/player-avatars/terry_mclaurin.webp",
+  "Braelon Allen": "/player-avatars/braelon_allen.webp",
+  "Tank Bigsby": "/player-avatars/tank_bigsby.webp",
+  "Devaughn Vele": "/player-avatars/devaugh_vele.jpeg",
+  "DeVaughn Vele": "/player-avatars/devaugh_vele.jpeg",
+  "Emanuel Wilson": "/player-avatars/emmanuel_wilson.jpeg",
   "Zay Flowers": "/player-avatars/zay_flower.jpeg",
 };
+
+export const PLAYER_PHOTO_OPTIONS: Record<string, string[]> = {
+  "Kirk Cousins": ["/player-avatars/kirk_cousins.webp", "/player-avatars/kirk_cousins_2.webp"],
+  "CeeDee Lamb": ["/player-avatars/ceedee_lamb.jpeg", "/player-avatars/ceedee_lamb_2.webp"],
+  "DeVonta Smith": ["/player-avatars/devonta_smith.avif", "/player-avatars/devonta_smith.jpg"],
+  "Saquon Barkley": ["/player-avatars/saquon_barkley.jpeg", "/player-avatars/saquon_barkley.webp"],
+  "Tee Higgins": ["/player-avatars/tee_higgins.webp", "/player-avatars/tee_higgins_2.webp"],
+  "Denzel Boston": ["/player-avatars/denzel_boston.jpeg", "/player-avatars/denzel_boston.jpg"],
+  "Ja'Marr Chase": ["/player-avatars/jamar_chase.avif", "/player-avatars/USATSI_27782765-scaled.jpg"],
+  "Josh Jacobs": ["/player-avatars/josh_jacobs.webp", "/player-avatars/mystdtllnrlmuydvfdax.webp"],
+  "Puka Nacua": ["/player-avatars/puka_nacua.png", "/player-avatars/images.jpg"],
+};
+
+const PHOTO_ALIASES: Record<string, string> = {
+  jsn: "Jaxon Smith-Njigba",
+  jaxonsmithnjigba: "Jaxon Smith-Njigba",
+  jaxsonsmithnjigba: "Jaxon Smith-Njigba",
+  kc: "KC Concepcion",
+  kcconcepcion: "KC Concepcion",
+  jamescookiii: "James Cook III",
+  emanuelwilson: "Emanuel Wilson",
+};
+
+function normalizePlayerName(name: string) {
+  return name.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+export function getPlayerPhotoOptions(name: string, fallback?: string | null) {
+  const canonicalName = PHOTO_ALIASES[normalizePlayerName(name)] ?? name;
+  const options = [...(PLAYER_PHOTO_OPTIONS[canonicalName] ?? (
+    PLAYER_PHOTOS[canonicalName] ? [PLAYER_PHOTOS[canonicalName]] : []
+  ))];
+  if (fallback && !options.includes(fallback)) options.push(fallback);
+  return options;
+}
 
 const NFL_TEAM_COLORS: Record<string, [string, string]> = {
   ARI: ["#97233F", "#FFB612"],
