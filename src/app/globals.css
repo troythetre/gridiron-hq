@@ -44,6 +44,106 @@ body {
   border-color: var(--border);
 }
 
+nav details[data-dashboard-disclosure] > summary {
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.nav-dropdown-panel {
+  transform-origin: top center;
+  animation: nav-dropdown-enter 180ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.nav-disclosure-closing > .nav-dropdown-panel {
+  pointer-events: none;
+  animation: nav-dropdown-exit 140ms cubic-bezier(.4,0,.8,.2) both;
+}
+
+.nav-disclosure-closing > summary {
+  pointer-events: none;
+}
+
+@keyframes nav-dropdown-enter {
+  from { opacity: 0; transform: translateY(-0.4rem) scale(.97); filter: blur(3px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes nav-dropdown-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  to { opacity: 0; transform: translateY(-0.25rem) scale(.98); filter: blur(2px); }
+}
+
+.position-cube-panel {
+  transform-origin: center;
+  backface-visibility: hidden;
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(.2,.8,.2,1);
+  animation-fill-mode: both;
+}
+
+.position-cube-panel-next {
+  animation-name: position-cube-next;
+}
+
+.position-cube-panel-previous {
+  animation-name: position-cube-previous;
+}
+
+@keyframes position-cube-next {
+  from { opacity: 0; transform: perspective(1200px) rotateY(-13deg) translateX(2rem) scale(.985); }
+  to { opacity: 1; transform: perspective(1200px) rotateY(0) translateX(0) scale(1); }
+}
+
+@keyframes position-cube-previous {
+  from { opacity: 0; transform: perspective(1200px) rotateY(13deg) translateX(-2rem) scale(.985); }
+  to { opacity: 1; transform: perspective(1200px) rotateY(0) translateX(0) scale(1); }
+}
+
+::view-transition-group(dashboard-header) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(dashboard-header) {
+  display: none;
+}
+
+::view-transition-new(dashboard-header) {
+  animation: none;
+}
+
+::view-transition-old(.dashboard-page-exit) {
+  animation: dashboard-page-out 130ms ease-in both;
+}
+
+::view-transition-new(.dashboard-page-enter) {
+  animation: dashboard-page-in 260ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+@keyframes dashboard-page-out {
+  to { opacity: 0; transform: translateY(-5px); }
+}
+
+@keyframes dashboard-page-in {
+  from { opacity: 0; transform: translateY(9px); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-dropdown-panel,
+  .nav-disclosure-closing > .nav-dropdown-panel,
+  .position-cube-panel,
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+}
+
 button {
   border-radius: 9999px;
 }

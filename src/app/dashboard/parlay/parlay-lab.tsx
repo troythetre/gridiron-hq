@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import type { CollegeFootballRankings } from "@/lib/college-football-live";
 import type { NflMockDraft } from "@/lib/nfl-mock-draft";
+import type { NflMockDraftSnapshot } from "@/lib/nfl-mock-draft";
 import {
   CollegeRankingsPanel,
   NflMockDraftPanel,
@@ -196,11 +197,15 @@ export function ParlayLab({
   initialTab = "parlay",
   mockDraft,
   collegeRankings,
+  mockDraftHistory = [],
+  mockDraftHistoryReady = true,
 }: {
   initialSport?: Sport;
   initialTab?: Tab;
   mockDraft: NflMockDraft | null;
   collegeRankings: CollegeFootballRankings | null;
+  mockDraftHistory?: NflMockDraftSnapshot[];
+  mockDraftHistoryReady?: boolean;
 }) {
   const tab = initialTab;
   const sport = initialSport;
@@ -280,7 +285,7 @@ export function ParlayLab({
       <p className="flex gap-2 text-xs leading-5 text-muted"><TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />Multiplies each leg&apos;s odds-implied probability; it is not a true forecast and does not account for sportsbook margin or correlated outcomes. A parlay can lose even when most legs win. Use responsibly.</p>
     </section>}
 
-    {tab === "mock-draft" && mockDraft && <NflMockDraftPanel data={mockDraft} />}
+    {tab === "mock-draft" && mockDraft && <NflMockDraftPanel data={mockDraft} history={mockDraftHistory} historyReady={mockDraftHistoryReady} />}
     {tab === "mock-draft" && !mockDraft && <p role="alert" className="rounded-xl border border-amber-400/30 p-4 text-sm text-amber-100">The NFL mock draft data was not provided to this view. Reload the page to try again.</p>}
 
     {tab === "college" && <section className="space-y-6">

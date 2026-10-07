@@ -7,6 +7,16 @@ export type NflMockDraftPick = {
   college: string;
 };
 
+export type NflMockDraftSnapshot = {
+  observed_at: string;
+  pick: number;
+  team: string;
+  team_abbreviation: string;
+  player: string;
+  position: string;
+  college: string;
+};
+
 export type NflMockDraft = {
   title: string;
   updated: string | null;

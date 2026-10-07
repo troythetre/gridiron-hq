@@ -36,13 +36,15 @@ export default async function MembershipPage({
 
   const ownerAccess = hasOwnerAccess(user.email);
   return <div className="mx-auto max-w-5xl space-y-6">
-    <header className="relative isolate min-h-60 overflow-hidden rounded-3xl border border-red-400/25 bg-[#22080c]">
-      <Image src="/membership-hero.webp" alt="" fill priority className="object-contain object-right" />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(15,8,10,.97)_0%,rgba(29,8,13,.86)_56%,rgba(18,9,13,.25)_100%),linear-gradient(0deg,rgba(9,9,12,.55),transparent)]" />
-      <div className="relative z-10 flex min-h-60 flex-col justify-center p-7 sm:p-10">
+    <header className="relative isolate min-h-[17rem] overflow-hidden rounded-3xl border border-red-400/25 bg-[linear-gradient(120deg,#22080c,#10090b_75%)] sm:min-h-[18rem]">
+      <div aria-hidden="true" className="absolute inset-y-0 right-0 hidden w-[42%] sm:block">
+        <Image src="/membership-hero.webp" alt="" fill priority sizes="(max-width: 1024px) 42vw, 420px" className="object-cover object-[center_35%]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#18090d_0%,rgba(24,9,13,.68)_30%,rgba(24,9,13,.08)_100%),linear-gradient(0deg,rgba(9,9,12,.45),transparent)]" />
+      </div>
+      <div className="relative z-10 flex min-h-[17rem] flex-col justify-center p-6 sm:min-h-[18rem] sm:p-9">
         <p className="text-[10px] font-black uppercase tracking-[.22em] text-red-200">Memberships</p>
-        <h1 className="mt-2 font-display text-4xl font-black text-white">Pick your edge.</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-white/80">Choose fantasy tools, NFL betting tools, or college football betting tools. Each plan is separate and can be managed through Stripe.</p>
+        <h1 className="mt-2 max-w-2xl font-display text-4xl font-black text-white sm:text-5xl">Pick your edge.</h1>
+        <p className="mt-3 max-w-xl text-sm leading-6 text-white/80">Choose fantasy tools, NFL betting tools, or college football betting tools. Each plan is separate and can be managed through Stripe.</p>
       </div>
     </header>
     {params.success && <p className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">Checkout complete. Access will unlock when Stripe confirms your subscription.</p>}

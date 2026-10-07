@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useId, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
-  ArrowLeft, ArrowUpRight, BarChart3, CalendarDays, Check, ChevronDown, ChevronRight, CircleDot,
+  ArrowLeft, ArrowUpRight, BarChart3, CalendarDays, Check, ChevronDown, ChevronRight, CircleDot, Heart,
   Clipboard, GraduationCap, HeartPulse, Info, Newspaper, Sparkles, TrendingUp, UserRound,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { PlayerAvatar } from "@/components/player-avatar";
 import type { InjuryRow, NewsItemRow, PlayerRow } from "@/lib/types";
 import type { PlayerProfileData, PlayerWeekStat } from "@/lib/player-profile-types";
 import { PLAYER_PHOTOS, teamColors } from "@/lib/player-visuals";
+import { togglePlayerFavorite, usePlayerFavorites } from "@/lib/player-favorites";
 import { cn } from "@/lib/utils";
 
 type ProfileTab = "stats" | "bio" | "trends" | "news" | "more";
@@ -48,6 +49,8 @@ export function PlayerProfile({
   const [comparedSeasons, setComparedSeasons] = useState<number[]>(() => (profile?.history ?? []).slice(-3).map((season) => season.season));
   const [expandedNewsId, setExpandedNewsId] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const favoriteIds = usePlayerFavorites();
+  const isFavorite = favoriteIds.has(player.id);
   const weeks = useMemo(() => {
     if (profile?.weeks?.length) return profile.weeks;
     return [
@@ -78,15 +81,6 @@ export function PlayerProfile({
     "--team-color": teamPrimary,
     "--team-accent": teamSecondary,
   } as CSSProperties;
-  const heroStyle: CSSProperties = {
-    ...teamStyle,
-    ...(photo
-      ? {
-          backgroundImage: `linear-gradient(90deg, rgba(6,10,16,.98) 0%, rgba(6,10,16,.86) 40%, rgba(6,10,16,.38) 100%), linear-gradient(0deg, rgba(6,10,16,.92), transparent 65%), url("${photo}")`,
-          backgroundPosition: "center, center, 65% 35%",
-        }
-      : {}),
-  } as CSSProperties;
 
   const shareProfile = async () => {
     if (!navigator.clipboard) return;
@@ -105,24 +99,52 @@ export function PlayerProfile({
           <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-0.5" />
           Player board
         </Link>
-        <button
-          onClick={shareProfile}
-          className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-surface/80 px-4 py-2 text-sm font-semibold text-muted transition hover:border-primary/50 hover:text-primary"
-          type="button"
-        >
-          {copied ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
-          {copied ? "Copied" : "Share profile"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => togglePlayerFavorite(player.id)}
+            className={`inline-flex items-center gap-2 rounded-full border border-border/80 bg-surface/80 px-4 py-2 text-sm font-semibold transition hover:border-rose-400/60 hover:text-rose-300 ${isFavorite ? "text-rose-400" : "text-muted"}`}
+            type="button"
+            aria-pressed={isFavorite}
+            aria-label={`${isFavorite ? "Remove" : "Add"} ${player.name} ${isFavorite ? "from" : "to"} favorites`}
+          >
+            <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+            {isFavorite ? "Favorited" : "Favorite"}
+          </button>
+          <button
+            onClick={shareProfile}
+            className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-surface/80 px-4 py-2 text-sm font-semibold text-muted transition hover:border-primary/50 hover:text-primary"
+            type="button"
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
+            {copied ? "Copied" : "Share profile"}
+          </button>
+        </div>
       </div>
 
       <section
         className="relative isolate overflow-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(ellipse_at_70%_0%,color-mix(in_srgb,var(--team-color)_45%,transparent),transparent_48%),linear-gradient(130deg,#101820,#090b10_58%,#17130a)] bg-cover shadow-[0_30px_100px_-45px_color-mix(in_srgb,var(--team-color)_70%,transparent)]"
-        style={heroStyle}
+        style={teamStyle}
       >
-        <div className="absolute inset-0 -z-10 opacity-[.11] [background-image:linear-gradient(rgba(255,255,255,.3)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.3)_1px,transparent_1px)] [background-size:42px_42px] [mask-image:linear-gradient(90deg,black,transparent_80%)]" />
-        <div className="absolute right-[-5rem] top-[-7rem] -z-10 h-80 w-80 rounded-full border-[1px] border-white/10" />
-        <div className="absolute right-[-1rem] top-[-3rem] -z-10 h-64 w-64 rounded-full border-[1px] border-white/10" />
-        <div className="grid min-h-[360px] gap-6 p-5 sm:min-h-[420px] sm:grid-cols-[1fr_auto] sm:items-end sm:p-9 lg:p-12">
+        {photo ? (
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0">
+            <Image
+              src={photo}
+              alt=""
+              fill
+              unoptimized={photo.startsWith("http")}
+              sizes="(max-width: 768px) 100vw, 1440px"
+              className="object-cover object-[65%_35%] opacity-75"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#060a10]/95 via-[#060a10]/65 to-[#060a10]/15" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#060a10]/90 via-transparent to-[#060a10]/10" />
+          </div>
+        ) : (
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_70%_0%,color-mix(in_srgb,var(--team-color)_45%,transparent),transparent_48%),linear-gradient(130deg,#101820,#090b10_58%,#17130a)]" />
+        )}
+        <div className="pointer-events-none absolute inset-0 z-10 opacity-[.11] [background-image:linear-gradient(rgba(255,255,255,.3)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.3)_1px,transparent_1px)] [background-size:42px_42px] [mask-image:linear-gradient(90deg,black,transparent_80%)]" />
+        <div className="pointer-events-none absolute right-[-5rem] top-[-7rem] z-10 h-80 w-80 rounded-full border-[1px] border-white/10" />
+        <div className="pointer-events-none absolute right-[-1rem] top-[-3rem] z-10 h-64 w-64 rounded-full border-[1px] border-white/10" />
+        <div className="relative z-20 grid min-h-[360px] gap-6 p-5 sm:min-h-[420px] sm:grid-cols-[1fr_auto] sm:items-end sm:p-9 lg:p-12">
           <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-end sm:gap-7">
             <div className="relative shrink-0 rounded-[2rem] border border-white/20 bg-black/30 p-2 shadow-2xl backdrop-blur-sm">
               <div className="absolute inset-0 rounded-[2rem] bg-[radial-gradient(circle,color-mix(in_srgb,var(--team-accent)_35%,transparent),transparent_70%)]" />
@@ -176,7 +198,7 @@ export function PlayerProfile({
             <HeroStat label="Position rank" value={`#${player.pos_rank ?? "—"}`} hint={player.pos} color="#c084fc" />
           </div>
         </div>
-        <div className="flex items-center justify-between border-t border-white/10 bg-black/25 px-5 py-3 text-[10px] font-bold uppercase tracking-[.18em] text-white/50 sm:px-9">
+        <div className="relative z-20 flex items-center justify-between border-t border-white/10 bg-black/25 px-5 py-3 text-[10px] font-bold uppercase tracking-[.18em] text-white/50 sm:px-9">
           <span>Gridiron HQ · Player intelligence</span>
           <span>Updated through week {Math.max(0, ...weeks.map((week) => week.week)) || "—"}</span>
         </div>

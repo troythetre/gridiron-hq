@@ -26,7 +26,7 @@ function PlayerPicker({ label, players, selected, onChange }: { label: string; p
   const [query, setQuery] = useState("");
   const filtered = useMemo(() => players.filter((player) => `${player.name} ${player.team} ${player.pos}`.toLowerCase().includes(query.toLowerCase())).slice(0, 80), [players, query]);
   function toggle(id: number) { onChange(selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id]); }
-  return <section className="rounded-2xl border border-border bg-surface p-4">
+  return <section className="rounded-3xl border border-border bg-surface p-4">
     <h2 className="text-sm font-extrabold uppercase tracking-wider">{label}</h2>
     <label className="relative mt-3 block"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a player" className="h-10 w-full rounded-full border border-border bg-background pl-10 pr-4 text-sm outline-none focus:border-primary/50" /></label>
     <div className="mt-3 max-h-[min(62vh,38rem)] space-y-2 overflow-y-auto pr-1">
@@ -38,7 +38,7 @@ function PlayerPicker({ label, players, selected, onChange }: { label: string; p
           type="button"
           aria-pressed={isSelected}
           onClick={() => toggle(player.id)}
-          className={`group relative isolate flex min-h-20 w-full items-end overflow-hidden rounded-xl border p-3 text-left transition ${isSelected ? "border-primary/70 ring-1 ring-primary/40" : "border-border/80 hover:border-primary/50"}`}
+          className={`group relative isolate flex min-h-20 w-full items-end overflow-hidden rounded-2xl border p-3 text-left transition ${isSelected ? "border-primary/70 ring-1 ring-primary/40" : "border-border/80 hover:border-primary/50"}`}
         >
           {photo ? (
             <span aria-hidden="true" className="absolute inset-y-0 right-0 w-[72%]">

@@ -1,12 +1,10 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/logo";
 import { GridironAssistant } from "@/components/gridiron-assistant";
 import { FantasyPreferenceControls, FantasyPreferencesProvider } from "@/components/fantasy-preferences";
 import { LogOut } from "lucide-react";
-import { DashboardNavigation } from "./dashboard-navigation";
+import { DashboardTopNavigation } from "./dashboard-navigation";
 import { getCollegeFootballRankings } from "@/lib/college-football-live";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -20,36 +18,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <FantasyPreferencesProvider>
-    <div className="flex min-h-screen min-w-0 bg-background">
-      <aside className="hidden w-60 flex-col border-r border-border bg-surface px-4 py-6 sm:flex">
-        <Link href="/dashboard" className="mb-8 px-2">
-          <Logo height={34} />
-        </Link>
-        <DashboardNavigation />
-        <div className="border-t border-border pt-4">
-          <p className="truncate px-2 text-sm font-medium">{displayName}</p>
-          <form action={logout}>
-            <Button type="submit" variant="ghost" size="sm" className="mt-1 w-full justify-start gap-2 text-muted">
-              <LogOut className="h-4 w-4" /> Sign out
-            </Button>
-          </form>
-        </div>
-      </aside>
-
-      {/* Mobile top nav */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-4 py-3 sm:hidden">
-          <Link href="/dashboard">
-            <Logo height={26} />
-          </Link>
-          <form action={logout}>
-            <Button type="submit" variant="ghost" size="sm">
+    <div className="relative min-h-screen min-w-0 bg-background">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_15%_0%,rgba(37,99,235,.11),transparent_38%),radial-gradient(ellipse_at_85%_5%,rgba(124,58,237,.1),transparent_34%)]" />
+      <div className="relative z-10 flex min-h-screen min-w-0 flex-col">
+        <DashboardTopNavigation trailing={
+          <form action={logout} className="shrink-0">
+            <Button type="submit" variant="ghost" size="icon" aria-label={`Sign out ${displayName}`} title="Sign out" className="h-9 w-9 rounded-full border border-white/10 bg-white/[.04] text-blue-100/70 transition hover:bg-white/[.1] hover:text-white">
               <LogOut className="h-4 w-4" />
             </Button>
           </form>
-        </div>
-        <DashboardNavigation mobile />
-        <main className="min-w-0 flex-1 px-4 py-5 sm:px-8 sm:py-8">
+        } />
+        <main className="mx-auto min-w-0 w-full max-w-7xl flex-1 px-4 py-5 sm:px-8 sm:py-7">
           <div className="mb-5 flex justify-end"><FantasyPreferenceControls /></div>
           {children}
         </main>

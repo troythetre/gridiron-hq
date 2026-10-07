@@ -65,7 +65,7 @@ function WaiverPickList({ picks }: { picks: Awaited<ReturnType<typeof getWaiverP
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {picks.map((pick, index) => (
-        <Card key={pick.id} className={`group relative isolate min-h-44 overflow-hidden border-l-4 border-y-slate-700/80 border-r-slate-700/80 bg-gradient-to-br from-slate-800/60 to-slate-950/80 transition hover:-translate-y-0.5 hover:border-r-slate-500 hover:shadow-xl hover:shadow-black/20 ${positionAccent[(pick.pos ?? "").toUpperCase()] ?? "border-l-slate-400"}`}>
+        <Card key={pick.id} className={`group relative isolate min-h-44 overflow-hidden rounded-3xl border-l-4 border-y-slate-700/80 border-r-slate-700/80 bg-gradient-to-br from-slate-800/60 to-slate-950/80 transition hover:-translate-y-0.5 hover:border-r-slate-500 hover:shadow-xl hover:shadow-black/20 ${positionAccent[(pick.pos ?? "").toUpperCase()] ?? "border-l-slate-400"}`}>
           {PLAYER_PHOTOS[pick.name] ? (
             <span aria-hidden="true" className="absolute inset-y-0 right-0 w-[72%]">
               <Image src={PLAYER_PHOTOS[pick.name]} alt="" fill unoptimized={PLAYER_PHOTOS[pick.name].startsWith("http")} sizes="(max-width: 640px) 75vw, 36vw" className="object-cover object-[center_18%] opacity-45 transition duration-300 group-hover:scale-105 group-hover:opacity-60" />

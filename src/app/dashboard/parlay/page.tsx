@@ -41,6 +41,23 @@ export default async function ParlayPage({
     initialTab === "mock-draft" ? getNflMockDraft() : Promise.resolve(null),
     initialTab === "college" ? getCollegeFootballRankings() : Promise.resolve(null),
   ]);
+  let mockDraftHistory: import("@/lib/nfl-mock-draft").NflMockDraftSnapshot[] = [];
+  let mockDraftHistoryReady = true;
+  if (initialTab === "mock-draft" && mockDraft && !mockDraft.error) {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("nfl_mock_draft_snapshots")
+      .select("observed_at,pick,team,team_abbreviation,player,position,college")
+      .order("observed_at", { ascending: false })
+      .limit(2000);
+    if (error?.code === "PGRST205") {
+      mockDraftHistoryReady = false;
+    } else if (error) {
+      throw error;
+    } else {
+      mockDraftHistory = data ?? [];
+    }
+  }
 
   return (
     <ParlayLab
@@ -49,6 +66,8 @@ export default async function ParlayPage({
       initialTab={initialTab}
       mockDraft={mockDraft}
       collegeRankings={collegeRankings}
+      mockDraftHistory={mockDraftHistory}
+      mockDraftHistoryReady={mockDraftHistoryReady}
     />
   );
 }
