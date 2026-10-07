@@ -32,6 +32,30 @@ function toTradeInput(p: PlayerRow, injuriesByName: Map<string, InjuryRow>) {
   };
 }
 
+function projectedStarterPoints(roster: PlayerRow[]) {
+  const scored = roster.filter((player) => ["QB", "RB", "WR", "TE"].includes(player.pos)).sort((a, b) => b.avg_pts - a.avg_pts);
+  const starters: PlayerRow[] = [];
+  const take = (position: string, count: number) => {
+    for (const player of scored.filter((candidate) => candidate.pos === position && !starters.includes(candidate)).slice(0, count)) {
+      starters.push(player);
+    }
+  };
+  take("QB", 1);
+  take("RB", 2);
+  take("WR", 2);
+  take("TE", 1);
+  const flex = scored.find((player) => ["RB", "WR", "TE"].includes(player.pos) && !starters.includes(player));
+  if (flex) starters.push(flex);
+  return Math.round(starters.reduce((sum, player) => sum + player.avg_pts, 0) * 10) / 10;
+}
+
+function rosterAfterTrade(roster: PlayerRow[], outgoing: PlayerRow[], incoming: PlayerRow[]) {
+  const outgoingIds = new Set(outgoing.map((player) => player.id));
+  const current = roster.filter((player) => !outgoingIds.has(player.id));
+  const currentIds = new Set(current.map((player) => player.id));
+  return [...current, ...incoming.filter((player) => !currentIds.has(player.id))];
+}
+
 function PlayerToggleList({
   players,
   selected,
@@ -117,6 +141,23 @@ export function ProposeTradeForm({
       receivingPlayers.map((p) => toTradeInput(p, injuriesByName))
     );
   }, [giving, receiving, myMember.roster, recipient, injuriesByName]);
+
+  const rosterImpact = useMemo(() => {
+    if (!recipient || (giving.size === 0 && receiving.size === 0)) return null;
+    const givingPlayers = myMember.roster.filter((player) => giving.has(player.id));
+    const receivingPlayers = recipient.roster.filter((player) => receiving.has(player.id));
+    const myAfter = rosterAfterTrade(myMember.roster, givingPlayers, receivingPlayers);
+    const theirAfter = rosterAfterTrade(recipient.roster, receivingPlayers, givingPlayers);
+    const myBeforePoints = projectedStarterPoints(myMember.roster);
+    const myAfterPoints = projectedStarterPoints(myAfter);
+    const theirBeforePoints = projectedStarterPoints(recipient.roster);
+    const theirAfterPoints = projectedStarterPoints(theirAfter);
+    return {
+      mine: { before: myBeforePoints, after: myAfterPoints, change: Math.round((myAfterPoints - myBeforePoints) * 10) / 10 },
+      theirs: { before: theirBeforePoints, after: theirAfterPoints, change: Math.round((theirAfterPoints - theirBeforePoints) * 10) / 10 },
+      edge: Math.round(((myAfterPoints - myBeforePoints) - (theirAfterPoints - theirBeforePoints)) * 10) / 10,
+    };
+  }, [giving, receiving, myMember, recipient]);
 
   // Handle form submission, sending the trade proposal to the server and updating state based on the response.
   function handleSubmit() {
@@ -231,6 +272,34 @@ export function ProposeTradeForm({
                     : `Favors them by ${Math.abs(evaluation.percentDiff)}%`}
               </span>
             </div>
+          </div>
+        )}
+
+        {rosterImpact && (
+          <div className="rounded-[var(--radius)] border border-border bg-background/40 p-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted">Roster fit · projected starters</p>
+            <div className="mt-2 grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-muted">{myMember.teamName}</p>
+                <p className="font-semibold">{rosterImpact.mine.before.toFixed(1)} → {rosterImpact.mine.after.toFixed(1)} pts</p>
+                <p className={cn("text-xs", rosterImpact.mine.change >= 0 ? "text-success" : "text-danger")}>
+                  {rosterImpact.mine.change >= 0 ? "+" : ""}{rosterImpact.mine.change.toFixed(1)} pts/week
+                </p>
+              </div>
+              <div>
+                <p className="text-muted">{recipient?.teamName}</p>
+                <p className="font-semibold">{rosterImpact.theirs.before.toFixed(1)} → {rosterImpact.theirs.after.toFixed(1)} pts</p>
+                <p className={cn("text-xs", rosterImpact.theirs.change >= 0 ? "text-success" : "text-danger")}>
+                  {rosterImpact.theirs.change >= 0 ? "+" : ""}{rosterImpact.theirs.change.toFixed(1)} pts/week
+                </p>
+              </div>
+            </div>
+            <p className="mt-2 text-xs font-semibold text-foreground">
+              {Math.abs(rosterImpact.edge) < 0.5
+                ? "Similar projected lineup impact for both teams."
+                : `${rosterImpact.edge > 0 ? myMember.teamName : recipient?.teamName} gains ${Math.abs(rosterImpact.edge).toFixed(1)} more starter points per week from roster fit.`}
+            </p>
+            <p className="mt-2 text-[11px] text-muted">Uses each roster&apos;s top projected QB, 2 RB, 2 WR, TE, and FLEX. Bench depth is included when calculating the change.</p>
           </div>
         )}
 
