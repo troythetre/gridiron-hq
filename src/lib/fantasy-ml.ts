@@ -2,6 +2,7 @@ import type { PlayerProfileData, PlayerWeekStat } from "@/lib/player-profile-typ
 
 const POSITIONS = ["QB", "RB", "WR", "TE", "K", "DST"] as const;
 const FEATURE_COUNT = 10;
+const CONTEXT_FEATURE_COUNT = 16;
 const RIDGE_PENALTY = 0.25;
 
 type ModelObservation = {
@@ -18,20 +19,79 @@ type TrainingRow = {
   position: string;
   features: number[];
   target: number;
+  playerId?: string;
+  gameType?: string;
+  baseline?: number;
 };
+
+export type NflModelGame = {
+  player_id: string;
+  position: string;
+  season: number;
+  week: number;
+  game_type: string;
+  game_date: string;
+  fantasy_points: number | null;
+  targets: number | null;
+  carries: number | null;
+  opponent: string | null;
+  coach: string | null;
+  is_home: boolean | null;
+  expected_qb_id: string | null;
+  qb_chemistry: number | null;
+  rb_share: number | null;
+  prior_go_rate: number | null;
+  prior_coach_go_rate: number | null;
+  prior_rush_epa: number | null;
+  prior_rush_success: number | null;
+  prior_sack_rate: number | null;
+};
+
+export type NflForecastContext = Pick<
+  NflModelGame,
+  | "game_type"
+  | "is_home"
+  | "qb_chemistry"
+  | "rb_share"
+  | "prior_go_rate"
+  | "prior_coach_go_rate"
+  | "prior_rush_epa"
+  | "prior_rush_success"
+  | "prior_sack_rate"
+>;
 
 export type FantasyScoreModel = {
   models: Partial<Record<(typeof POSITIONS)[number], number[]>>;
+  contextModels?: Partial<Record<(typeof POSITIONS)[number], number[]>>;
   validation: {
     modelMae: number | null;
     baselineMae: number | null;
     samples: number;
     seasons: number[];
+    rollingContext?: ContextBenchmark;
   };
+};
+
+export type ContextBenchmark = {
+  modelMae: number | null;
+  baselineMae: number | null;
+  samples: number;
+  playerCount: number;
+  improvementPercent: number | null;
+  maeDifferenceInterval: [number, number] | null;
+  conclusion: "model-ahead" | "baseline-ahead" | "inconclusive" | "not-enough-data";
+  seasons: {
+    season: number;
+    samples: number;
+    regularSeasonMae: number | null;
+    playoffMae: number | null;
+    baselineMae: number | null;
+  }[];
 };
 
 export type FantasyScoreForecast = {
   points: number;
+  modelVersion: "base" | "context";
 };
 
 function normalizePosition(position: string): (typeof POSITIONS)[number] | null {
@@ -87,6 +147,22 @@ function buildFeatures(previous: ModelObservation[], currentConcern = 0): number
   ];
 }
 
+function contextFeatures(context: NflForecastContext): number[] {
+  const value = (number: number | null) => number == null || !Number.isFinite(number) ? 0 : number;
+  const present = (number: number | null) => number == null || !Number.isFinite(number) ? 0 : 1;
+  return [
+    context.is_home == null ? 0 : Number(context.is_home),
+    context.game_type === "POST" ? 1 : 0,
+    value(context.qb_chemistry), present(context.qb_chemistry),
+    value(context.rb_share), present(context.rb_share),
+    value(context.prior_go_rate), present(context.prior_go_rate),
+    value(context.prior_coach_go_rate), present(context.prior_coach_go_rate),
+    value(context.prior_rush_epa), present(context.prior_rush_epa),
+    value(context.prior_rush_success), present(context.prior_rush_success),
+    value(context.prior_sack_rate), present(context.prior_sack_rate),
+  ];
+}
+
 function solve(matrix: number[][], vector: number[]): number[] | null {
   const size = vector.length;
   const augmented = matrix.map((row, index) => [...row, vector[index]]);
@@ -114,19 +190,20 @@ function solve(matrix: number[][], vector: number[]): number[] | null {
 }
 
 function fit(rows: TrainingRow[]): number[] | null {
-  if (rows.length < FEATURE_COUNT + 1) return null;
-  const matrix = Array.from({ length: FEATURE_COUNT + 1 }, () => Array(FEATURE_COUNT + 1).fill(0));
-  const vector = Array(FEATURE_COUNT + 1).fill(0);
+  const featureCount = rows[0]?.features.length ?? FEATURE_COUNT + 1;
+  if (rows.length < featureCount + 1 || rows.some((row) => row.features.length !== featureCount)) return null;
+  const matrix = Array.from({ length: featureCount }, () => Array(featureCount).fill(0));
+  const vector = Array(featureCount).fill(0);
 
   for (const row of rows) {
-    for (let left = 0; left <= FEATURE_COUNT; left += 1) {
+    for (let left = 0; left < featureCount; left += 1) {
       vector[left] += row.features[left] * row.target;
-      for (let right = 0; right <= FEATURE_COUNT; right += 1) {
+      for (let right = 0; right < featureCount; right += 1) {
         matrix[left][right] += row.features[left] * row.features[right];
       }
     }
   }
-  for (let index = 1; index <= FEATURE_COUNT; index += 1) {
+  for (let index = 1; index < featureCount; index += 1) {
     matrix[index][index] += RIDGE_PENALTY;
   }
   return solve(matrix, vector);

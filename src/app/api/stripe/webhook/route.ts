@@ -26,14 +26,18 @@ function verifyStripeSignature(payload: string, signature: string, secret: strin
   const fields = signature.split(",").map((part) => part.split("="));
   const timestamp = fields.find(([key]) => key === "t")?.[1];
   const signatures = fields.filter(([key]) => key === "v1").map(([, value]) => value);
+
+  // Reject if the timestamp is missing, not a number, or more than 5 minutes from the current time
   if (!timestamp || !Number.isFinite(Number(timestamp)) || Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
   const expected = createHmac("sha256", secret).update(`${timestamp}.${payload}`).digest();
   return signatures.some((value) => {
     if (!/^[a-f\d]{64}$/i.test(value)) return false;
+    // Use timingSafeEqual to prevent timing attacks when comparing the expected signature with the provided signature
     return timingSafeEqual(expected, Buffer.from(value, "hex"));
   });
 }
 
+// Function to retrieve a Stripe subscription by its ID
 async function stripeSubscription(subscriptionId: string): Promise<StripeSubscription> {
   const response = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, {
     headers: { authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
@@ -53,11 +57,15 @@ async function saveSubscription(subscription: StripeSubscription) {
   let profileId = subscription.metadata?.profile_id;
   const metadataProductKey = subscription.metadata?.product_key;
   let productKey = metadataProductKey;
+
+  // If the profile_id is not present in the subscription metadata, attempt to look it up in the database using the subscription ID
   if (!profileId) {
     const { data } = await admin.from("membership_subscriptions").select("profile_id,product_key").eq("stripe_subscription_id", subscriptionId).maybeSingle();
     profileId = data?.profile_id;
     productKey ??= data?.product_key;
   }
+
+  // If the profile_id is still not found, throw an error since we cannot associate the subscription with a user
   if (!profileId) throw new Error("Stripe subscription has no matching profile_id metadata");
   productKey ??= "gridiron_plus";
   if (!isMembershipProductKey(productKey)) throw new Error("Stripe subscription has an unknown product_key");

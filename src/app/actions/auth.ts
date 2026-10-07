@@ -33,6 +33,7 @@ export async function signup(_prevState: AuthFormState, formData: FormData): Pro
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
+  // Create a Supabase client and attempt to sign up the user
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
@@ -49,6 +50,7 @@ export async function signup(_prevState: AuthFormState, formData: FormData): Pro
   redirect("/login?confirmEmail=1");
 }
 
+// Login function that validates the form data and attempts to log in the user
 export async function login(_prevState: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const parsed = LoginSchema.safeParse({
     email: formData.get("email"),

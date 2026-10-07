@@ -35,6 +35,7 @@ export async function setRosterSlot(
   return { error: null };
 }
 
+// Function to clear a roster slot for a specific league member
 export async function clearRosterSlot(leagueMemberId: string, slot: RosterSlotName) {
   const supabase = await createClient();
   const { error } = await supabase

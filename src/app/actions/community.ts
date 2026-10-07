@@ -9,6 +9,7 @@ const PostSchema = z.string().trim().min(1).max(4000);
 const ReplySchema = z.string().trim().min(1).max(2000);
 const MessageSchema = z.string().trim().min(1).max(4000);
 
+// Function to create an anonymous forum post
 export async function createAnonymousForumPost(formData: FormData) {
   const body = PostSchema.safeParse(formData.get("body"));
   if (!body.success) return;
@@ -19,6 +20,7 @@ export async function createAnonymousForumPost(formData: FormData) {
   revalidatePath("/dashboard/community");
 }
 
+// Function to create an anonymous forum reply to a specific post
 export async function createAnonymousForumReply(postId: string, formData: FormData) {
   const body = ReplySchema.safeParse(formData.get("body"));
   if (!body.success) return;
@@ -29,6 +31,7 @@ export async function createAnonymousForumReply(postId: string, formData: FormDa
   revalidatePath("/dashboard/community");
 }
 
+// Function to toggle following/unfollowing a user
 export async function toggleFollow(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -48,6 +51,7 @@ export async function toggleFollow(formData: FormData) {
   revalidatePath("/dashboard/messages");
 }
 
+// Function to send a direct message to another user
 export async function sendDirectMessage(recipientId: string, formData: FormData) {
   const body = MessageSchema.safeParse(formData.get("body"));
   if (!body.success) return;

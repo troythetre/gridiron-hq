@@ -16,6 +16,7 @@ function appUrl() {
   }
 }
 
+// Helper function to create a Stripe session for checkout or billing portal
 async function createStripeSession(endpoint: string, secret: string, form: URLSearchParams) {
   const response = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
     method: "POST",
@@ -29,6 +30,7 @@ async function createStripeSession(endpoint: string, secret: string, form: URLSe
   return { response, result };
 }
 
+// Function to start the membership checkout process for a specific product
 export async function startMembershipCheckout(productKey: MembershipProductKey) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -41,6 +43,7 @@ export async function startMembershipCheckout(productKey: MembershipProductKey) 
   const baseUrl = appUrl();
   if (!secret || !price || !baseUrl) redirect("/dashboard/membership?error=setup");
 
+  // Check if the user already has an active or trialing membership for the specified product
   const { data: memberships, error: membershipError } = await supabase
     .from("membership_subscriptions")
     .select("product_key,status,current_period_end,stripe_customer_id")
@@ -53,6 +56,7 @@ export async function startMembershipCheckout(productKey: MembershipProductKey) 
     redirect("/dashboard/membership?error=already-active");
   }
 
+  // Create a Stripe checkout session for the user
   const stripeCustomerId = memberships.find((row) => row.stripe_customer_id)?.stripe_customer_id;
   const form = new URLSearchParams({
     mode: "subscription",
@@ -69,6 +73,7 @@ export async function startMembershipCheckout(productKey: MembershipProductKey) 
   if (stripeCustomerId) form.set("customer", stripeCustomerId);
   else if (user.email) form.set("customer_email", user.email);
 
+  // Create the Stripe session and handle the response
   const { response, result } = await createStripeSession("checkout/sessions", secret, form);
   if (!response.ok || !result.url) {
     console.error("Stripe checkout session creation failed", response.status, result.error?.message);
@@ -77,12 +82,14 @@ export async function startMembershipCheckout(productKey: MembershipProductKey) 
   redirect(result.url);
 }
 
+// Function to open the Stripe billing portal for managing the user's membership
 export async function openMembershipPortal(productKey: MembershipProductKey) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   if (!isMembershipProductKey(productKey)) redirect("/dashboard/membership?error=plan");
 
+  // Check if the user has an active membership for the specified product
   const secret = process.env.STRIPE_SECRET_KEY;
   const baseUrl = appUrl();
   if (!secret || !baseUrl) redirect("/dashboard/membership?error=setup");

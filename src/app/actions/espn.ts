@@ -1,11 +1,12 @@
 "use server";
 
-import { z } from "zod";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { z } from "zod"; // Importing the zod library for schema validation
+import { revalidatePath } from "next/cache"; // Importing the revalidatePath function from Next.js for cache revalidation
+import { redirect } from "next/navigation"; // Importing the redirect function from Next.js for navigation
 import { createClient } from "@/lib/supabase/server";
 import { currentEspnSeason, decryptEspnCookies, encryptEspnCookies, fetchEspnRoster } from "@/lib/espn";
 
+// Type definition for the state returned by action functions
 type ActionState = { error?: string } | undefined;
 const ConnectionSchema = z.object({
   leagueId: z.string().trim().min(1).max(20).regex(/^\d+$/, "League ID must be numeric."),
@@ -15,6 +16,7 @@ const ConnectionSchema = z.object({
   teamId: z.string().trim().max(10).regex(/^\d*$/, "Team ID must be numeric.").optional(),
 });
 
+// Function to connect to an ESPN league
 export async function connectEspnLeague(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = ConnectionSchema.safeParse({
     leagueId: formData.get("leagueId"), season: formData.get("season"), swid: formData.get("swid"),
@@ -29,6 +31,7 @@ export async function connectEspnLeague(_prev: ActionState, formData: FormData):
     const roster = await fetchEspnRoster(parsed.data.leagueId, parsed.data.season, parsed.data.swid, parsed.data.espnS2, parsed.data.teamId);
     const encrypted = encryptEspnCookies({ swid: parsed.data.swid, espnS2: parsed.data.espnS2 });
     const { error: linkError } = await supabase.from("espn_links").upsert({
+      // Store the encrypted ESPN cookies and league information in the database
       profile_id: user.id,
       espn_league_id: roster.league_id,
       season: parsed.data.season,
@@ -58,6 +61,7 @@ export async function connectEspnLeague(_prev: ActionState, formData: FormData):
   return {};
 }
 
+// Function to synchronize the ESPN league data
 export async function syncEspnLeague(leagueId: string): Promise<{ error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -86,6 +90,7 @@ export async function syncEspnLeague(leagueId: string): Promise<{ error?: string
   return {};
 }
 
+// Function to remove an ESPN league connection
 export async function removeEspnLeague(leagueId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
