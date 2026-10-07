@@ -11,6 +11,8 @@ In Cloudflare, open **Workers & Pages → gridiron-hq → Settings → Builds** 
 
 The deploy command skips rebuilding because Workers Builds has already run the build command. For a one-off local deploy instead, use `npm run deploy:vinext` after logging into Cloudflare.
 
+After changing these settings, trigger a fresh build with a push that changes a tracked file included by **Build watch paths**. An empty commit may not trigger a build because it changes no files. In the build log, confirm that it runs `npm run build:vinext` followed by `npm run deploy:vinext:built`.
+
 The Worker name in `cloudflare.config.ts` must stay `gridiron-hq` so deployments update the existing `gridiron-hq.yw2888.workers.dev` URL.
 
 ## Configure app environment
