@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import Image from "next/image";
+import { useId, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
-  ArrowLeft, ArrowUpRight, BarChart3, CalendarDays, Check, ChevronRight, CircleDot,
+  ArrowLeft, ArrowUpRight, BarChart3, CalendarDays, Check, ChevronDown, ChevronRight, CircleDot,
   Clipboard, GraduationCap, HeartPulse, Info, Newspaper, Sparkles, TrendingUp, UserRound,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +17,8 @@ import { PLAYER_PHOTOS, teamColors } from "@/lib/player-visuals";
 import { cn } from "@/lib/utils";
 
 type ProfileTab = "stats" | "bio" | "trends" | "news" | "more";
+type TrendWeek = Pick<PlayerWeekStat, "week" | "fantasyPoints" | "rushingYards" | "receivingYards" | "targetShare" | "airYardsShare">;
+type TrendSeason = { season: number; weeks: TrendWeek[] };
 
 const PROFILE_TABS: { id: ProfileTab; label: string; icon: typeof BarChart3 }[] = [
   { id: "stats", label: "Stats", icon: BarChart3 },
@@ -30,16 +33,20 @@ export function PlayerProfile({
   profile,
   players,
   news,
+  newsAreGeneral,
   injury,
 }: {
   player: PlayerRow;
   profile: PlayerProfileData | null;
   players: PlayerRow[];
   news: NewsItemRow[];
+  newsAreGeneral: boolean;
   injury: InjuryRow | null;
 }) {
   const [tab, setTab] = useState<ProfileTab>("stats");
   const [trendSeason, setTrendSeason] = useState(profile?.season ?? new Date().getFullYear());
+  const [comparedSeasons, setComparedSeasons] = useState<number[]>(() => (profile?.history ?? []).slice(-3).map((season) => season.season));
+  const [expandedNewsId, setExpandedNewsId] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const weeks = useMemo(() => {
     if (profile?.weeks?.length) return profile.weeks;
@@ -61,15 +68,18 @@ export function PlayerProfile({
   const totalTds = sum(weeks, "passingTds") + sum(weeks, "rushingTds") + sum(weeks, "receivingTds");
   const targets = sum(weeks, "targets");
   const carries = sum(weeks, "carries");
-  const trendSeasons = (profile?.history?.length
+  const trendSeasons: TrendSeason[] = (profile?.history?.length
     ? profile.history
     : [{ season: profile?.season ?? new Date().getFullYear(), weeks }]).slice(-5);
   const selectedTrend = trendSeasons.find((season) => season.season === trendSeason) ?? trendSeasons.at(-1)!;
-  const [teamPrimary, teamSecondary] = teamColors();
+  const [teamPrimary, teamSecondary] = teamColors(player.team);
   const photo = PLAYER_PHOTOS[player.name] ?? profile?.headshotUrl ?? null;
-  const heroStyle: CSSProperties = {
+  const teamStyle = {
     "--team-color": teamPrimary,
     "--team-accent": teamSecondary,
+  } as CSSProperties;
+  const heroStyle: CSSProperties = {
+    ...teamStyle,
     ...(photo
       ? {
           backgroundImage: `linear-gradient(90deg, rgba(6,10,16,.98) 0%, rgba(6,10,16,.86) 40%, rgba(6,10,16,.38) 100%), linear-gradient(0deg, rgba(6,10,16,.92), transparent 65%), url("${photo}")`,
@@ -86,7 +96,7 @@ export function PlayerProfile({
   };
 
   return (
-    <div className="mx-auto max-w-[1440px] space-y-6 pb-10">
+    <div className="mx-auto max-w-[1440px] space-y-6 pb-10" style={teamStyle}>
       <div className="flex items-center justify-between gap-3">
         <Link
           href="/dashboard/rankings"
@@ -160,9 +170,9 @@ export function PlayerProfile({
           </div>
 
           <div className="grid grid-cols-3 gap-2 sm:w-[280px] sm:grid-cols-1 sm:gap-3">
-            <HeroStat label="Half-PPR PPG" value={pointsPerGame.toFixed(1)} hint={`${games} games`} />
-            <HeroStat label="Season points" value={pointsTotal.toFixed(1)} hint={`Rank #${player.overall_rank ?? "—"}`} />
-            <HeroStat label="Position rank" value={`#${player.pos_rank ?? "—"}`} hint={player.pos} />
+            <HeroStat label="Half-PPR PPG" value={pointsPerGame.toFixed(1)} hint={`${games} games`} color="#38bdf8" />
+            <HeroStat label="Season points" value={pointsTotal.toFixed(1)} hint={`Rank #${player.overall_rank ?? "—"}`} color="#34d399" />
+            <HeroStat label="Position rank" value={`#${player.pos_rank ?? "—"}`} hint={player.pos} color="#c084fc" />
           </div>
         </div>
         <div className="flex items-center justify-between border-t border-white/10 bg-black/25 px-5 py-3 text-[10px] font-bold uppercase tracking-[.18em] text-white/50 sm:px-9">
@@ -196,10 +206,10 @@ export function PlayerProfile({
             <MetricCard label="Touchdowns" value={totalTds.toString()} icon={<CircleDot />} />
           </div>
           <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
-            <Card className="overflow-hidden border-white/10 bg-surface/75">
+            <Card className="overflow-hidden bg-surface/75" style={{ borderColor: `${teamPrimary}55` }}>
               <CardContent className="p-0">
-                <div className="flex items-center justify-between border-b border-border/70 p-5">
-                  <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-primary">Game log</p><h2 className="mt-1 text-xl font-bold">Week by week</h2></div>
+                <div className="flex items-center justify-between border-b p-5" style={{ borderColor: `${teamPrimary}44` }}>
+                  <div><p className="text-[10px] font-black uppercase tracking-[.2em]" style={{ color: teamSecondary }}>Game log</p><h2 className="mt-1 font-display text-xl font-bold" style={{ color: teamPrimary }}>Week by week</h2></div>
                   <span className="rounded-full border border-border bg-black/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted">{profile?.season ?? "Current"}</span>
                 </div>
                 {weeks.length > 0 ? (
@@ -211,7 +221,7 @@ export function PlayerProfile({
                       <tbody>{weeks.map((week) => (
                         <tr key={week.week} className="border-t border-border/60 transition hover:bg-white/[.025]">
                           <td className="px-5 py-3.5 font-bold">WK {week.week.toString().padStart(2, "0")}</td>
-                          <td className="px-3 py-3.5 text-right font-black text-primary">{week.fantasyPoints?.toFixed(1) ?? "—"}</td>
+                          <td className="px-3 py-3.5 text-right font-black" style={{ color: week.fantasyPoints != null && week.fantasyPoints > 20 ? "#34d399" : teamPrimary }}>{week.fantasyPoints?.toFixed(1) ?? "—"}</td>
                           <td className="px-3 py-3.5 text-right text-muted">{week.passingYards ?? "—"}</td>
                           <td className="px-3 py-3.5 text-right text-muted">{week.rushingYards ?? "—"}</td>
                           <td className="px-3 py-3.5 text-right text-muted">{week.targets ?? "—"}</td>
@@ -223,10 +233,10 @@ export function PlayerProfile({
                 ) : <EmptyState message="Weekly game logs will appear as stats are added." />}
               </CardContent>
             </Card>
-            <Card className="border-white/10 bg-surface/75">
+            <Card className="bg-surface/75" style={{ borderColor: `${teamPrimary}55` }}>
               <CardContent className="p-5">
                 <SectionHeading eyebrow="Usage profile" title="Touches & targets" compact />
-                <TrendChart weeks={weeks} valueFor={(week) => (week.carries ?? 0) + (week.targets ?? 0)} unit="opps" tone="muted" />
+                <TrendChart weeks={weeks} valueFor={(week) => (week.carries ?? 0) + (week.targets ?? 0)} unit="opps" tone="muted" color={teamPrimary} />
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <MiniStat label="Carries" value={carries.toString()} />
                   <MiniStat label="Targets" value={targets.toString()} />
@@ -247,15 +257,28 @@ export function PlayerProfile({
             {trendSeasons.map(({ season }) => <button key={season} type="button" onClick={() => setTrendSeason(season)} aria-pressed={selectedTrend.season === season} className={cn("rounded-full border px-3 py-1.5 text-xs font-bold transition", selectedTrend.season === season ? "border-primary bg-primary/15 text-primary" : "border-border text-muted hover:text-foreground")}>{season}</button>)}
           </div>
           <div className="grid gap-5 xl:grid-cols-2">
-            <Card className="border-white/10 bg-surface/75"><CardContent className="p-5 sm:p-6">
+            <Card className="bg-surface/75" style={{ borderColor: `${teamPrimary}55` }}><CardContent className="p-5 sm:p-6">
               <div className="flex items-start justify-between"><SectionHeading eyebrow={`${selectedTrend.season} fantasy output`} title="Weekly half-PPR" compact /><span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-black text-primary">PTS</span></div>
-              <TrendChart weeks={selectedTrend.weeks} valueFor={(week) => week.fantasyPoints ?? 0} unit="pts" tone="bright" tall />
+              <TrendChart weeks={selectedTrend.weeks} valueFor={(week) => week.fantasyPoints ?? 0} unit="pts" tone="bright" color={teamPrimary} tall />
             </CardContent></Card>
-            <Card className="border-white/10 bg-surface/75"><CardContent className="p-5 sm:p-6">
+            <Card className="bg-surface/75" style={{ borderColor: `${teamPrimary}55` }}><CardContent className="p-5 sm:p-6">
               <div className="flex items-start justify-between"><SectionHeading eyebrow={`${selectedTrend.season} opportunity`} title="Yards from scrimmage" compact /><span className="rounded-full bg-sky-400/10 px-2.5 py-1 text-[10px] font-black text-sky-300">YDS</span></div>
-              <TrendChart weeks={selectedTrend.weeks} valueFor={(week) => (week.rushingYards ?? 0) + (week.receivingYards ?? 0)} unit="yds" tone="muted" tall />
+              <TrendChart weeks={selectedTrend.weeks} valueFor={(week) => (week.rushingYards ?? 0) + (week.receivingYards ?? 0)} unit="yds" tone="muted" color={teamPrimary} tall />
             </CardContent></Card>
           </div>
+          {trendSeasons.length > 1 && (
+            <MultiSeasonTrendCard
+              seasons={trendSeasons}
+              selectedSeasons={comparedSeasons.length ? comparedSeasons : trendSeasons.slice(-3).map((season) => season.season)}
+              onToggleSeason={(season) => setComparedSeasons((selected) =>
+                selected.includes(season)
+                  ? selected.length > 1 ? selected.filter((value) => value !== season) : selected
+                  : [...selected, season].sort((a, b) => a - b)
+              )}
+              color={teamPrimary}
+              accent={teamSecondary}
+            />
+          )}
           <div className="grid gap-3 md:grid-cols-3">
             <InsightCard label="Recent points" value={trendText(selectedTrend.weeks)} detail="Last game compared with the prior game" icon={<TrendingUp />} />
             <InsightCard label="Target share" value={formatPercent(mean(selectedTrend.weeks.map((week) => week.targetShare)))} detail="Average weekly share of team targets" icon={<CircleDot />} />
@@ -269,8 +292,9 @@ export function PlayerProfile({
 
       {tab === "news" && (
         <div className="space-y-5">
-          <SectionHeading eyebrow="Around the league" title={`${player.name} news desk`} />
-          {news.length > 0 ? <div className="grid gap-3 lg:grid-cols-2">{news.map((item) => <NewsCard key={item.id} item={item} />)}</div> : (
+          <SectionHeading eyebrow={newsAreGeneral ? "No direct coverage" : "Player coverage"} title={`${player.name} news desk`} />
+          {newsAreGeneral && <p className="text-sm text-muted">No stories directly mention {player.name} yet. We’re not showing unrelated player stories here.</p>}
+          {news.length > 0 ? <div className="grid gap-3 lg:grid-cols-2">{news.map((item) => <NewsCard key={item.id} item={item} player={player} expanded={expandedNewsId === item.id} onToggle={() => setExpandedNewsId((current) => current === item.id ? null : item.id)} general={newsAreGeneral} />)}</div> : (
             <Card className="border-white/10 bg-surface/75"><CardContent className="py-14"><EmptyState message={`No player-specific news is linked to ${player.name} yet.`} /><p className="mt-3 text-center text-xs text-muted">League-wide updates are in <Link href="/dashboard/news" className="font-bold text-primary hover:underline">Fantasy News</Link>.</p></CardContent></Card>
           )}
         </div>
@@ -328,31 +352,31 @@ function formatDecimal(value: number | null) {
   return value == null ? "—" : value.toFixed(2);
 }
 
-function trendText(weeks: PlayerWeekStat[]) {
+function trendText(weeks: { fantasyPoints: number | null }[]) {
   const played = weeks.filter((week) => typeof week.fantasyPoints === "number");
   if (played.length < 2) return "Building sample";
   const delta = (played.at(-1)?.fantasyPoints ?? 0) - (played.at(-2)?.fantasyPoints ?? 0);
   return `${delta > 0 ? "+" : ""}${delta.toFixed(1)} pts`;
 }
 
-function HeroStat({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return <div className="rounded-2xl border border-white/15 bg-black/40 px-3 py-2.5 backdrop-blur-md sm:px-4 sm:py-3">
+function HeroStat({ label, value, hint, color }: { label: string; value: string; hint: string; color: string }) {
+  return <div className="rounded-2xl border bg-black/40 px-3 py-2.5 backdrop-blur-md sm:px-4 sm:py-3" style={{ borderColor: `${color}66`, backgroundImage: `linear-gradient(120deg, ${color}16, transparent 72%)` }}>
     <p className="truncate text-[8px] font-black uppercase tracking-[.16em] text-white/55 sm:text-[9px]">{label}</p>
-    <div className="mt-0.5 flex items-baseline justify-between gap-1 sm:mt-1"><span className="font-display text-2xl font-black leading-none text-white sm:text-3xl">{value}</span><span className="hidden text-[9px] font-bold text-primary sm:block">{hint}</span></div>
+    <div className="mt-0.5 flex items-baseline justify-between gap-1 sm:mt-1"><span className="font-display text-2xl font-black leading-none sm:text-3xl" style={{ color }}>{value}</span><span className="hidden text-[9px] font-bold sm:block" style={{ color }}>{hint}</span></div>
   </div>;
 }
 
 function SectionHeading({ eyebrow, title, compact = false }: { eyebrow: string; title: string; compact?: boolean }) {
   return <div className={cn(!compact && "mb-1")}>
-    <p className="text-[9px] font-black uppercase tracking-[.2em] text-primary">{eyebrow}</p>
-    <h2 className={cn("mt-1 font-bold", compact ? "text-lg" : "text-2xl sm:text-3xl")}>{title}</h2>
+    <p className="text-[9px] font-black uppercase tracking-[.2em]" style={{ color: "var(--team-accent)" }}>{eyebrow}</p>
+    <h2 className={cn("mt-1 font-display font-bold", compact ? "text-lg" : "text-2xl sm:text-3xl")} style={{ color: "var(--team-color)" }}>{title}</h2>
   </div>;
 }
 
 function MetricCard({ label, value, icon, accent = false }: { label: string; value: string; icon: ReactNode; accent?: boolean }) {
-  return <Card className={cn("border-white/10 bg-surface/75", accent && "border-primary/25 bg-primary/[.06]")}><CardContent className="p-4 sm:p-5">
-    <div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[.14em] text-muted">{label}</span><span className={cn("text-muted", accent && "text-primary")}>{icon}</span></div>
-    <p className={cn("mt-3 font-display text-3xl font-black sm:text-4xl", accent && "text-primary")}>{value}</p>
+  return <Card className={cn("bg-surface/75", accent && "bg-[color-mix(in_srgb,var(--team-color)_8%,var(--surface))]")} style={{ borderColor: `color-mix(in srgb, var(--team-color) 34%, transparent)` }}><CardContent className="p-4 sm:p-5">
+    <div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[.14em]" style={{ color: "var(--team-accent)" }}>{label}</span><span style={{ color: "var(--team-color)" }}>{icon}</span></div>
+    <p className="mt-3 font-display text-3xl font-black sm:text-4xl" style={{ color: accent ? "var(--team-color)" : undefined }}>{value}</p>
   </CardContent></Card>;
 }
 
@@ -360,25 +384,33 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   return <div className="rounded-xl border border-border/70 bg-black/15 p-3"><p className="text-[9px] font-bold uppercase tracking-wider text-muted">{label}</p><p className="mt-1 font-display text-xl font-bold">{value}</p></div>;
 }
 
-function TrendChart({ weeks, valueFor, unit, tone, tall = false }: {
-  weeks: PlayerWeekStat[];
-  valueFor: (week: PlayerWeekStat) => number;
+function TrendChart<T extends { week: number }>({ weeks, valueFor, unit, tone, color, tall = false }: {
+  weeks: T[];
+  valueFor: (week: T) => number;
   unit: string;
   tone: "bright" | "muted";
+  color: string;
   tall?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const chartId = useId();
   const values = weeks.map((week) => Math.max(0, valueFor(week)));
   if (weeks.length === 0) return <div className="flex h-44 items-center justify-center text-xs text-muted">Weekly data not available.</div>;
   const maxValue = Math.max(1, ...values);
-  const chartHeight = tall ? 176 : 132;
+  const chartHeight = (tall ? 176 : 132) + (expanded ? 140 : 0);
   const chartWidth = Math.max(360, weeks.length * 76);
   const baseY = chartHeight - 24;
   const startX = 30;
   const step = (chartWidth - 60) / weeks.length;
-  const color = tone === "bright" ? "#f5f5f5" : "#737373";
   const points = values.map((value, i) => `${startX + step * i + step / 2},${baseY - (value / maxValue) * (chartHeight - 55)}`).join(" ");
 
-  return <div className="mt-4 overflow-x-auto">
+  return <div className="mt-4">
+    <div className="mb-2 flex justify-end">
+      <button type="button" aria-expanded={expanded} aria-controls={chartId} onClick={() => setExpanded((value) => !value)} className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-muted transition hover:border-[var(--team-color)] hover:text-foreground">
+        {expanded ? "Collapse chart" : "Expand chart"} <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </button>
+    </div>
+    <div id={chartId} className="overflow-x-auto rounded-xl transition-all">
     <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-auto min-w-full overflow-visible" role="img" aria-label={`Weekly ${unit} trend`}>
       {[0, .5, 1].map((fraction) => {
         const y = baseY - fraction * (chartHeight - 55);
@@ -392,12 +424,88 @@ function TrendChart({ weeks, valueFor, unit, tone, tall = false }: {
         return <g key={week.week}>
           <line x1={x} x2={x} y1={y} y2={baseY} stroke={color} strokeOpacity=".1" strokeWidth={Math.min(34, step * .48)} />
           <circle cx={x} cy={y} r="5" fill="#0a0a0a" stroke={color} strokeWidth="3" />
-          <text x={x} y={y - 12} textAnchor="middle" fill="white" fontSize="10" fontWeight="700">{value.toFixed(value < 10 ? 1 : 0)}</text>
+          <text x={x} y={y - 12} textAnchor="middle" fill={color} fontSize="10" fontWeight="700">{value.toFixed(value < 10 ? 1 : 0)}</text>
           <text x={x} y={chartHeight - 5} textAnchor="middle" fill="rgba(255,255,255,.45)" fontSize="9">W{week.week}</text>
         </g>;
       })}
     </svg>
+    </div>
   </div>;
+}
+
+function MultiSeasonTrendCard({
+  seasons, selectedSeasons, onToggleSeason, color, accent,
+}: {
+  seasons: TrendSeason[];
+  selectedSeasons: number[];
+  onToggleSeason: (season: number) => void;
+  color: string;
+  accent: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const chartId = useId();
+  const selected = seasons.filter((season) => selectedSeasons.includes(season.season));
+  const weekNumbers = [...new Set(selected.flatMap((season) => season.weeks.map((week) => week.week)))].sort((a, b) => a - b);
+  const values = selected.flatMap((season) => season.weeks.map((week) => week.fantasyPoints ?? 0));
+  const maxValue = Math.max(1, ...values);
+  const chartWidth = Math.max(520, weekNumbers.length * 58);
+  const chartHeight = expanded ? 370 : 240;
+  const baseY = chartHeight - 28;
+  const startX = 42;
+  const step = weekNumbers.length > 1 ? (chartWidth - 76) / (weekNumbers.length - 1) : chartWidth - 76;
+  const colors = [color, accent, "#38bdf8", "#a78bfa", "#f59e0b"];
+
+  return (
+    <Card className="bg-surface/75" style={{ borderColor: `${color}55` }}>
+      <CardContent className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <SectionHeading eyebrow="Season comparison" title="Weekly fantasy points across years" compact />
+          <div className="flex flex-wrap gap-1.5" aria-label="Choose seasons to compare">
+            {seasons.map((season) => {
+              const active = selectedSeasons.includes(season.season);
+              return <button key={season.season} type="button" aria-pressed={active} onClick={() => onToggleSeason(season.season)} className="rounded-full border px-2.5 py-1 text-[10px] font-bold transition" style={{ color: active ? color : undefined, borderColor: active ? `${color}99` : undefined, backgroundColor: active ? `${color}18` : undefined }}>{season.season}</button>;
+            })}
+          </div>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <button type="button" aria-expanded={expanded} aria-controls={chartId} onClick={() => setExpanded((value) => !value)} className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-muted transition hover:text-foreground">
+            {expanded ? "Collapse chart" : "Expand chart"} <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          </button>
+        </div>
+        {selected.length > 0 ? (
+          <div id={chartId} className="overflow-x-auto">
+            <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-auto min-w-full overflow-visible" role="img" aria-label="Fantasy points per week across selected seasons">
+              {[0, .5, 1].map((fraction) => {
+                const y = baseY - fraction * (chartHeight - 60);
+                return <g key={fraction}><line x1="34" x2={chartWidth - 10} y1={y} y2={y} stroke="rgba(255,255,255,.09)" strokeDasharray="3 5" /><text x="2" y={y + 3} fill="rgba(255,255,255,.4)" fontSize="9">{Math.round(maxValue * fraction)}</text></g>;
+              })}
+              {selected.map((season, index) => {
+                const byWeek = new Map(season.weeks.map((week) => [week.week, week.fantasyPoints ?? 0]));
+                const linePoints = weekNumbers.map((weekNumber, pointIndex) => {
+                  const x = startX + step * pointIndex;
+                  const value = byWeek.get(weekNumber);
+                  return value == null ? null : `${x},${baseY - (value / maxValue) * (chartHeight - 60)}`;
+                }).filter((point): point is string => point !== null).join(" ");
+                return <g key={season.season}>
+                  <polyline points={linePoints} fill="none" stroke={colors[index % colors.length]} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  {season.weeks.map((week) => {
+                    const pointIndex = weekNumbers.indexOf(week.week);
+                    const x = startX + step * pointIndex;
+                    const value = week.fantasyPoints ?? 0;
+                    const y = baseY - (value / maxValue) * (chartHeight - 60);
+                    return <g key={`${season.season}-${week.week}`}><circle cx={x} cy={y} r="4" fill="#0a0a0a" stroke={colors[index % colors.length]} strokeWidth="2.5" /><text x={x} y={chartHeight - 7} textAnchor="middle" fill="rgba(255,255,255,.48)" fontSize="8">W{week.week}</text></g>;
+                  })}
+                </g>;
+              })}
+            </svg>
+          </div>
+        ) : <p className="py-8 text-center text-xs text-muted">Select at least one season to display its weekly points.</p>}
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+          {selected.map((season, index) => <span key={season.season} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-muted"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: colors[index % colors.length] }} />{season.season}</span>)}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function BioPanel({ player, profile }: { player: PlayerRow; profile: PlayerProfileData | null }) {
@@ -460,13 +568,46 @@ function InsightCard({ label, value, detail, icon }: { label: string; value: str
   </CardContent></Card>;
 }
 
-function NewsCard({ item }: { item: NewsItemRow }) {
-  return <Card className="group border-white/10 bg-surface/75 transition hover:border-primary/30">
-    <CardContent className="p-5">
-      <div className="flex items-start justify-between gap-4"><span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-primary">Player update</span><span className="text-[10px] text-muted">{item.item_date ?? "Recent"}</span></div>
-      <h3 className="mt-4 text-lg font-bold leading-snug transition group-hover:text-primary">{item.article_url ? <a href={item.article_url} target="_blank" rel="noreferrer">{item.headline}<ArrowUpRight className="ml-1 inline h-4 w-4" /></a> : item.headline}</h3>
-      {item.body && <p className="mt-2 line-clamp-4 text-sm leading-6 text-muted">{item.body}</p>}
-      {item.source && <p className="mt-4 border-t border-border/70 pt-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Source · {item.article_url ? item.source : item.source_url ? <a href={item.source_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">{item.source}</a> : item.source}</p>}
+function NewsCard({
+  item, player, expanded, onToggle, general,
+}: {
+  item: NewsItemRow;
+  player: PlayerRow;
+  expanded: boolean;
+  onToggle: () => void;
+  general: boolean;
+}) {
+  const [teamPrimary, teamSecondary] = teamColors(player.team);
+  const bodyColor = `color-mix(in srgb, ${teamSecondary} 65%, white)`;
+  const href = item.article_url ?? item.source_url;
+  const panelId = `player-news-${item.id}`;
+
+  return <Card className="overflow-hidden bg-surface/75 transition" style={{ borderColor: `${teamPrimary}55`, backgroundImage: `linear-gradient(135deg, ${teamPrimary}0c, transparent 65%)` }}>
+    <CardContent className="p-0">
+      <button type="button" aria-expanded={expanded} aria-controls={panelId} onClick={onToggle} className="flex w-full items-start gap-3 p-4 text-left transition hover:bg-white/[.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset" style={{ outlineColor: teamPrimary }}>
+        <PlayerAvatar name={player.name} team={player.team} position={player.pos} size={48} />
+        <span className="min-w-0 flex-1">
+          <span className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider" style={{ backgroundColor: `${teamPrimary}22`, color: teamPrimary }}>{general ? "League-wide" : `${player.team} · ${player.pos}`}</span>
+            <time className="text-[10px] text-muted">{item.item_date ?? "Recent"}</time>
+          </span>
+          <span className="block font-display text-base font-bold leading-snug sm:text-lg" style={{ color: teamPrimary }}>{item.headline}</span>
+          {item.body && <span className="mt-1 block line-clamp-2 text-xs leading-5" style={{ color: bodyColor }}>{item.body}</span>}
+        </span>
+        <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </button>
+      {expanded && (
+        <div id={panelId} className="space-y-3 px-4 pb-4 pl-[4.75rem]">
+          {item.image_url && <div className="relative aspect-[16/8] max-w-xl overflow-hidden rounded-xl border border-border">
+            <Image src={item.image_url} alt="" fill unoptimized sizes="(max-width: 768px) 100vw, 560px" className="object-cover" />
+          </div>}
+          {item.body && <p className="whitespace-pre-line text-sm leading-6" style={{ color: bodyColor }}>{item.body}</p>}
+          {item.source && <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Source · {item.source}</p>}
+          {href && <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-xs font-bold hover:underline" style={{ color: teamPrimary }}>
+            Read full story <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+          </a>}
+        </div>
+      )}
     </CardContent>
   </Card>;
 }

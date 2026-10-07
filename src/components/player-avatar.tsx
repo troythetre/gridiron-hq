@@ -34,7 +34,7 @@ export function PlayerAvatar({
         style={{ width: size, height: size }}
       >
         <span className="relative block h-full w-full overflow-hidden rounded-full bg-black">
-          <Image src={photo} alt={`${name} player photo`} fill sizes={`${size}px`} className="object-cover object-top" />
+          <Image src={photo} alt={`${name} player photo`} fill sizes={`${size}px`} unoptimized={photo.startsWith("http")} className="object-cover object-top" />
           <span className="absolute inset-0 rounded-full ring-1 ring-inset ring-white/20" />
         </span>
         <span

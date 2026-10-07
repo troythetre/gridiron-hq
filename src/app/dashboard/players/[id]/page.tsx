@@ -41,9 +41,11 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
   const playerProfile = catalogProfile ?? (profileData as PlayerProfileData[]).find(
     (profile) => profile.name === player.name && profile.team === player.team
   ) ?? null;
-  const playerNews = allNews.filter((item) =>
+  const matchingPlayerNews = allNews.filter((item) =>
     `${item.headline} ${item.body ?? ""}`.toLowerCase().includes(player.name.toLowerCase())
   );
+  const newsAreGeneral = matchingPlayerNews.length === 0;
+  const playerNews = matchingPlayerNews;
   const injury = injuries.find((item) => item.name.toLowerCase() === player.name.toLowerCase()) ?? null;
 
   return (
@@ -52,6 +54,7 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
       profile={playerProfile}
       players={players}
       news={playerNews}
+      newsAreGeneral={newsAreGeneral}
       injury={injury}
     />
   );

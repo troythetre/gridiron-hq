@@ -35,14 +35,14 @@ export default async function Home() {
         </nav>
       </header>
 
-      <section className="relative overflow-hidden">
+      <section className="relative min-h-[520px] overflow-hidden sm:min-h-[580px]">
         <div className="absolute inset-0">
           <Image
-            src="/stadium-hero.jpg"
+            src="/super-bowl-hero.webp"
             alt=""
             fill
             priority
-            className="object-cover"
+            className="object-cover object-[center_58%]"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-background" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />

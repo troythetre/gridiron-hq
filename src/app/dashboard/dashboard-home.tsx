@@ -52,10 +52,10 @@ export function DashboardHome({
     </header>
 
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <StatTile label="Players tracked" value={players.length.toLocaleString()} detail={`${scoringLabel(scoring)} rankings`} icon={<Sparkles className="h-4 w-4" />} />
-      <StatTile label="Your teams" value={teams.length.toString()} detail={teams.length ? "ESPN + Sleeper" : "Connect a roster"} icon={<ShieldAlert className="h-4 w-4" />} />
-      <StatTile label="Roster news" value={onTeamNews.length.toString()} detail="Stories tied to your players" icon={<Newspaper className="h-4 w-4" />} />
-      <StatTile label="Trending" value={trending.filter((player) => player.changePct > 0).length.toString()} detail="Players gaining momentum" icon={<TrendingUp className="h-4 w-4" />} />
+      <StatTile label="Players tracked" value={players.length.toLocaleString()} detail={`${scoringLabel(scoring)} rankings`} icon={<Sparkles className="h-4 w-4" />} color="#38bdf8" />
+      <StatTile label="Your teams" value={teams.length.toString()} detail={teams.length ? "ESPN + Sleeper" : "Connect a roster"} icon={<ShieldAlert className="h-4 w-4" />} color="#a78bfa" />
+      <StatTile label="Roster news" value={onTeamNews.length.toString()} detail="Stories tied to your players" icon={<Newspaper className="h-4 w-4" />} color="#f59e0b" />
+      <StatTile label="Trending" value={trending.filter((player) => player.changePct > 0).length.toString()} detail="Players gaining momentum" icon={<TrendingUp className="h-4 w-4" />} color="#34d399" />
     </div>
 
     <section className="space-y-4">
@@ -179,12 +179,122 @@ function scoringLabel(scoring: string) {
   return scoring === "ppr" ? "PPR" : scoring === "standard" ? "Standard" : "Half-PPR";
 }
 
+function normalizeName(value: string) {
+  return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function safeStoryUrl(value: string | null | undefined) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function DashboardNewsCard({
+  item, players, expanded, onToggle,
+}: {
+  item: PersonalizedNews;
+  players: OverviewTeam["players"];
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const leadPlayer = players[0];
+  const [teamPrimary, teamSecondary] = teamColors(leadPlayer?.team);
+  const storyHref = safeStoryUrl(item.article_url);
+  const fallbackHref = safeStoryUrl(item.source_url);
+  const playerNames = players.slice(0, 2).map((player) => player.name);
+  const bodyColor = `color-mix(in srgb, ${teamSecondary} 62%, white)`;
+  const panelId = `news-story-${item.id}`;
+
+  return (
+    <article className="overflow-hidden rounded-xl border-b border-border last:border-b-0" style={{ borderColor: `${teamPrimary}35` }}>
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        onClick={onToggle}
+        className="group flex w-full items-start gap-3 rounded-xl p-3 text-left transition hover:bg-white/[.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset"
+        style={{ outlineColor: teamPrimary }}
+      >
+        {leadPlayer ? (
+          <PlayerAvatar name={leadPlayer.name} team={leadPlayer.team ?? "FA"} position={leadPlayer.pos} size={44} />
+        ) : item.image_url ? (
+          <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl">
+            <Image src={item.image_url} alt="" fill unoptimized sizes="44px" className="object-cover" />
+          </span>
+        ) : (
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ backgroundColor: `${teamPrimary}22`, color: teamPrimary }}>
+            <Newspaper className="h-5 w-5" />
+          </span>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="mb-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+            <span className="text-[9px] font-black uppercase tracking-wider" style={{ color: teamPrimary }}>
+              {item.onTeam ? `Your team${playerNames.length ? ` · ${playerNames.join(", ")}` : ""}` : item.source ?? "Fantasy news"}
+            </span>
+            <time className="text-[10px] text-muted">{item.item_date ?? "Latest"}</time>
+          </span>
+          <span className="block font-display text-base font-bold leading-5" style={{ color: teamPrimary }}>{item.headline}</span>
+          {item.body && <span className="mt-1 block line-clamp-2 text-xs leading-5" style={{ color: bodyColor }}>{item.body}</span>}
+        </span>
+        <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </button>
+      {expanded && (
+        <div id={panelId} className="space-y-3 px-3 pb-4 pl-[4.5rem]">
+          {players.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {players.slice(0, 3).map((player) => <Link key={`${player.name}-${player.team}`} href={player.playerId ? `/dashboard/players/${player.playerId}` : "/dashboard/search"} className="inline-flex items-center gap-2 rounded-full border px-2 py-1 text-[10px] font-semibold hover:brightness-125" style={{ borderColor: `${teamColors(player.team)[0]}66`, color: teamColors(player.team)[0] }}>
+                <PlayerAvatar name={player.name} team={player.team ?? "FA"} position={player.pos} size={24} />
+                {player.name} · {player.pos}
+              </Link>)}
+            </div>
+          )}
+          {item.image_url && leadPlayer && (
+            <div className="relative aspect-[16/7] max-w-xl overflow-hidden rounded-xl border border-border">
+              <Image src={item.image_url} alt="" fill unoptimized sizes="(max-width: 768px) 100vw, 560px" className="object-cover" />
+            </div>
+          )}
+          {item.body && <p className="max-w-2xl whitespace-pre-line text-sm leading-6" style={{ color: bodyColor }}>{item.body}</p>}
+          {(storyHref || fallbackHref) && (
+            <a href={storyHref ?? fallbackHref!} target="_blank" rel="noopener noreferrer" className="inline-flex text-xs font-bold hover:underline" style={{ color: teamPrimary }}>
+              Read full story <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+            </a>
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+function TradeSide({ label, player }: { label: string; player: Pick<OverviewPlayer, "name" | "team" | "pos" | "avg_pts"> }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-background/40 p-3">
+      <PlayerAvatar name={player.name} team={player.team} position={player.pos} size={40} />
+      <span className="min-w-0 flex-1"><span className="block text-[9px] font-black uppercase tracking-wider text-muted">{label}</span><span className="mt-0.5 block truncate text-sm font-bold">{player.name}</span></span>
+      <span className="flex items-center gap-2"><PosBadge pos={player.pos} /><span className="text-xs font-black text-cyan-200">{player.avg_pts.toFixed(1)} PPG</span></span>
+    </div>
+  );
+}
+
 function SectionHeader({ title, detail, href }: { title: string; detail: string; href: string }) {
   return <div className="flex items-end justify-between gap-3"><div><h2 className="font-display text-xl font-black uppercase tracking-wide">{title}</h2><p className="text-xs text-muted">{detail}</p></div><Link href={href} className="shrink-0 text-xs font-bold text-primary hover:underline">See all <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link></div>;
 }
 
-function StatTile({ label, value, detail, icon }: { label: string; value: string; detail: string; icon: React.ReactNode }) {
-  return <Card><CardContent className="p-4"><div className="flex items-center justify-between text-primary">{icon}<span className="text-[9px] font-black uppercase tracking-wider text-muted">{label}</span></div><p className="mt-2 font-display text-2xl font-black">{value}</p><p className="mt-0.5 text-[10px] text-muted">{detail}</p></CardContent></Card>;
+function StatTile({ label, value, detail, icon, color }: { label: string; value: string; detail: string; icon: React.ReactNode; color: string }) {
+  return <Card className="relative overflow-hidden bg-surface/80" style={{ borderColor: `${color}66`, backgroundImage: `linear-gradient(135deg, ${color}19, transparent 68%)` }}>
+    <span aria-hidden="true" className="absolute -right-7 -top-9 h-24 w-24 rounded-full blur-2xl" style={{ backgroundColor: `${color}30` }} />
+    <CardContent className="relative p-4">
+      <div className="flex items-center justify-between gap-2">
+        <span style={{ color }}>{icon}</span>
+        <span className="text-right text-[9px] font-black uppercase tracking-wider text-muted">{label}</span>
+      </div>
+      <p className="mt-2 font-display text-2xl font-black" style={{ color }}>{value}</p>
+      <p className="mt-0.5 text-[10px] text-muted">{detail}</p>
+    </CardContent>
+  </Card>;
 }
 
 function QuickLink({ href, title, detail }: { href: string; title: string; detail: string }) {
