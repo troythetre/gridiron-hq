@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { Plus, Trash2, TriangleAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -109,7 +110,7 @@ function SectionHeader({ title, detail }: { title: string; detail: string }) {
 
 export function ParlayLab({ initialSport = "NFL", initialTab = "parlay" }: { initialSport?: Sport; initialTab?: Tab }) {
   const [tab, setTab] = useState<Tab>(initialTab);
-  const [sport, setSport] = useState<Sport>(initialSport);
+  const sport = initialSport;
   const snapshot = useSyncExternalStore(subscribeToSavedState, getSavedSnapshot, getServerSnapshot);
   const state = savedStateFromSnapshot(snapshot);
 
@@ -155,7 +156,7 @@ export function ParlayLab({ initialSport = "NFL", initialTab = "parlay" }: { ini
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SectionHeader title="Parlay builder" detail="Enter the lines shown by your sportsbook to calculate combined odds and returns." />
         <div className="flex rounded-xl border border-border bg-surface p-1" aria-label="Parlay sport">
-          {(["NFL", "CFB"] as const).map((item) => <button key={item} type="button" onClick={() => setSport(item)} aria-pressed={sport === item} className={`rounded-lg px-4 py-2 text-xs font-black ${sport === item ? "bg-violet-400/20 text-violet-200" : "text-muted hover:text-foreground"}`}>{item}</button>)}
+          {(["NFL", "CFB"] as const).map((item) => <Link key={item} href={`/dashboard/parlay?sport=${item}`} aria-current={sport === item ? "page" : undefined} className={`rounded-lg px-4 py-2 text-xs font-black ${sport === item ? "bg-violet-400/20 text-violet-200" : "text-muted hover:text-foreground"}`}>{item}</Link>)}
         </div>
       </div>
       <Card><CardContent className="space-y-3 p-4">

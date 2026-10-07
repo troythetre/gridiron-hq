@@ -1,3 +1,5 @@
+import type { PlayerTradeContext } from "@/lib/types";
+
 /**
  * Explainable Start/Sit estimate. It blends season production, recency-weighted
  * production, empirical floor/upside, role stability, trend, and injury status.
@@ -193,6 +195,7 @@ export interface TradeValuedPlayer {
   pos: string;
   team: string;
   avg_pts: number;
+  context: PlayerTradeContext | null;
   injuryStatus: InjuryStatus;
   value: number;
   reasons: string[];
@@ -220,17 +223,61 @@ export function tradeValue(input: {
   pos: string;
   team: string;
   avg_pts: number;
+  context?: PlayerTradeContext | null;
   injuryStatus?: InjuryStatus;
   injuryNote?: string;
 }): TradeValuedPlayer {
   const multiplier = POSITION_MULTIPLIER[input.pos] ?? 1;
   const injuryStatus = input.injuryStatus ?? null;
   const discount = injuryStatus ? TRADE_INJURY_DISCOUNT[injuryStatus] : 0;
-  const value = Math.max(0, Math.round((input.avg_pts * multiplier - discount) * 100) / 100);
+  const context = input.context ?? null;
+  let weightedAverage = input.avg_pts;
+  const adjustments: string[] = [];
+  if (context) {
+    const careerAverage = context.careerAverage ?? input.avg_pts;
+    const seasonAverage = context.currentSeasonAverage ?? input.avg_pts;
+    weightedAverage = careerAverage * 0.35 + seasonAverage * 0.65;
+    if (context.careerAverage != null) {
+      adjustments.push(`career baseline ${careerAverage.toFixed(1)} pts/game`);
+    }
+    if (context.seasonChange != null) {
+      adjustments.push(`${context.seasonChange >= 0 ? "+" : ""}${context.seasonChange.toFixed(1)} pts/game vs. last season`);
+    }
+    if (context.developmentPerSeason != null) {
+      adjustments.push(`${context.developmentPerSeason >= 0 ? "+" : ""}${context.developmentPerSeason.toFixed(1)} pts/game annual development trend`);
+    }
+    if (context.opportunityChangePct != null) {
+      adjustments.push(`${context.opportunityChangePct >= 0 ? "+" : ""}${context.opportunityChangePct.toFixed(0)}% opportunities vs. last season`);
+    }
+    const passRateChange = context.teamPassRate != null && context.leaguePassRate != null
+      ? context.teamPassRate - context.leaguePassRate
+      : null;
+    if (passRateChange != null && Math.abs(passRateChange) >= 0.03) {
+      adjustments.push(`team pass rate ${(passRateChange * 100).toFixed(1)} points vs. league average (play-calling proxy, not coach-specific)`);
+    }
+  }
+  const development = context?.developmentPerSeason ?? 0;
+  const seasonalChange = context?.seasonChange ?? 0;
+  const opportunityChange = context?.opportunityChangePct ?? 0;
+  const passRateChange = context?.teamPassRate != null && context.leaguePassRate != null
+    ? context.teamPassRate - context.leaguePassRate
+    : 0;
+  const passStyleFactor = input.pos === "QB" ? 14 : input.pos === "WR" ? 10 : input.pos === "TE" ? 7 : input.pos === "RB" ? -8 : 0;
+  const contextAdjustment = context
+    ? Math.max(-3, Math.min(3,
+      development * 0.12
+      + seasonalChange * 0.08
+      + Math.max(-1.5, Math.min(1.5, opportunityChange / 100 * 1.5))
+      + passRateChange * passStyleFactor,
+    ))
+    : 0;
+  const value = Math.max(0, Math.round(((weightedAverage + contextAdjustment) * multiplier - discount) * 100) / 100);
 
   const reasons: string[] = [
-    `${input.avg_pts.toFixed(1)} pts/game x ${multiplier.toFixed(2)} ${input.pos} scarcity`,
+    `${weightedAverage.toFixed(1)} pts/game weighted career/season baseline x ${multiplier.toFixed(2)} ${input.pos} scarcity`,
+    ...adjustments,
   ];
+  if (contextAdjustment) reasons.push(`${contextAdjustment >= 0 ? "+" : ""}${contextAdjustment.toFixed(1)} context adjustment`);
   if (injuryStatus) {
     reasons.push(`-${discount.toFixed(2)} for ${injuryStatus.toLowerCase()} status (${input.injuryNote ?? "injury risk"})`);
   }
@@ -241,6 +288,7 @@ export function tradeValue(input: {
     pos: input.pos,
     team: input.team,
     avg_pts: input.avg_pts,
+    context,
     injuryStatus,
     value,
     reasons,

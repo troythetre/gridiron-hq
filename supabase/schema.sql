@@ -72,12 +72,14 @@ create table if not exists public.profiles (
 );
 
 create table if not exists public.membership_subscriptions (
-  profile_id uuid primary key references public.profiles(id) on delete cascade,
-  stripe_customer_id text unique,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  product_key text not null default 'gridiron_plus' check (product_key in ('gridiron_plus', 'nfl_betting', 'cfb_betting')),
+  stripe_customer_id text,
   stripe_subscription_id text unique,
   status text not null default 'inactive',
   current_period_end timestamptz,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  primary key (profile_id, product_key)
 );
 
 create table if not exists public.leagues (

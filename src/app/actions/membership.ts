@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { hasOwnerAccess } from "@/lib/membership";
+import { isMembershipProductKey, MEMBERSHIP_PLANS, type MembershipProductKey } from "@/lib/membership-plans";
 
 function appUrl() {
   const value = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
@@ -28,28 +29,31 @@ async function createStripeSession(endpoint: string, secret: string, form: URLSe
   return { response, result };
 }
 
-export async function startMembershipCheckout() {
+export async function startMembershipCheckout(productKey: MembershipProductKey) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   if (hasOwnerAccess(user.email)) redirect("/dashboard/membership");
+  if (!isMembershipProductKey(productKey)) redirect("/dashboard/membership?error=plan");
 
   const secret = process.env.STRIPE_SECRET_KEY;
-  const price = process.env.STRIPE_PRICE_ID;
+  const price = process.env[MEMBERSHIP_PLANS[productKey].priceEnv];
   const baseUrl = appUrl();
   if (!secret || !price || !baseUrl) redirect("/dashboard/membership?error=setup");
 
-  const { data: membership, error: membershipError } = await supabase
+  const { data: memberships, error: membershipError } = await supabase
     .from("membership_subscriptions")
-    .select("status,current_period_end,stripe_customer_id")
+    .select("product_key,status,current_period_end,stripe_customer_id")
     .eq("profile_id", user.id)
-    .maybeSingle();
+    .limit(10);
   if (membershipError) throw membershipError;
+  const membership = memberships.find((row) => row.product_key === productKey);
   if (membership && ["active", "trialing"].includes(membership.status)
     && (!membership.current_period_end || new Date(membership.current_period_end).getTime() > Date.now())) {
     redirect("/dashboard/membership?error=already-active");
   }
 
+  const stripeCustomerId = memberships.find((row) => row.stripe_customer_id)?.stripe_customer_id;
   const form = new URLSearchParams({
     mode: "subscription",
     "line_items[0][price]": price,
@@ -58,9 +62,11 @@ export async function startMembershipCheckout() {
     success_url: `${baseUrl}/dashboard/membership?success=1`,
     cancel_url: `${baseUrl}/dashboard/membership?cancelled=1`,
     "subscription_data[metadata][profile_id]": user.id,
+    "subscription_data[metadata][product_key]": productKey,
     "metadata[profile_id]": user.id,
+    "metadata[product_key]": productKey,
   });
-  if (membership?.stripe_customer_id) form.set("customer", membership.stripe_customer_id);
+  if (stripeCustomerId) form.set("customer", stripeCustomerId);
   else if (user.email) form.set("customer_email", user.email);
 
   const { response, result } = await createStripeSession("checkout/sessions", secret, form);
@@ -71,10 +77,11 @@ export async function startMembershipCheckout() {
   redirect(result.url);
 }
 
-export async function openMembershipPortal() {
+export async function openMembershipPortal(productKey: MembershipProductKey) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  if (!isMembershipProductKey(productKey)) redirect("/dashboard/membership?error=plan");
 
   const secret = process.env.STRIPE_SECRET_KEY;
   const baseUrl = appUrl();
@@ -84,6 +91,7 @@ export async function openMembershipPortal() {
     .from("membership_subscriptions")
     .select("stripe_customer_id")
     .eq("profile_id", user.id)
+    .eq("product_key", productKey)
     .maybeSingle();
   if (error) throw error;
   if (!membership?.stripe_customer_id) redirect("/dashboard/membership?error=portal-unavailable");

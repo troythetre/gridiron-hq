@@ -16,6 +16,18 @@ export interface PlayerRow {
   pos_rank: number | null;
   overall_rank: number | null;
   profileHref?: string;
+  tradeContext?: PlayerTradeContext | null;
+}
+
+export interface PlayerTradeContext {
+  careerAverage: number | null;
+  priorSeasonAverage: number | null;
+  currentSeasonAverage: number | null;
+  seasonChange: number | null;
+  developmentPerSeason: number | null;
+  opportunityChangePct: number | null;
+  teamPassRate: number | null;
+  leaguePassRate: number | null;
 }
 
 export interface InjuryRow {
