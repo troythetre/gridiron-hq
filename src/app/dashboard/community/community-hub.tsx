@@ -5,10 +5,23 @@ import Link from "next/link";
 import { ArrowUpRight, AtSign, Feather, MessageCircle, Search, Send, Users, UserRoundPlus } from "lucide-react";
 import { createAnonymousForumPost, createAnonymousForumReply, toggleFollow } from "@/app/actions/community";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
-type Post = { id: string; body: string; created_at: string };
+type Post = { id: string; body: string; created_at: string; author?: string; isDemo?: boolean };
 type Reply = { id: string; post_id: string; body: string; created_at: string };
-type Person = { id: string; display_name: string };
+type Person = { id: string; display_name: string; title?: string; isDemo?: boolean };
+
+const DEMO_PEOPLE: Person[] = [
+  { id: "demo-gridiron-manager", display_name: "Gridiron Manager", title: "Community host", isDemo: true },
+  { id: "demo-waiver-wizard", display_name: "Waiver Wizard", title: "Waiver wire regular", isDemo: true },
+  { id: "demo-film-room", display_name: "Film Room Fan", title: "Matchup watcher", isDemo: true },
+];
+
+const DEMO_POSTS: Post[] = [
+  { id: "demo-post-lineup", author: "Gridiron Manager", isDemo: true, created_at: new Date(Date.now() - 18 * 60_000).toISOString(), body: "Welcome to The Huddle. What is the one lineup decision you keep changing your mind about this week? Drop the players and your league format." },
+  { id: "demo-post-waivers", author: "Waiver Wizard", isDemo: true, created_at: new Date(Date.now() - 95 * 60_000).toISOString(), body: "Waiver strategy check: do you spend FAAB early on a clear role change, or save it for a late-season starter? What makes you pull the trigger?" },
+  { id: "demo-post-matchup", author: "Film Room Fan", isDemo: true, created_at: new Date(Date.now() - 5 * 60_000_000).toISOString(), body: "Trade talk: when two players have similar projections, I look at which one actually fills a hole on my roster. What roster need are you trying to solve?" },
+];
 
 function timeAgo(value: string) {
   const minutes = Math.max(1, Math.floor((Date.now() - new Date(value).getTime()) / 60000));
@@ -23,7 +36,8 @@ export function CommunityHub({
   setupReady: boolean; posts: Post[]; replies: Reply[]; people: Person[]; followingIds: string[]; followerIds: string[];
 }) {
   const [query, setQuery] = useState("");
-  const filteredPeople = useMemo(() => people.filter((person) => person.display_name.toLowerCase().includes(query.trim().toLowerCase())), [people, query]);
+  const filteredPeople = useMemo(() => [...people, ...DEMO_PEOPLE].filter((person) => person.display_name.toLowerCase().includes(query.trim().toLowerCase())), [people, query]);
+  const visiblePosts = posts.length ? posts : DEMO_POSTS;
 
   return <div className="mx-auto max-w-7xl space-y-6">
     <header className="rounded-3xl border border-white/10 bg-[linear-gradient(135deg,#181818,#090909_68%)] p-6 sm:p-9">
@@ -41,12 +55,13 @@ export function CommunityHub({
           <div className="mt-3 flex flex-col justify-between gap-3 text-xs text-muted sm:flex-row sm:items-center"><span>Anonymous to other managers · up to 4,000 characters</span><button className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-5 text-xs font-black uppercase tracking-wider text-black transition hover:bg-white/85"><Send className="h-3.5 w-3.5" />Post anonymously</button></div>
         </form>}
 
-        {setupReady && posts.length ? posts.map((post) => {
+        {!posts.length && <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-muted">Sample posts from demo managers. They are examples, not live user conversations.</div>}
+        {visiblePosts.length ? visiblePosts.map((post) => {
           const postReplies = replies.filter((reply) => reply.post_id === post.id);
           return <article key={post.id} className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/[.06]"><AtSign className="h-4 w-4 text-muted" /></span><span className="text-sm font-semibold">Anonymous Manager</span></div><time className="text-xs text-muted" dateTime={post.created_at}>{timeAgo(post.created_at)}</time></div>
+            <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/[.06]"><AtSign className="h-4 w-4 text-muted" /></span><span className="text-sm font-semibold">{post.isDemo ? post.author : "Anonymous Manager"}</span>{post.isDemo && <Badge variant="outline">Demo</Badge>}</div><time className="text-xs text-muted" dateTime={post.created_at}>{timeAgo(post.created_at)}</time></div>
             <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-7 text-white/90">{post.body}</p>
-            <details className="group mt-4 border-t border-border pt-3">
+            {post.isDemo ? <p className="mt-4 border-t border-border pt-3 text-xs text-muted">Sample discussion · replies are disabled</p> : <details className="group mt-4 border-t border-border pt-3">
               <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-bold text-muted hover:text-white"><MessageCircle className="h-4 w-4" />{postReplies.length} replies <span className="ml-auto text-[10px] uppercase tracking-wider group-open:hidden">Open thread</span></summary>
               <div className="mt-4 space-y-3">
                 {postReplies.map((reply) => <div key={reply.id} className="rounded-xl bg-background/80 p-3"><div className="mb-1 flex items-center justify-between text-[10px] text-muted"><span>Anonymous Manager</span><time dateTime={reply.created_at}>{timeAgo(reply.created_at)}</time></div><p className="whitespace-pre-wrap break-words text-sm leading-6">{reply.body}</p></div>)}
@@ -55,7 +70,7 @@ export function CommunityHub({
                   <button aria-label="Send anonymous reply" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/15 bg-white text-black hover:bg-white/85"><Send className="h-4 w-4" /></button>
                 </form>
               </div>
-            </details>
+            </details>}
           </article>;
         }) : <div className="rounded-2xl border border-dashed border-border py-16 text-center"><MessageCircle className="mx-auto h-8 w-8 text-muted" /><p className="mt-3 font-semibold">The huddle is quiet</p><p className="mt-1 text-sm text-muted">Be the first manager to start a conversation.</p></div>}
       </section>
@@ -71,8 +86,8 @@ export function CommunityHub({
               const mutual = follows && followsYou;
               return <div key={person.id} className="flex items-center gap-3 py-3">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[.05] text-xs font-bold">{person.display_name.slice(0, 1).toUpperCase()}</span>
-                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{person.display_name}</span><span className="block text-[10px] text-muted">{mutual ? "Mutual follow · DMs open" : followsYou ? "Follows you" : "Gridiron manager"}</span></span>
-                {setupReady && (mutual ? <Link href={`/dashboard/messages?to=${person.id}`} aria-label={`Message ${person.display_name}`} className="grid h-9 w-9 place-items-center rounded-full border border-white/10 hover:bg-white/10"><MessageCircle className="h-4 w-4" /></Link> : <form action={toggleFollow}><input type="hidden" name="targetId" value={person.id} /><button aria-label={`${follows ? "Unfollow" : "Follow"} ${person.display_name}`} className={`grid h-9 w-9 place-items-center rounded-full border transition ${follows ? "border-white/25 bg-white text-black" : "border-white/10 hover:bg-white/10"}`}>{follows ? <span className="text-sm">✓</span> : <UserRoundPlus className="h-4 w-4" />}</button></form>)}
+                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{person.display_name}</span><span className="block text-[10px] text-muted">{person.isDemo ? person.title : mutual ? "Mutual follow · DMs open" : followsYou ? "Follows you" : "Gridiron manager"}</span></span>
+                {person.isDemo ? <Badge variant="outline">Demo</Badge> : setupReady && (mutual ? <Link href={`/dashboard/messages?to=${person.id}`} aria-label={`Message ${person.display_name}`} className="grid h-9 w-9 place-items-center rounded-full border border-white/10 hover:bg-white/10"><MessageCircle className="h-4 w-4" /></Link> : <form action={toggleFollow}><input type="hidden" name="targetId" value={person.id} /><button aria-label={`${follows ? "Unfollow" : "Follow"} ${person.display_name}`} className={`grid h-9 w-9 place-items-center rounded-full border transition ${follows ? "border-white/25 bg-white text-black" : "border-white/10 hover:bg-white/10"}`}>{follows ? <span className="text-sm">✓</span> : <UserRoundPlus className="h-4 w-4" />}</button></form>)}
               </div>;
             })}
             {filteredPeople.length === 0 && <p className="py-8 text-center text-sm text-muted">No managers found.</p>}

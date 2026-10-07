@@ -1,5 +1,6 @@
 import { useId } from "react";
-import { teamColors } from "@/lib/player-visuals";
+import Image from "next/image";
+import { PLAYER_PHOTOS, teamColors } from "@/lib/player-visuals";
 
 export function PlayerAvatar({
   name,
@@ -21,9 +22,31 @@ export function PlayerAvatar({
   const jersey = number && number > 0 ? number : position === "QB" ? 1 : 0;
   const initials = name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("");
   const nameSeed = [...name].reduce((seed, character) => seed + character.charCodeAt(0), 0);
+  const photo = PLAYER_PHOTOS[name];
   const skinTone = ["#f1c6a5", "#d7a17e", "#ba8060", "#8e5d49", "#704633"][nameSeed % 5];
   const fieldId = `field-${instanceId}`;
   const jerseyId = `jersey-${instanceId}`;
+
+  if (photo) {
+    return (
+      <span
+        className={`relative inline-block shrink-0 overflow-visible rounded-full border-2 border-white/70 bg-black p-0.5 shadow-[0_0_24px_rgba(255,255,255,.18)] ${className}`}
+        style={{ width: size, height: size }}
+      >
+        <span className="relative block h-full w-full overflow-hidden rounded-full bg-black">
+          <Image src={photo} alt={`${name} player photo`} fill sizes={`${size}px`} className="object-cover object-top" />
+          <span className="absolute inset-0 rounded-full ring-1 ring-inset ring-white/20" />
+        </span>
+        <span
+          className="absolute -bottom-1 -right-1 grid place-items-center rounded-full border-2 border-background bg-black font-black text-white shadow-lg"
+          style={{ width: Math.max(20, Math.round(size * 0.34)), height: Math.max(20, Math.round(size * 0.34)), fontSize: Math.max(8, Math.round(size * 0.12)) }}
+          aria-hidden="true"
+        >
+          {jersey || position.slice(0, 2)}
+        </span>
+      </span>
+    );
+  }
 
   return (
     <svg
