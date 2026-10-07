@@ -3,10 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import profiles from "@/data/player-profiles.json";
 import type { PlayerProfileData } from "@/lib/player-profile-types";
 import { StartSitTool } from "./start-sit-tool";
+import { hasActiveMembership } from "@/lib/membership";
+import { MembershipWall } from "@/components/membership-wall";
 
 export default async function StartSitPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !await hasActiveMembership(user.id)) return <MembershipWall feature="Start/Sit" />;
   const [players, injuries, { data: sleeperRosters }, { data: espnRosters }] = await Promise.all([
     getPlayers(),
     getInjuries(),

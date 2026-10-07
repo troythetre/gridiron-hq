@@ -6,7 +6,7 @@ Forum posts/replies are anonymous to other managers: the public rows contain no 
 
 ## Fantasy video refresh
 
-The scheduled **Refresh fantasy video feed** GitHub Action searches recent NFL fantasy videos and stores links, thumbnails, titles, and tags. To enable it:
+The scheduled **Refresh fantasy video feed** GitHub Action searches recent NFL fantasy videos and stores links, thumbnails, titles, and tags. It refreshes every six hours. To enable it:
 
 1. Enable YouTube Data API v3 for a Google Cloud project and create an API key restricted to that API.
 2. Add `YOUTUBE_API_KEY` as a GitHub Actions repository secret. The workflow also reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.

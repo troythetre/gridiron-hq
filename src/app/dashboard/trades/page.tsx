@@ -9,6 +9,8 @@ import { TradeBlockPanel, type TradeBlockEntry } from "./trade-block-panel";
 import { ProposeTradeForm, type TradeMember } from "./propose-trade-form";
 import { TradeOffersList, type OfferView } from "./trade-offers-list";
 import { Users2 } from "lucide-react";
+import { hasActiveMembership } from "@/lib/membership";
+import { MembershipWall } from "@/components/membership-wall";
 
 export default async function TradesPage({
   searchParams,
@@ -18,6 +20,7 @@ export default async function TradesPage({
   const { league: leagueParam } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !await hasActiveMembership(user.id)) return <MembershipWall feature="Trade Calculator" />;
 
   const { data: memberships } = await supabase
     .from("league_members")

@@ -20,6 +20,7 @@ const NAV = [
   { href: "/dashboard/team-review", label: "Team Review", icon: ClipboardList },
   { href: "/dashboard/trades", label: "Trades", icon: ArrowLeftRight },
   { href: "/dashboard/sync", label: "Sync", icon: RefreshCw },
+  { href: "/dashboard/membership", label: "Membership", icon: Trophy },
   { href: "/dashboard/waiver", label: "Waiver Wire", icon: Siren },
   { href: "/dashboard/news", label: "News", icon: Newspaper },
   { href: "/dashboard/fantasy-feed", label: "Fantasy Feed", icon: Video },

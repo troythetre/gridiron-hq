@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link2, ShieldAlert, Target, TrendingUp } from "lucide-react";
+import { hasActiveMembership } from "@/lib/membership";
+import { MembershipWall } from "@/components/membership-wall";
 
 type RosterPlayer = { name: string; pos: string; team: string | null };
 type TeamRoster = { id: string; platform: "ESPN" | "Sleeper"; teamName: string; leagueName: string; wins: number; losses: number; ties: number; players: RosterPlayer[] };
@@ -109,6 +111,7 @@ function normalizePosition(value: string) {
 export default async function TeamReviewPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !await hasActiveMembership(user.id)) return <MembershipWall feature="Team Review" />;
   const [{ data: sleeperRows }, { data: espnRows }, players, injuries, waiverPicks] = await Promise.all([
     supabase.from("sleeper_rosters").select("*").eq("profile_id", user!.id).order("synced_at", { ascending: false }),
     supabase.from("espn_rosters").select("*").eq("profile_id", user!.id).order("synced_at", { ascending: false }),

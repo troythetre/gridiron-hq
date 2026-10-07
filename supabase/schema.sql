@@ -53,6 +53,7 @@ create table if not exists public.news_items (
   source text,
   article_url text,
   source_url text,
+  image_url text,
   topics text[] not null default '{}',
   created_at timestamptz not null default now()
 );
@@ -68,6 +69,15 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
   created_at timestamptz not null default now()
+);
+
+create table if not exists public.membership_subscriptions (
+  profile_id uuid primary key references public.profiles(id) on delete cascade,
+  stripe_customer_id text unique,
+  stripe_subscription_id text unique,
+  status text not null default 'inactive',
+  current_period_end timestamptz,
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.leagues (
@@ -112,6 +122,7 @@ alter table public.injuries enable row level security;
 alter table public.waiver_picks enable row level security;
 alter table public.news_items enable row level security;
 alter table public.profiles enable row level security;
+alter table public.membership_subscriptions enable row level security;
 alter table public.leagues enable row level security;
 alter table public.league_members enable row level security;
 alter table public.roster_slots enable row level security;
@@ -129,6 +140,10 @@ create policy "news_public_read" on public.news_items for select using (true);
 create policy "profiles_read_all" on public.profiles for select to authenticated using (true);
 create policy "profiles_insert_own" on public.profiles for insert to authenticated with check (id = auth.uid());
 create policy "profiles_update_own" on public.profiles for update to authenticated using (id = auth.uid());
+
+create policy "members can read own subscription" on public.membership_subscriptions
+  for select to authenticated using (auth.uid() = profile_id);
+revoke insert, update, delete on public.membership_subscriptions from anon, authenticated;
 
 -- Leagues: any signed-in user can browse leagues (to join by invite code) and create one;
 -- only the creator can modify/delete it.

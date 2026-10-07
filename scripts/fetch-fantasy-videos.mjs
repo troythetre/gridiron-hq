@@ -5,24 +5,20 @@ if (!youtubeApiKey || !supabaseUrl || !serviceKey) {
   throw new Error("Set YOUTUBE_API_KEY, SUPABASE_URL, and SUPABASE_SERVICE_ROLE_KEY before running the video importer.");
 }
 
-const search = new URL("https://www.googleapis.com/youtube/v3/search");
-search.search = new URLSearchParams({
-  part: "snippet",
-  type: "video",
-  maxResults: "50",
-  order: "date",
-  safeSearch: "moderate",
-  regionCode: "US",
-  relevanceLanguage: "en",
-  publishedAfter: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
-  q: "NFL fantasy football PPR half PPR dynasty start sit waiver",
-  key: youtubeApiKey,
-}).toString();
-
-const response = await fetch(search, { signal: AbortSignal.timeout(20000) });
-if (!response.ok) throw new Error(`YouTube search failed: HTTP ${response.status} ${await response.text()}`);
-const result = await response.json();
-const videos = (result.items ?? []).flatMap((item) => {
+const queries = ["NFL fantasy football weekly rankings start sit", "NFL fantasy football waiver wire player news", "NFL fantasy football dynasty PPR analysis", "NFL fantasy football trade advice player outlook"];
+const searchResults = await Promise.all(queries.map(async (query) => {
+  const search = new URL("https://www.googleapis.com/youtube/v3/search");
+  search.search = new URLSearchParams({
+    part: "snippet", type: "video", maxResults: "15", order: "date", safeSearch: "moderate",
+    regionCode: "US", relevanceLanguage: "en",
+    publishedAfter: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(), q: query, key: youtubeApiKey,
+  }).toString();
+  const response = await fetch(search, { signal: AbortSignal.timeout(20000) });
+  if (!response.ok) throw new Error(`YouTube search for "${query}" failed: HTTP ${response.status} ${await response.text()}`);
+  return (await response.json()).items ?? [];
+}));
+const items = [...new Map(searchResults.flat().map((item) => [item.id?.videoId, item])).values()];
+const videos = items.flatMap((item) => {
   const id = item.id?.videoId;
   if (typeof id !== "string" || !/^[A-Za-z0-9_-]{6,20}$/.test(id)) return [];
   const title = String(item.snippet?.title ?? "").slice(0, 300);
@@ -68,4 +64,4 @@ const cleanup = await fetch(`${baseUrl}/rest/v1/fantasy_videos?${cleanupQuery}`,
   headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}` },
 });
 if (!cleanup.ok) throw new Error(`Supabase video cleanup failed: HTTP ${cleanup.status} ${await cleanup.text()}`);
-console.log(`Saved ${videos.length} recent fantasy videos; removed videos older than 45 days.`);
+console.log(`Found ${videos.length} recent fantasy videos across ${queries.length} searches; removed videos older than 45 days.`);

@@ -2,7 +2,7 @@ name: Refresh fantasy video feed
 
 on:
   schedule:
-    - cron: "43 * * * *"
+    - cron: "43 */6 * * *"
   workflow_dispatch:
 
 permissions:

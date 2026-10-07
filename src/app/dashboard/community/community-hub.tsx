@@ -39,26 +39,26 @@ export function CommunityHub({
   const filteredPeople = useMemo(() => [...people, ...DEMO_PEOPLE].filter((person) => person.display_name.toLowerCase().includes(query.trim().toLowerCase())), [people, query]);
   const visiblePosts = posts.length ? posts : DEMO_POSTS;
 
-  return <div className="mx-auto max-w-7xl space-y-6">
-    <header className="rounded-3xl border border-white/10 bg-[linear-gradient(135deg,#181818,#090909_68%)] p-6 sm:p-9">
-      <p className="text-[10px] font-bold uppercase tracking-[.24em] text-muted">Gridiron Social</p>
+  return <div className="mx-auto max-w-7xl space-y-6 text-amber-50">
+    <header className="rounded-3xl border border-amber-500/20 bg-[linear-gradient(135deg,#3d291c,#1b120e_68%)] p-6 sm:p-9">
+      <p className="text-[10px] font-bold uppercase tracking-[.24em] text-amber-300">Gridiron Social</p>
       <h1 className="mt-2 font-display text-4xl font-black tracking-tight sm:text-6xl">The Huddle</h1>
-      <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Talk ball, vent about your lineup, share a take. Forum posts are anonymous to other managers; following and private messages use your account profile.</p>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-amber-100/65">Talk ball, vent about your lineup, share a take. Forum posts are anonymous to other managers; following and private messages use your account profile.</p>
     </header>
 
     <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,.8fr)]">
       <section className="space-y-4">
         {!setupReady && <div className="rounded-2xl border border-white/15 bg-white/[.04] p-4 text-sm leading-6 text-muted">Community storage isn&apos;t set up yet. Apply <code className="rounded bg-white/10 px-1.5 py-0.5 text-white">supabase/migrations/202610070002_community_and_fantasy_feed.sql</code> to enable posting, following, and DMs.</div>}
-        {setupReady && <form action={createAnonymousForumPost} className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-          <label htmlFor="post-body" className="mb-3 flex items-center gap-2 text-sm font-bold"><Feather className="h-4 w-4 text-muted" />Drop a thought in the huddle</label>
-          <textarea id="post-body" name="body" required minLength={1} maxLength={4000} rows={4} placeholder="Start a debate. Ask for advice. Celebrate the W. Your post will appear as Anonymous Manager." className="w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6 outline-none transition placeholder:text-muted/70 focus:border-white/30 focus:ring-2 focus:ring-white/10" />
-          <div className="mt-3 flex flex-col justify-between gap-3 text-xs text-muted sm:flex-row sm:items-center"><span>Anonymous to other managers · up to 4,000 characters</span><button className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-5 text-xs font-black uppercase tracking-wider text-black transition hover:bg-white/85"><Send className="h-3.5 w-3.5" />Post anonymously</button></div>
+        {setupReady && <form action={createAnonymousForumPost} className="rounded-2xl border border-amber-900/50 bg-[#21170f] p-4 sm:p-5">
+          <label htmlFor="post-body" className="mb-3 flex items-center gap-2 text-sm font-bold"><Feather className="h-4 w-4 text-amber-400" />Drop a thought in the huddle</label>
+          <textarea id="post-body" name="body" required minLength={1} maxLength={4000} rows={4} placeholder="Start a debate. Ask for advice. Celebrate the W. Your post will appear as Anonymous Manager." className="w-full resize-y rounded-2xl border border-amber-900/60 bg-[#120d09] px-4 py-3 text-sm leading-6 outline-none transition placeholder:text-amber-100/35 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/15" />
+          <div className="mt-3 flex flex-col justify-between gap-3 text-xs text-amber-100/55 sm:flex-row sm:items-center"><span>Anonymous to other managers · up to 4,000 characters</span><button className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-amber-500 px-5 text-xs font-black uppercase tracking-wider text-[#21150b] transition hover:bg-amber-400"><Send className="h-3.5 w-3.5" />Post anonymously</button></div>
         </form>}
 
         {!posts.length && <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-muted">Sample posts from demo managers. They are examples, not live user conversations.</div>}
         {visiblePosts.length ? visiblePosts.map((post) => {
           const postReplies = replies.filter((reply) => reply.post_id === post.id);
-          return <article key={post.id} className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+          return <article key={post.id} className="rounded-2xl border border-amber-900/45 bg-[#21170f] p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/[.06]"><AtSign className="h-4 w-4 text-muted" /></span><span className="text-sm font-semibold">{post.isDemo ? post.author : "Anonymous Manager"}</span>{post.isDemo && <Badge variant="outline">Demo</Badge>}</div><time className="text-xs text-muted" dateTime={post.created_at}>{timeAgo(post.created_at)}</time></div>
             <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-7 text-white/90">{post.body}</p>
             {post.isDemo ? <p className="mt-4 border-t border-border pt-3 text-xs text-muted">Sample discussion · replies are disabled</p> : <details className="group mt-4 border-t border-border pt-3">
@@ -76,16 +76,16 @@ export function CommunityHub({
       </section>
 
       <aside className="space-y-4 xl:sticky xl:top-8">
-        <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-muted">Connect</p><h2 className="mt-1 font-display text-2xl font-bold">Manager directory</h2></div><Users className="h-5 w-5 text-muted" /></div>
-          <label className="relative mt-4 block"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a manager" className="rounded-full bg-background pl-10" /></label>
+        <section className="rounded-2xl border border-amber-900/45 bg-[#21170f] p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-amber-400">Connect</p><h2 className="mt-1 font-display text-2xl font-bold">Manager directory</h2></div><Users className="h-5 w-5 text-amber-400" /></div>
+          <label className="relative mt-4 block"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber-200/45" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a manager" className="rounded-full border-amber-900/60 bg-[#120d09] pl-10" /></label>
           <div className="mt-3 max-h-[520px] divide-y divide-border overflow-y-auto">
             {filteredPeople.map((person) => {
               const follows = followingIds.includes(person.id);
               const followsYou = followerIds.includes(person.id);
               const mutual = follows && followsYou;
               return <div key={person.id} className="flex items-center gap-3 py-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[.05] text-xs font-bold">{person.display_name.slice(0, 1).toUpperCase()}</span>
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-amber-500/25 bg-amber-500/10 text-xs font-bold text-amber-300">{person.display_name.slice(0, 1).toUpperCase()}</span>
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{person.display_name}</span><span className="block text-[10px] text-muted">{person.isDemo ? person.title : mutual ? "Mutual follow · DMs open" : followsYou ? "Follows you" : "Gridiron manager"}</span></span>
                 {person.isDemo ? <Badge variant="outline">Demo</Badge> : setupReady && (mutual ? <Link href={`/dashboard/messages?to=${person.id}`} aria-label={`Message ${person.display_name}`} className="grid h-9 w-9 place-items-center rounded-full border border-white/10 hover:bg-white/10"><MessageCircle className="h-4 w-4" /></Link> : <form action={toggleFollow}><input type="hidden" name="targetId" value={person.id} /><button aria-label={`${follows ? "Unfollow" : "Follow"} ${person.display_name}`} className={`grid h-9 w-9 place-items-center rounded-full border transition ${follows ? "border-white/25 bg-white text-black" : "border-white/10 hover:bg-white/10"}`}>{follows ? <span className="text-sm">✓</span> : <UserRoundPlus className="h-4 w-4" />}</button></form>)}
               </div>;
