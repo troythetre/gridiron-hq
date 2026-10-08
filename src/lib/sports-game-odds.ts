@@ -91,9 +91,10 @@ export async function getSportsGameOddsEvents(
         "x-api-key": apiKey,
         Accept: "application/json",
       },
-      next: {
-        revalidate: 30,
-      },
+      // This payload is routinely 10-15MB, well over Next's 2MB data-cache
+      // limit, so `next: { revalidate }` was failing to cache it on every
+      // request and logging a noisy error. Fetch fresh each time instead.
+      cache: "no-store",
     }
   );
 

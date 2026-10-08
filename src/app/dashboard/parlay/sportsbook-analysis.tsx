@@ -250,6 +250,76 @@ function shortTeamName(name: string) {
     .trim();
 }
 
+/*
+ * NFL team full name -> ESPN's public team-logo CDN slug. ESPN's
+ * /i/teamlogos/nfl/500/{slug}.png path is a stable, widely used public
+ * asset (no API key, no auth) - this is the same source most third-party
+ * fantasy tools pull logos from. College teams aren't mapped here (there
+ * are hundreds of possible names and no single clean slug source), so CFB
+ * games fall back to the initials mark below.
+ */
+const NFL_LOGO_SLUGS: Record<string, string> = {
+  "Arizona Cardinals": "ari",
+  "Atlanta Falcons": "atl",
+  "Baltimore Ravens": "bal",
+  "Buffalo Bills": "buf",
+  "Carolina Panthers": "car",
+  "Chicago Bears": "chi",
+  "Cincinnati Bengals": "cin",
+  "Cleveland Browns": "cle",
+  "Dallas Cowboys": "dal",
+  "Denver Broncos": "den",
+  "Detroit Lions": "det",
+  "Green Bay Packers": "gb",
+  "Houston Texans": "hou",
+  "Indianapolis Colts": "ind",
+  "Jacksonville Jaguars": "jax",
+  "Kansas City Chiefs": "kc",
+  "Las Vegas Raiders": "lv",
+  "Los Angeles Chargers": "lac",
+  "Los Angeles Rams": "lar",
+  "Miami Dolphins": "mia",
+  "Minnesota Vikings": "min",
+  "New England Patriots": "ne",
+  "New Orleans Saints": "no",
+  "New York Giants": "nyg",
+  "New York Jets": "nyj",
+  "Philadelphia Eagles": "phi",
+  "Pittsburgh Steelers": "pit",
+  "San Francisco 49ers": "sf",
+  "Seattle Seahawks": "sea",
+  "Tampa Bay Buccaneers": "tb",
+  "Tennessee Titans": "ten",
+  "Washington Commanders": "wsh",
+};
+
+function teamLogoUrl(name: string): string | null {
+  const slug = NFL_LOGO_SLUGS[name];
+  return slug ? `https://a.espncdn.com/i/teamlogos/nfl/500/${slug}.png` : null;
+}
+
+/*
+ * A team's logo badge, falling back to the initials mark when no logo
+ * is mapped (college teams, or an NFL name that doesn't exactly match
+ * the map above).
+ */
+function TeamBadge({ name, size = "h-11 w-11" }: { name: string; size?: string }) {
+  const logo = teamLogoUrl(name);
+  if (logo) {
+    return (
+      <div className={`grid ${size} shrink-0 place-items-center overflow-hidden rounded-xl border border-white/10 bg-white p-1.5`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- external logo CDN, not an optimizable local asset */}
+        <img src={logo} alt={`${name} logo`} className="h-full w-full object-contain" />
+      </div>
+    );
+  }
+  return (
+    <div className={`grid ${size} shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-sm font-black text-white`}>
+      {teamMark(name)}
+    </div>
+  );
+}
+
 export function SportsbookAnalysis() {
   const [league, setLeague] = useState<League>("NFL");
   const [events, setEvents] = useState<Event[]>([]);
@@ -572,13 +642,20 @@ export function SportsbookAnalysis() {
                       onClick={() =>
                         setSelectedEvent(event)
                       }
-                      className={`mb-1.5 w-full rounded-xl border p-3 text-left transition ${
+                      className={`relative mb-1.5 w-full overflow-hidden rounded-xl border p-3 text-left transition ${
                         active
                           ? "border-white/15 bg-white/[0.07]"
                           : "border-transparent hover:bg-white/[0.04]"
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
+                      {teamLogoUrl(eventHome) && (
+                        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-0 flex items-center justify-end opacity-[0.06]">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- external logo CDN */}
+                          <img src={teamLogoUrl(eventHome)!} alt="" className="h-[160%] w-auto translate-x-1/3 object-contain" />
+                        </div>
+                      )}
+
+                      <div className="relative flex items-center justify-between gap-2">
 
                         <span className="text-[8px] font-black uppercase tracking-wider text-zinc-600">
                           {event.status?.live
@@ -591,7 +668,7 @@ export function SportsbookAnalysis() {
                         </span>
                       </div>
 
-                      <div className="mt-2 space-y-1">
+                      <div className="relative mt-2 space-y-1">
                         <div className="truncate text-xs font-bold text-white">
                           {eventAway}
                         </div>
@@ -601,7 +678,7 @@ export function SportsbookAnalysis() {
                         </div>
                       </div>
 
-                      <div className="mt-2 text-[8px] text-zinc-600">
+                      <div className="relative mt-2 text-[8px] text-zinc-600">
                         {event.startsAt
                           ? new Date(
                               event.startsAt
@@ -648,9 +725,24 @@ export function SportsbookAnalysis() {
                     intentionally compact so the sportsbook data
                     remains the primary content.
                     ================================================= */}
-                <div className="border-b border-white/10 bg-[#0b0b0d] px-5 py-4 sm:px-6">
+                <div className="relative overflow-hidden border-b border-white/10 bg-[#0b0b0d] px-5 py-4 sm:px-6">
 
-                  <div className="flex items-center justify-between gap-4">
+                  {/* Faint team-logo backdrop - "card background should be
+                      player background but somewhat opacity" */}
+                  {(teamLogoUrl(away) || teamLogoUrl(home)) && (
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-0 flex items-center justify-between opacity-[0.07]">
+                      {teamLogoUrl(away) && (
+                        // eslint-disable-next-line @next/next/no-img-element -- external logo CDN
+                        <img src={teamLogoUrl(away)!} alt="" className="h-[220%] w-auto -translate-x-1/4 object-contain" />
+                      )}
+                      {teamLogoUrl(home) && (
+                        // eslint-disable-next-line @next/next/no-img-element -- external logo CDN
+                        <img src={teamLogoUrl(home)!} alt="" className="h-[220%] w-auto translate-x-1/4 object-contain" />
+                      )}
+                    </div>
+                  )}
+
+                  <div className="relative flex items-center justify-between gap-4">
 
                     {/* Event status */}
                     <div className="min-w-0">
@@ -709,7 +801,7 @@ export function SportsbookAnalysis() {
                   {/* ------------------------------------------------
                       MATCHUP
                       ------------------------------------------------ */}
-                  <div className="mt-4 flex items-center justify-center">
+                  <div className="relative mt-4 flex items-center justify-center">
 
                     {/* Away */}
                     <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
@@ -724,9 +816,7 @@ export function SportsbookAnalysis() {
                         </div>
                       </div>
 
-                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-sm font-black text-white">
-                        {teamMark(away)}
-                      </div>
+                      <TeamBadge name={away} />
                     </div>
 
                     {/* VS */}
@@ -737,9 +827,7 @@ export function SportsbookAnalysis() {
                     {/* Home */}
                     <div className="flex min-w-0 flex-1 items-center gap-3">
 
-                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-sm font-black text-white">
-                        {teamMark(home)}
-                      </div>
+                      <TeamBadge name={home} />
 
                       <div className="text-left">
                         <div className="truncate text-sm font-black text-white sm:text-base">

@@ -244,7 +244,7 @@ export function ParlayLab({
       <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Analyze parlays, compare sportsbook lines, expose market discrepancies, and explore the signals behind each game. Gridiron HQ is an analysis layer — not a sportsbook.</p>
     </header>
 
-    <div className="flex flex-wrap gap-2 border-b border-border" role="tablist" aria-label="Parlay Lab tools">
+    <div className="sticky top-[var(--dash-header-h,76px)] z-20 -mx-4 flex flex-wrap gap-2 border-b border-border bg-background/95 px-4 pt-2 backdrop-blur-md sm:-mx-8 sm:px-8" role="tablist" aria-label="Parlay Lab tools">
       {tabs.map((item) => <Link
         key={item.id}
         href={item.id === "parlay" ? `/dashboard/parlay?sport=${sport}` : `/dashboard/parlay?tab=${item.id}`}
