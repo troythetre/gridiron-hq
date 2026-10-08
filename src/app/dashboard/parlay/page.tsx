@@ -14,7 +14,10 @@ export default async function ParlayPage({
   const params = await searchParams;
   const initialSport = params.sport === "CFB" ? "CFB" : "NFL";
   const initialTab =
-    params.tab === "mock-draft" || params.tab === "college" || params.tab === "rivalries"
+    params.tab === "sportsbook" ||
+    params.tab === "mock-draft" ||
+    params.tab === "college" ||
+    params.tab === "rivalries"
       ? params.tab
       : "parlay";
 

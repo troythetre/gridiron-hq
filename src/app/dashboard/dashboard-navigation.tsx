@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/logo";
 import {
@@ -127,6 +127,34 @@ function closeDisclosuresOnNavigation() {
   closeOpenDisclosures();
 }
 
+function useCloseDisclosuresOnOutsideInteraction() {
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      document
+        .querySelectorAll<HTMLDetailsElement>("[data-dashboard-disclosure][open]")
+        .forEach((disclosure) => {
+          if (!disclosure.contains(target)) {
+            disclosure.classList.add("nav-disclosure-closing");
+            window.setTimeout(() => {
+              disclosure.open = false;
+              disclosure.classList.remove("nav-disclosure-closing");
+            }, 150);
+          }
+        });
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") closeOpenDisclosures();
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+}
+
 function ItemLink({ item, pathname, mobile = false }: { item: NavItem; pathname: string; mobile?: boolean }) {
   const active = isActive(pathname, item.href);
   const className = `flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
@@ -173,6 +201,7 @@ function GroupDetails({ group, pathname }: { group: NavGroup; pathname: string }
 
 export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
   const pathname = usePathname();
+  useCloseDisclosuresOnOutsideInteraction();
   if (!mobile) {
     return <nav aria-label="Dashboard navigation" className="flex-1 space-y-1 overflow-y-auto">
       <ItemLink item={homeItem} pathname={pathname} />
@@ -208,12 +237,31 @@ export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
 
 export function DashboardTopNavigation({ trailing }: { trailing?: ReactNode }) {
   const pathname = usePathname();
+  const headerRef = useRef<HTMLElement>(null);
+  useCloseDisclosuresOnOutsideInteraction();
   useEffect(() => {
     closeOpenDisclosures();
   }, [pathname]);
 
-  return <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5" style={{ viewTransitionName: "dashboard-header" }}>
-    <div className="mx-auto flex h-14 max-w-5xl items-center justify-center gap-1 rounded-full border border-white/15 bg-[linear-gradient(115deg,rgba(21,37,58,.78),rgba(31,25,54,.72),rgba(13,24,39,.78))] px-3 shadow-[0_12px_36px_rgba(0,0,0,.28),inset_0_1px_0_rgba(255,255,255,.12)] backdrop-blur-2xl sm:h-16 sm:gap-2 sm:px-5">
+  // Other pages (e.g. the Parlay Lab tab row) need to sit flush below this
+  // header without sliding underneath its translucent glass pill. Rather
+  // than guessing a pixel height per breakpoint - which drifts the moment
+  // padding, font size, or responsive height changes - publish the header's
+  // real measured height as a CSS variable every page can read.
+  useEffect(() => {
+    const node = headerRef.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const updateHeight = () => {
+      document.documentElement.style.setProperty("--dash-header-h", `${node.offsetHeight}px`);
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return <header ref={headerRef} className="sticky top-0 z-40 px-3 pt-3 sm:px-5" style={{ viewTransitionName: "dashboard-header" }}>
+    <div className="mx-auto flex h-14 max-w-5xl items-center justify-center gap-1 rounded-full border border-white/15 bg-[linear-gradient(115deg,rgba(21,37,58,.96),rgba(31,25,54,.94),rgba(13,24,39,.96))] px-3 shadow-[0_12px_36px_rgba(0,0,0,.4),inset_0_1px_0_rgba(255,255,255,.12)] backdrop-blur-2xl sm:h-16 sm:gap-2 sm:px-5">
       <Link href="/dashboard" onClick={closeDisclosuresOnNavigation} className="shrink-0" aria-label="Gridiron HQ home">
         <Logo height={26} />
       </Link>

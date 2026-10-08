@@ -14,9 +14,10 @@ import {
   NflMockDraftPanel,
   RivalryHistoryPanel,
 } from "./football-live-panels";
+import { SportsbookAnalysis } from "./sportsbook-analysis";
 
 type Sport = "NFL" | "CFB";
-type Tab = "parlay" | "mock-draft" | "college" | "rivalries";
+type Tab = "parlay" | "sportsbook" | "mock-draft" | "college" | "rivalries";
 type BookLine = { book: string; odds: string };
 type ParlayLeg = { id: string; event: string; selection: string; odds: string; book?: string; bookLines?: BookLine[] };
 type DraftPick = { id: string; pick: number; team: string; prospect: string; position: string; college: string };
@@ -224,6 +225,7 @@ export function ParlayLab({
     : null;
   const tabs: { id: Tab; label: string }[] = [
     { id: "parlay", label: "Parlay builder" },
+    { id: "sportsbook", label: "Sportsbook analysis" },
     { id: "mock-draft", label: "NFL mock draft" },
     { id: "college", label: "College rankings" },
     { id: "rivalries", label: "Rivalry history" },
@@ -239,10 +241,10 @@ export function ParlayLab({
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,#130e1a_0%,rgba(19,14,26,.96)_37%,rgba(19,14,26,.48)_72%,rgba(19,14,26,.2)_100%),linear-gradient(0deg,rgba(13,10,18,.72),transparent_70%)]" />
       <p className="text-[10px] font-black uppercase tracking-[.22em] text-violet-300">NFL · College football</p>
       <h1 className="mt-2 font-display text-4xl font-black uppercase tracking-tight sm:text-6xl">Parlay Lab</h1>
-      <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Build parlays from odds you enter, follow the latest NFL mock draft, and explore live college rankings and rivalry history. No live sportsbook lines or automatic bet placement.</p>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Analyze parlays, compare sportsbook lines, expose market discrepancies, and explore the signals behind each game. Gridiron HQ is an analysis layer — not a sportsbook.</p>
     </header>
 
-    <div className="flex flex-wrap gap-2 border-b border-border" role="tablist" aria-label="Parlay Lab tools">
+    <div className="sticky top-[var(--dash-header-h,76px)] z-20 -mx-4 flex flex-wrap gap-2 border-b border-border bg-background/95 px-4 pt-2 backdrop-blur-md sm:-mx-8 sm:px-8" role="tablist" aria-label="Parlay Lab tools">
       {tabs.map((item) => <Link
         key={item.id}
         href={item.id === "parlay" ? `/dashboard/parlay?sport=${sport}` : `/dashboard/parlay?tab=${item.id}`}
@@ -251,6 +253,8 @@ export function ParlayLab({
         className={`shrink-0 border-b-2 px-4 py-3 text-sm font-bold transition ${tab === item.id ? "border-violet-400 text-violet-200" : "border-transparent text-muted hover:text-foreground"}`}
       >{item.label}</Link>)}
     </div>
+
+    {tab === "sportsbook" && <SportsbookAnalysis />}
 
     {tab === "parlay" && <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -285,7 +289,7 @@ export function ParlayLab({
       <p className="flex gap-2 text-xs leading-5 text-muted"><TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />Multiplies each leg&apos;s odds-implied probability; it is not a true forecast and does not account for sportsbook margin or correlated outcomes. A parlay can lose even when most legs win. Use responsibly.</p>
     </section>}
 
-    {tab === "mock-draft" && mockDraft && <NflMockDraftPanel data={mockDraft} history={mockDraftHistory} historyReady={mockDraftHistoryReady} />}
+    {tab === "mock-draft" && mockDraft && <NflMockDraftPanel data={mockDraft} />}
     {tab === "mock-draft" && !mockDraft && <p role="alert" className="rounded-xl border border-amber-400/30 p-4 text-sm text-amber-100">The NFL mock draft data was not provided to this view. Reload the page to try again.</p>}
 
     {tab === "college" && <section className="space-y-6">
