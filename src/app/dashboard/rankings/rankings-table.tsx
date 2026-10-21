@@ -2,16 +2,13 @@
 
 import { useMemo, useRef, useState, type TouchEvent } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Heart } from "lucide-react";
 import type { PlayerRow } from "@/lib/types";
 import { PosBadge } from "@/components/pos-badge";
-import { PlayerAvatar } from "@/components/player-avatar";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { pointsForFormat, useFantasyPreferences } from "@/components/fantasy-preferences";
-import { PLAYER_PHOTOS } from "@/lib/player-visuals";
 import { togglePlayerFavorite, usePlayerFavorites } from "@/lib/player-favorites";
 
 const POSITIONS = ["ALL", "QB", "RB", "WR", "TE", "K", "DST"] as const;
@@ -133,39 +130,32 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
         onTouchEnd={handleTouchEnd}
         aria-live="polite"
       >
+      {/* Mobile: compact stat cards, no headshots - rank/name/team up top, the
+          four core numbers in a row underneath. */}
       <div className="space-y-2 md:hidden">
         {visible.map((p) => {
-          const photo = PLAYER_PHOTOS[p.name] ?? p.photoUrl;
           const isFavorite = favoriteIds.has(p.id);
           return <div key={p.id} className="relative">
           <Link
             href={p.profileHref ?? `/dashboard/players/${p.id}`}
-            className="group relative isolate block min-h-24 overflow-hidden rounded-2xl border border-border bg-surface p-3 pr-14 transition hover:border-primary/50"
+            className="group block rounded-2xl border border-border bg-surface p-3 pr-14 transition hover:border-primary/50 hover:bg-surface-raised"
           >
-            {photo ? (
-              <span aria-hidden="true" className="absolute inset-y-0 right-0 w-[68%]">
-                <Image src={photo} alt="" fill unoptimized={photo.startsWith("http")} sizes="68vw" className="object-cover object-[center_20%] opacity-75 transition duration-300 group-hover:scale-105 group-hover:opacity-90" />
-              </span>
-            ) : (
-              <PlayerAvatar name={p.name} team={p.team} position={p.pos} size={150} className="absolute -right-2 top-1/2 -translate-y-1/2 opacity-45" />
-            )}
-            <span aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-[#090b10] via-[#090b10]/90 via-45% to-[#090b10]/25" />
-            <span className="relative z-10 flex min-w-0 items-start justify-between gap-2">
-              <span className="min-w-0">
-                <span className="block text-[9px] font-black uppercase tracking-wider text-white/65">Rank #{p.overallRank}</span>
-                <span className="mt-0.5 block truncate text-sm font-black text-white drop-shadow">{p.name}</span>
-                <span className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/80"><PosBadge pos={p.pos} />{p.team}</span>
-              </span>
-              <span className="shrink-0 rounded-lg border border-white/20 bg-black/55 px-2 py-1 text-right text-white shadow-lg">
-                <span className="block font-display text-base font-black">{p.displayAvg.toFixed(1)}</span>
-                <span className="block text-[9px] uppercase tracking-wider text-white/70">Avg</span>
-              </span>
-            </span>
-            <span className="relative z-10 mt-2.5 flex justify-between gap-1.5 border-t border-white/15 pt-1.5 text-[9px] text-white/75">
-              <span>Total <strong className="text-white">{p.displayTotal.toFixed(1)}</strong></span>
-              <span>Pos rank <strong className="text-white">#{p.positionRank}</strong></span>
-              <span>W1/W2 <strong className="text-white">{p.displayWk1?.toFixed(1) ?? "—"} / {p.displayWk2?.toFixed(1) ?? "—"}</strong></span>
-            </span>
+            <div className="flex min-w-0 items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="block text-[9px] font-black uppercase tracking-wider text-muted">Rank #{p.overallRank}</span>
+                <span className="mt-0.5 block truncate text-sm font-black text-foreground transition group-hover:text-primary">{p.name}</span>
+                <span className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted"><PosBadge pos={p.pos} />{p.team}</span>
+              </div>
+              <div className="shrink-0 rounded-lg border border-border bg-surface-raised px-2 py-1 text-right">
+                <span className="block font-display text-base font-black text-foreground">{p.displayAvg.toFixed(1)}</span>
+                <span className="block text-[9px] uppercase tracking-wider text-muted">Avg</span>
+              </div>
+            </div>
+            <div className="mt-2.5 flex justify-between gap-1.5 border-t border-border pt-1.5 text-[9px] text-muted">
+              <span>Total <strong className="text-foreground">{p.displayTotal.toFixed(1)}</strong></span>
+              <span>Pos rank <strong className="text-foreground">#{p.positionRank}</strong></span>
+              <span>W1/W2 <strong className="text-foreground">{p.displayWk1?.toFixed(1) ?? "—"} / {p.displayWk2?.toFixed(1) ?? "—"}</strong></span>
+            </div>
           </Link>
           <FavoriteButton name={p.name} active={isFavorite} onClick={() => togglePlayerFavorite(p.id)} className="absolute right-3 top-3 z-20" />
           </div>;
@@ -176,36 +166,29 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
         </button>}
       </div>
 
+      {/* Desktop: a plain data table - same columns as before, just without
+          the background headshot/gradient treatment. */}
       <div className="hidden overflow-x-auto rounded-[var(--radius)] border border-border bg-surface md:block">
-        <div className="min-w-[900px] p-2">
+        <div className="min-w-[860px] p-2">
           <div className="grid grid-cols-[48px_minmax(220px,2fr)_64px_64px_repeat(5,minmax(76px,1fr))_38px] items-center gap-2 px-3 py-2 text-xs uppercase text-muted">
             <span>Rank</span><span>Player</span><span>Pos</span><span>Team</span>
             <span className="text-right">Wk1</span><span className="text-right">Wk2</span><span className="text-right">Total</span><span className="text-right">Avg</span><span className="text-right">Pos Rank</span>
             <span aria-label="Favorite" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             {visible.map((p) => {
-              const photo = PLAYER_PHOTOS[p.name] ?? p.photoUrl;
               return <div key={p.id} className="relative">
               <Link
                 href={p.profileHref ?? `/dashboard/players/${p.id}`}
-                className="group relative isolate grid min-h-[4.75rem] grid-cols-[48px_minmax(220px,2fr)_64px_64px_repeat(5,minmax(76px,1fr))_38px] items-center gap-2 overflow-hidden rounded-xl border border-border/80 bg-surface px-3 py-1.5 text-sm transition hover:border-primary/45 hover:bg-surface-raised"
+                className="group grid min-h-12 grid-cols-[48px_minmax(220px,2fr)_64px_64px_repeat(5,minmax(76px,1fr))_38px] items-center gap-2 rounded-xl border border-transparent px-3 py-2 text-sm transition hover:border-primary/35 hover:bg-surface-raised"
               >
-                {photo ? (
-                  <span aria-hidden="true" className="absolute inset-y-0 left-[8%] -z-10 w-[38%]">
-                    <Image src={photo} alt="" fill unoptimized={photo.startsWith("http")} sizes="38vw" className="object-cover object-[center_20%] opacity-65 transition duration-300 group-hover:scale-105 group-hover:opacity-80" />
-                  </span>
-                ) : (
-                  <PlayerAvatar name={p.name} team={p.team} position={p.pos} size={92} className="absolute right-[55%] top-1/2 -z-10 -translate-y-1/2 opacity-35" />
-                )}
-                <span aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-[#090b10]/90 via-[#090b10]/80 via-45% to-[#090b10]/95" />
                 <span className="text-muted">{p.overallRank}</span>
-                <span className="truncate font-bold text-white drop-shadow transition group-hover:text-primary">{p.name}</span>
+                <span className="truncate font-bold text-foreground transition group-hover:text-primary">{p.name}</span>
                 <span><PosBadge pos={p.pos} /></span>
                 <span className="text-muted">{p.team}</span>
                 <span className="text-right text-muted">{p.displayWk1?.toFixed(1) ?? "-"}</span>
                 <span className="text-right text-muted">{p.displayWk2?.toFixed(1) ?? "-"}</span>
-                <span className="text-right font-semibold">{p.displayTotal.toFixed(1)}</span>
+                <span className="text-right font-semibold text-foreground">{p.displayTotal.toFixed(1)}</span>
                 <span className="text-right text-muted">{p.displayAvg.toFixed(1)}</span>
                 <span className="text-right"><PositionRank rank={p.positionRank} /></span>
                 <span />
@@ -237,7 +220,7 @@ function FavoriteButton({ name, active, onClick, className }: { name: string; ac
         event.stopPropagation();
         onClick();
       }}
-      className={`${className} flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white/75 shadow-lg backdrop-blur transition hover:scale-105 hover:border-rose-300/60 hover:text-rose-300 ${active ? "text-rose-400" : ""}`}
+      className={`${className} flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface-raised text-muted shadow-sm backdrop-blur transition hover:scale-105 hover:border-rose-300/60 hover:text-rose-400 ${active ? "text-rose-400" : ""}`}
     >
       <Heart className={`h-4 w-4 ${active ? "fill-current" : ""}`} />
     </button>
