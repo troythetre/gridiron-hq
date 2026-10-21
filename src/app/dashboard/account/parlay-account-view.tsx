@@ -126,7 +126,6 @@ export function ParlayAccountView({ displayName, email, parlays, stats }: {
         </div>
         <div className="ml-auto flex flex-wrap gap-2">
           <Link href="/dashboard/parlay" className="rounded-full border border-violet-400/30 px-4 py-2 text-xs font-bold text-violet-200 hover:bg-violet-400/10">Build a parlay</Link>
-          <Link href="/dashboard/leaderboard" className="rounded-full border border-border px-4 py-2 text-xs font-bold text-muted hover:text-foreground">View leaderboard</Link>
         </div>
       </div>
     </header>

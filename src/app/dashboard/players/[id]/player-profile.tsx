@@ -344,15 +344,15 @@ export function PlayerProfile({
             </CardContent></Card>
             <Card className="border-white/10 bg-surface/75"><CardContent className="p-5">
               <SectionHeading eyebrow="Get back in the game" title="Quick links" compact />
-              <QuickLink href="/dashboard/start-sit" title="Start / sit tool" detail="Compare against another player" icon={<CircleDot />} />
-              <QuickLink href="/dashboard/rankings" title="Full player board" detail="Browse every ranked player" icon={<BarChart3 />} />
-              <QuickLink href="/dashboard/waiver" title="Waiver wire" detail="Find your next breakout" icon={<Sparkles />} />
-              <QuickLink href="/dashboard/news" title="Fantasy news" detail="See the latest league updates" icon={<Newspaper />} last />
+              <QuickLink href="/dashboard/player-analysis?tab=compare" title="Compare players" detail="Put two players side by side" icon={<CircleDot />} />
+              <QuickLink href="/dashboard/player-analysis?tab=rankings" title="Full player board" detail="Browse every ranked player" icon={<BarChart3 />} />
+              <QuickLink href="/dashboard/player-analysis?tab=market" title="Player market" detail="See who's trending up or down" icon={<Sparkles />} />
+              <QuickLink href="/dashboard/player-analysis?tab=news" title="Player news" detail="See the latest coverage" icon={<Newspaper />} last />
             </CardContent></Card>
           </div>
           <Card className="border-primary/20 bg-primary/[.04]"><CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-primary">Player comparison</p><p className="mt-1 text-sm text-muted">See how {player.name} stacks up against the rest of the field.</p></div>
-            <Link href={player.id > 0 ? `/dashboard/compare?player=${player.id}` : "/dashboard/compare"} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-black uppercase tracking-wider text-black transition hover:brightness-110">Compare players <ChevronRight className="h-4 w-4" /></Link>
+            <Link href={player.id > 0 ? `/dashboard/player-analysis?tab=compare&player=${player.id}` : "/dashboard/player-analysis?tab=compare"} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-black uppercase tracking-wider text-black transition hover:brightness-110">Compare players <ChevronRight className="h-4 w-4" /></Link>
           </CardContent></Card>
         </div>
       )}

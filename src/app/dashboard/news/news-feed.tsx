@@ -9,7 +9,6 @@ import Image from "next/image";
 import { newsHeadlineToneClass } from "@/lib/news-headline-tone";
 
 const filters = [
-  { id: "my_team", label: "My Players" },
   { id: "all", label: "All News" },
   { id: "players", label: "Players" },
   { id: "teams", label: "Teams" },
@@ -42,49 +41,36 @@ const topicColors: Record<string, string> = {
   dynasty: "border-violet-500/30 bg-violet-500/10 text-violet-300",
 };
 
-export function NewsFeed({ news, teamPlayerNames }: { news: NewsItemRow[]; teamPlayerNames: string[] }) {
-  const [active, setActive] = useState(teamPlayerNames.length ? "my_team" : "all");
+export function NewsFeed({ news }: { news: NewsItemRow[] }) {
+  const [active, setActive] = useState("all");
   const [selected, setSelected] = useState<NewsItemRow | null>(null);
   const [query, setQuery] = useState("");
-  const { visible, teamPlayerMatches } = useMemo(() => {
-    const names = [...new Set(teamPlayerNames.map(normalizeName).filter((name) => name.length > 3))];
-    const matches = new Map<number, string[]>();
-    for (const item of news) {
-      const text = normalizeName(`${item.headline} ${item.body ?? ""}`);
-      const found = names.filter((name) => text.includes(name));
-      if (found.length) matches.set(item.id, found);
-    }
-    const ordered = [...news].sort((a, b) => {
-      const personalized = Number(matches.has(b.id)) - Number(matches.has(a.id));
-      return personalized || (new Date(b.item_date ?? 0).getTime() - new Date(a.item_date ?? 0).getTime());
-    });
+  const { visible } = useMemo(() => {
+    const ordered = [...news].sort((a, b) => (new Date(b.item_date ?? 0).getTime() - new Date(a.item_date ?? 0).getTime()));
     return {
       visible: ordered.filter((item) => {
-        const topicMatch = active === "my_team" ? matches.has(item.id) : active === "all" || item.topics?.includes(active);
+        const topicMatch = active === "all" || item.topics?.includes(active);
         const keywordMatch = !query.trim() || normalizeName(`${item.headline} ${item.body ?? ""} ${item.source ?? ""}`).includes(normalizeName(query));
         return topicMatch && keywordMatch;
       }),
-      teamPlayerMatches: matches,
     };
-  }, [active, news, teamPlayerNames, query]);
+  }, [active, news, query]);
 
   return (
     <div className="space-y-5">
       <label className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 focus-within:border-primary/50"><Search className="h-4 w-4 shrink-0 text-muted" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search headlines, players, teams, or sources..." aria-label="Search news keywords" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted" /><span className="shrink-0 text-[10px] text-muted">{visible.length} stories</span></label>
-      <div className="flex flex-wrap gap-2 pb-1" role="tablist" aria-label="Filter fantasy news">
+      <div className="flex flex-wrap gap-2 pb-1" role="tablist" aria-label="Filter news">
         {filters.map((filter) => <button key={filter.id} type="button" role="tab" aria-selected={active === filter.id} onClick={() => setActive(filter.id)} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black uppercase tracking-wider transition ${active === filter.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-muted hover:border-primary/40 hover:text-foreground"}`}>{filter.label}</button>)}
       </div>
-      {active === "my_team" && teamPlayerNames.length > 0 && <p className="text-xs text-muted">Prioritizing stories that mention a player on your synced rosters.</p>}
       {visible.length ? <div className="grid gap-4 lg:grid-cols-2">
         {visible.map((item) => {
           const topics = item.topics ?? [];
-          const onTeam = teamPlayerMatches.has(item.id);
           return <button key={item.id} type="button" onClick={() => setSelected(item)} aria-label={`Read summary: ${item.headline}`} className="block w-full rounded-[var(--radius)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
             <Card className="group h-full overflow-hidden border-border/80 transition hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
             {item.image_url && <div className="relative aspect-[16/8] overflow-hidden bg-background"><Image src={item.image_url} alt="" fill unoptimized sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition duration-500 group-hover:scale-[1.03]" /></div>}
             <CardHeader className="pb-2">
               <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.16em] text-primary"><Newspaper className="h-3.5 w-3.5" />{item.source || "Gridiron News"}{onTeam && <span className="rounded-full bg-primary/10 px-2 py-1 tracking-wide">Your team</span>}</span>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.16em] text-primary"><Newspaper className="h-3.5 w-3.5" />{item.source || "Gridiron News"}</span>
                 <time className="shrink-0 text-xs text-muted" dateTime={item.item_date ?? undefined}>{displayDate(item.item_date)}</time>
               </div>
               <CardTitle className={`text-lg leading-snug ${newsHeadlineToneClass(item.headline)}`}>
@@ -101,7 +87,7 @@ export function NewsFeed({ news, teamPlayerNames }: { news: NewsItemRow[]; teamP
             </Card>
           </button>;
         })}
-      </div> : <div className="rounded-2xl border border-dashed border-border py-14 text-center text-sm text-muted">{active === "my_team" ? "No recent stories matched players on your synced rosters. Check All News for broader coverage." : "No stories match this filter yet. The feed refreshes automatically when scheduled ingestion is enabled."}</div>}
+      </div> : <div className="rounded-2xl border border-dashed border-border py-14 text-center text-sm text-muted">No stories match this filter yet. The feed refreshes automatically when scheduled ingestion is enabled.</div>}
       <Dialog.Root open={selected !== null} onOpenChange={(open) => { if (!open) setSelected(null); }}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" />

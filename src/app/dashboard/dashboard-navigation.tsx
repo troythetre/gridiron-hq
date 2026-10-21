@@ -7,13 +7,12 @@ import type { ReactNode } from "react";
 import { Logo } from "@/components/logo";
 import {
   BrainCircuit,
-  ChartCandlestick,
   ChevronDown,
   CircleDot,
   LayoutDashboard,
-  Newspaper,
   Search,
   ShieldAlert,
+  TicketCheck,
   TrendingUp,
   Trophy,
   UserRound,
@@ -35,28 +34,20 @@ type NavGroup = {
 const homeItem: NavItem = { href: "/dashboard", label: "Home", icon: LayoutDashboard };
 const analyticsItem: NavItem = { href: "/dashboard/analytics-engine", label: "Analytics Engine", icon: BrainCircuit };
 const predictionsItem: NavItem = { href: "/dashboard/predictions", label: "Predictions", icon: TrendingUp };
+const playerAnalysisItem: NavItem = { href: "/dashboard/player-analysis", label: "Player Analysis", icon: Trophy };
+const parlayItem: NavItem = { href: "/dashboard/parlay", label: "Parlay", icon: TicketCheck };
 
 // This platform is player & team analysis, not a per-league destination -
-// so navigation isn't split into NFL/CFB sections. The Predictions page
-// covers both leagues itself. Fantasy league-management and betting
-// features (leagues, trades, waiver, parlay/market-odds, the placeholder
-// betting leaderboard) are hidden from navigation for now - their routes
-// and code are untouched, so nothing is deleted.
-const groups: NavGroup[] = [
-  {
-    label: "Player Analysis",
-    icon: Trophy,
-    items: [
-      { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
-      { href: "/dashboard/market", label: "Player market", icon: ChartCandlestick },
-      { href: "/dashboard/compare", label: "Compare players", icon: CircleDot },
-      { href: "/dashboard/search", label: "Player search", icon: Search },
-      { href: "/dashboard/news", label: "News", icon: Newspaper },
-    ],
-  },
-];
+// so navigation isn't split into NFL/CFB sections, and Rankings/Compare/
+// Market/News are one consolidated Player Analysis page (playerAnalysisItem)
+// instead of four separate routes. Fantasy league-management features
+// (leagues, trades, waiver, start/sit, team review, roster sync) have been
+// removed entirely, not just hidden - this is a player-analysis platform,
+// not a fantasy-league assistant.
+const groups: NavGroup[] = [];
 
 const moreItems: NavItem[] = [
+  { href: "/dashboard/search", label: "Player search", icon: Search },
   { href: "/dashboard/injuries", label: "Injuries", icon: ShieldAlert },
   { href: "/dashboard/account", label: "My Account", icon: UserRound },
 ];
@@ -168,6 +159,8 @@ export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
       <ItemLink item={homeItem} pathname={pathname} />
       <ItemLink item={analyticsItem} pathname={pathname} />
       <ItemLink item={predictionsItem} pathname={pathname} />
+      <ItemLink item={playerAnalysisItem} pathname={pathname} />
+      <ItemLink item={parlayItem} pathname={pathname} />
       {groups.map((group) => <GroupDetails key={group.label} group={group} pathname={pathname} />)}
       <details data-dashboard-disclosure className="group/nav rounded-xl">
         <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted transition hover:bg-border/40 [&::-webkit-details-marker]:hidden">
@@ -183,6 +176,8 @@ export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
       <ItemLink item={homeItem} pathname={pathname} mobile />
       <ItemLink item={analyticsItem} pathname={pathname} mobile />
       <ItemLink item={predictionsItem} pathname={pathname} mobile />
+      <ItemLink item={playerAnalysisItem} pathname={pathname} mobile />
+      <ItemLink item={parlayItem} pathname={pathname} mobile />
       {groups.map((group) => <details key={group.label} data-dashboard-disclosure className="group/mobile relative">
         <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-muted hover:bg-border/40 [&::-webkit-details-marker]:hidden">
           <group.icon className="h-3.5 w-3.5" />{group.label}<ChevronDown className="h-3 w-3" />
@@ -239,6 +234,12 @@ export function DashboardTopNavigation({ trailing }: { trailing?: ReactNode }) {
         </Link>
         <Link href="/dashboard/predictions" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, predictionsItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, predictionsItem.href) ? "text-white" : "text-blue-100/65"}`}>
           <TrendingUp className="h-4 w-4 text-emerald-300" /><span className="hidden sm:inline">Predictions</span>
+        </Link>
+        <Link href="/dashboard/player-analysis" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, playerAnalysisItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, playerAnalysisItem.href) ? "text-white" : "text-blue-100/65"}`}>
+          <Trophy className="h-4 w-4 text-amber-300" /><span className="hidden sm:inline">Player Analysis</span>
+        </Link>
+        <Link href="/dashboard/parlay" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, parlayItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, parlayItem.href) ? "text-white" : "text-blue-100/65"}`}>
+          <TicketCheck className="h-4 w-4 text-violet-300" /><span className="hidden sm:inline">Parlay</span>
         </Link>
         {groups.map((group) => <TopNavDropdown key={group.label} group={group} pathname={pathname} />)}
         <details data-dashboard-disclosure className="group/top relative">
