@@ -46,7 +46,7 @@ export function DashboardHome({
       <div className="absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(9,9,9,.94)_0%,rgba(9,9,9,.84)_54%,rgba(9,9,9,.62)_100%),linear-gradient(0deg,rgba(9,9,9,.58),transparent_72%)]" />
       <div className="absolute -right-10 -top-24 z-20 h-72 w-72 rounded-full border border-white/10" />
       <div className="relative z-20">
-        <p className="text-[10px] font-black uppercase tracking-[.22em] text-primary">Your fantasy command center</p>
+        <p className="text-[10px] font-black uppercase tracking-[.22em] text-primary">Player &amp; team analysis</p>
         <h1 className="mt-2 font-display text-4xl font-black uppercase tracking-tight sm:text-6xl">The huddle starts here.</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Your teams, player movement, stories, stats, and film study in one personalized feed.</p>
         <div className="mt-5 flex flex-wrap gap-2">
