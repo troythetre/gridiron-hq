@@ -86,27 +86,36 @@ export type PublicBettingProfile = {
  * private or nonexistent profile id gets back null here with no extra checks.
  */
 export async function getPublicBettingProfile(profileId: string): Promise<PublicBettingProfile | null> {
-  const supabase = await createClient();
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", profileId)
-    .maybeSingle();
-  if (profileError?.code === "PGRST205" || profileError?.code === "42P01") return null;
-  if (profileError) throw profileError;
-  if (!profile) return null;
+  // This backs a public, no-login page that anyone (including a recruiter
+  // following a shared link) can land on cold - a transient Supabase
+  // hiccup here should degrade to "unavailable", never a raw 500 page, so
+  // the whole function is wrapped rather than only checking known
+  // Postgres error codes.
+  try {
+    const supabase = await createClient();
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", profileId)
+      .maybeSingle();
+    if (profileError?.code === "PGRST205" || profileError?.code === "42P01") return null;
+    if (profileError) throw profileError;
+    if (!profile) return null;
 
-  const { data, error } = await supabase
-    .from("player_list_entries")
-    .select("list_type, players ( id, name, pos, team, avg_pts, total_pts )")
-    .eq("profile_id", profileId);
-  if (error?.code === "PGRST205" || error?.code === "42P01") {
-    return { displayName: profile.display_name ?? "Bettor", lists: { favorite: [], target: [], observed: [] } };
+    const { data, error } = await supabase
+      .from("player_list_entries")
+      .select("list_type, players ( id, name, pos, team, avg_pts, total_pts )")
+      .eq("profile_id", profileId);
+    if (error?.code === "PGRST205" || error?.code === "42P01") {
+      return { displayName: profile.display_name ?? "Bettor", lists: { favorite: [], target: [], observed: [] } };
+    }
+    if (error) throw error;
+
+    return {
+      displayName: profile.display_name ?? "Bettor",
+      lists: groupByListType((data ?? []) as unknown as PlayerListRow[]),
+    };
+  } catch {
+    return null;
   }
-  if (error) throw error;
-
-  return {
-    displayName: profile.display_name ?? "Bettor",
-    lists: groupByListType((data ?? []) as unknown as PlayerListRow[]),
-  };
 }

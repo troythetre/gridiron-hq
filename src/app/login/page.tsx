@@ -27,7 +27,7 @@ function LoginForm() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your fantasy dashboard.</CardDescription>
+          <CardDescription>Sign in to your dashboard.</CardDescription>
         </CardHeader>
         <CardContent>
           {justSignedUp && (

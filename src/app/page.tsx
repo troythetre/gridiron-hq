@@ -3,17 +3,17 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Logo } from "@/components/logo";
-import { Trophy, Swords, Users2, Siren, Newspaper, ShieldAlert } from "lucide-react";
+import { BrainCircuit, Trophy, TrendingUp, ShieldAlert, CircleDot, Newspaper } from "lucide-react";
 import { getNews } from "@/lib/data";
 import { NewsSlideshow } from "@/components/news-slideshow";
 
 const FEATURES = [
-  { icon: Trophy, title: "Rankings", body: "Live positional and overall rankings built from real weekly scoring." },
-  { icon: Swords, title: "Start/Sit", body: "A transparent engine scores any two players and explains why one wins." },
-  { icon: Users2, title: "Your Team", body: "Bring in a roster from a league you already play in and keep your team details close at hand." },
-  { icon: Siren, title: "Waiver Wire", body: "The week's top pickups, ranked by opportunity, not just name recognition." },
-  { icon: Newspaper, title: "Fantasy News", body: "Short, sourced blurbs on what actually moves your lineup." },
+  { icon: BrainCircuit, title: "Analytics Engine", body: "A real NFL data pipeline and a from-scratch regression model, with live holdout accuracy - open to everyone, no account needed.", href: "/dashboard/analytics-engine" },
+  { icon: TrendingUp, title: "Predictions", body: "Data-driven NFL & CFB playoff pictures, award projections, and stat-leader pace, computed live from real player data.", href: "/dashboard/predictions" },
+  { icon: Trophy, title: "Rankings", body: "Positional and overall player rankings built from real weekly production." },
+  { icon: CircleDot, title: "Compare Players", body: "Put any two players side by side and see where the numbers actually differ." },
   { icon: ShieldAlert, title: "Injury Tracker", body: "Status, context, and who steps in next - color-coded by severity." },
+  { icon: Newspaper, title: "NFL News", body: "Short, sourced blurbs on what's actually moving around the league." },
 ];
 
 export default async function Home() {
@@ -26,6 +26,9 @@ export default async function Home() {
           <Logo height={36} />
         </Link>
         <nav className="flex items-center gap-2">
+          <Button asChild variant="ghost" className="hidden sm:inline-flex">
+            <Link href="/dashboard/analytics-engine">Analytics Engine</Link>
+          </Button>
           <Button asChild variant="ghost">
             <Link href="/login">Sign in</Link>
           </Button>
@@ -49,20 +52,23 @@ export default async function Home() {
         </div>
         <div className="relative mx-auto max-w-3xl px-6 pt-16 pb-24 text-center sm:px-10 sm:pt-24 sm:pb-32">
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
-            Your fantasy football <span className="text-primary">command center.</span>
+            NFL player &amp; team analytics, <span className="text-primary">built from real data.</span>
           </h1>
           <p className="mt-5 text-lg text-neutral-200">
-            Rankings, start/sit calls, waiver targets, and injury context to help with
-            the fantasy decisions you make each week. Built for the leagues you already play in.
+            A real multi-season data pipeline, a from-scratch regression model with live validated accuracy, and
+            data-driven playoff, award, and stat-leader predictions - rankings, injury context, and player comparisons too.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg">
-              <Link href="/signup">Create your free account</Link>
+              <Link href="/dashboard/analytics-engine">Explore the Analytics Engine</Link>
             </Button>
             <Button asChild size="lg" variant="secondary">
-              <Link href="/login">I already have one</Link>
+              <Link href="/dashboard/predictions">See 2026 predictions</Link>
             </Button>
           </div>
+          <p className="mt-4 text-sm text-neutral-400">
+            Both are public, no account needed. <Link href="/signup" className="font-semibold text-primary underline-offset-4 hover:underline">Create a free account</Link> to track your own team.
+          </p>
         </div>
       </section>
 
@@ -71,7 +77,7 @@ export default async function Home() {
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[.2em] text-primary">Around the league</p>
-              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">Latest fantasy news</h2>
+              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">Latest NFL news</h2>
             </div>
             <Button asChild variant="ghost" className="shrink-0">
               <Link href="/dashboard/news">All news</Link>
@@ -83,21 +89,29 @@ export default async function Home() {
 
       <section className="px-6 pb-20 sm:px-10">
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <Card key={f.title}>
-              <CardHeader>
-                <f.icon className="mb-2 h-6 w-6 text-primary" strokeWidth={1.75} />
-                <CardTitle>{f.title}</CardTitle>
-                <CardDescription>{f.body}</CardDescription>
-              </CardHeader>
-              <CardContent />
-            </Card>
-          ))}
+          {FEATURES.map((f) => {
+            const content = <>
+              <f.icon className="mb-2 h-6 w-6 text-primary" strokeWidth={1.75} />
+              <CardTitle>{f.title}</CardTitle>
+              <CardDescription>{f.body}</CardDescription>
+            </>;
+            return f.href
+              ? <Link key={f.title} href={f.href} className="block">
+                <Card className="h-full transition hover:border-primary/40">
+                  <CardHeader>{content}</CardHeader>
+                  <CardContent />
+                </Card>
+              </Link>
+              : <Card key={f.title}>
+                <CardHeader>{content}</CardHeader>
+                <CardContent />
+              </Card>;
+          })}
         </div>
       </section>
 
       <footer className="px-6 pb-10 text-center text-sm text-muted sm:px-10">
-        Built with Next.js, Supabase, and a custom scoring engine.
+        Built with Next.js, Supabase, an R/nflreadr data pipeline, and a hand-implemented regression model.
       </footer>
     </div>
   );
