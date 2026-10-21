@@ -6,30 +6,18 @@ import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/logo";
 import {
-  ArrowLeftRight,
-  BarChart3,
   BrainCircuit,
   ChartCandlestick,
   ChevronDown,
   CircleDot,
-  ClipboardList,
   GraduationCap,
   LayoutDashboard,
-  Medal,
-  MessagesSquare,
   Newspaper,
-  RefreshCw,
   Search,
   ShieldAlert,
-  Siren,
-  Swords,
-  TicketCheck,
   TrendingUp,
   Trophy,
-  Users,
-  Users2,
   UserRound,
-  Video,
 } from "lucide-react";
 
 type NavItem = {
@@ -48,59 +36,34 @@ type NavGroup = {
 const homeItem: NavItem = { href: "/dashboard", label: "Home", icon: LayoutDashboard };
 const analyticsItem: NavItem = { href: "/dashboard/analytics-engine", label: "Analytics Engine", icon: BrainCircuit };
 
+// Fantasy league-management and betting features (leagues, trades, waiver,
+// parlay/market-odds, the placeholder betting leaderboard) are hidden from
+// navigation for now - this platform's focus is player & team analysis -
+// but their routes and code are untouched, so nothing is deleted.
 const groups: NavGroup[] = [
-  {
-    label: "Player Analytics",
-    icon: Trophy,
-    items: [
-      { href: "/dashboard/leagues", label: "Team overview", icon: Users2 },
-      { href: "/dashboard/market", label: "Player market", icon: ChartCandlestick },
-      { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
-      { href: "/dashboard/news", label: "News feed", icon: Newspaper },
-      { href: "/dashboard/leaderboard", label: "Leaderboard", icon: Medal },
-      { label: "Futures", icon: TrendingUp, soon: true },
-    ],
-  },
   {
     label: "NFL",
     icon: ShieldAlert,
     items: [
-      { href: "/dashboard/parlay?sport=NFL", label: "Market Odds", icon: TicketCheck },
-      { href: "/dashboard/news", label: "News", icon: Newspaper },
-      { href: "/dashboard/leaderboard", label: "Leaderboard", icon: Medal },
       { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
-      { label: "Stats", icon: BarChart3, soon: true },
-      { href: "/dashboard/parlay?tab=mock-draft", label: "Latest mock draft", icon: ClipboardList },
+      { href: "/dashboard/market", label: "Player market", icon: ChartCandlestick },
+      { href: "/dashboard/predictions", label: "Predictions", icon: TrendingUp },
+      { href: "/dashboard/news", label: "News", icon: Newspaper },
+      { href: "/dashboard/compare", label: "Compare players", icon: CircleDot },
+      { href: "/dashboard/search", label: "Player search", icon: Search },
     ],
   },
   {
-    label: "CFB",
+    label: "College Football",
     icon: GraduationCap,
     items: [
-      { href: "/dashboard/parlay?sport=CFB", label: "Market Odds", icon: TicketCheck },
-      { label: "News", icon: Newspaper, soon: true },
-      { href: "/dashboard/leaderboard", label: "Leaderboard", icon: Medal },
-      { href: "/dashboard/parlay?tab=college", label: "Rankings", icon: Trophy },
-      { label: "Stats", icon: BarChart3, soon: true },
-      { label: "Transfer portal", icon: Users, soon: true },
-      { href: "/dashboard/parlay?tab=rivalries", label: "Rivalry history", icon: Swords },
+      { href: "/dashboard/predictions#college-football", label: "Playoff predictions", icon: TrendingUp },
     ],
   },
 ];
 
 const moreItems: NavItem[] = [
-  { href: "/dashboard/start-sit", label: "Start/Sit", icon: Swords },
-  { href: "/dashboard/team-review", label: "Team Review", icon: ClipboardList },
-  { href: "/dashboard/trades", label: "Trades", icon: ArrowLeftRight },
-  { href: "/dashboard/waiver", label: "Waiver Wire", icon: Siren },
   { href: "/dashboard/injuries", label: "Injuries", icon: ShieldAlert },
-  { href: "/dashboard/search", label: "Player search", icon: Search },
-  { href: "/dashboard/compare", label: "Compare players", icon: CircleDot },
-  { href: "/dashboard/fantasy-feed", label: "Fantasy Feed", icon: Video },
-  { href: "/dashboard/community", label: "The Huddle", icon: MessagesSquare },
-  { href: "/dashboard/messages", label: "Messages", icon: MessagesSquare },
-  { href: "/dashboard/sync", label: "Sync teams", icon: RefreshCw },
-  { href: "/dashboard/membership", label: "Membership", icon: Trophy },
   { href: "/dashboard/account", label: "My Account", icon: UserRound },
 ];
 

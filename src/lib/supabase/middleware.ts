@@ -39,7 +39,16 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname; // Get the current request path
   const isAuthRoute = path.startsWith("/login") || path.startsWith("/signup");
-  const isProtectedRoute = path.startsWith("/dashboard");
+
+  // These /dashboard/** pages are meant to be viewed by people without an
+  // account - a recruiter reading the Analytics Engine / Predictions
+  // showcase pages, or anyone a bettor shared their public profile link
+  // with - so they're carved out of the login gate below.
+  const PUBLIC_DASHBOARD_PREFIXES = ["/dashboard/analytics-engine", "/dashboard/predictions", "/dashboard/bettor"];
+  const isPublicDashboardRoute = PUBLIC_DASHBOARD_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+  );
+  const isProtectedRoute = path.startsWith("/dashboard") && !isPublicDashboardRoute;
 
   // Redirect unauthenticated users to the login page if they try to access a protected route
   if (!user && isProtectedRoute) {
