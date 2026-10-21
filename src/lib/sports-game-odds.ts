@@ -95,6 +95,9 @@ export async function getSportsGameOddsEvents(
       // limit, so `next: { revalidate }` was failing to cache it on every
       // request and logging a noisy error. Fetch fresh each time instead.
       cache: "no-store",
+      // Bound the live fetch so a slow/unreachable upstream degrades
+      // gracefully instead of blocking the predictions page's render.
+      signal: AbortSignal.timeout(4000),
     }
   );
 

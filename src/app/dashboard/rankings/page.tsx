@@ -1,14 +1,17 @@
 import { getPlayers } from "@/lib/data";
 import { RankingsTable } from "./rankings-table";
+import { TrendingPlayersRail } from "./trending-players";
 import profiles from "@/data/player-profiles.json";
 import type { PlayerProfileData } from "@/lib/player-profile-types";
 import Link from "next/link";
 import { mergeCurrentPlayerCatalog } from "@/lib/current-player-catalog";
+import { getTrendingPlayers } from "@/lib/player-analysis-trends";
 
 export default async function RankingsPage() {
   const rankedPlayers = await getPlayers();
   const profileRows = profiles as PlayerProfileData[];
   const players = mergeCurrentPlayerCatalog(rankedPlayers, profileRows);
+  const trending = getTrendingPlayers();
   const normalizeName = (name: string) => name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const profilesByPlayer = new Map(profileRows.map((profile) => [`${normalizeName(profile.name)}|${profile.team}`, profile]));
   const receptionsByPlayer = Object.fromEntries(players.map((player) => {
@@ -29,6 +32,7 @@ export default async function RankingsPage() {
           Current production, player bios, game logs, and trend charts, including players with current-season stats beyond the ranked pool. Select a name to open the full player card.
         </p>
         </div><Link href="/dashboard/compare" className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-xs font-black text-primary transition hover:bg-primary/15">Compare players →</Link></div>
+      <TrendingPlayersRail trending={trending} />
       <RankingsTable players={players} receptionsByPlayer={receptionsByPlayer} />
     </div>
   );
