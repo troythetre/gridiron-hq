@@ -8,6 +8,7 @@ import { Logo } from "@/components/logo";
 import {
   ArrowLeftRight,
   BarChart3,
+  BrainCircuit,
   ChartCandlestick,
   ChevronDown,
   CircleDot,
@@ -27,6 +28,7 @@ import {
   Trophy,
   Users,
   Users2,
+  UserRound,
   Video,
 } from "lucide-react";
 
@@ -44,17 +46,18 @@ type NavGroup = {
 };
 
 const homeItem: NavItem = { href: "/dashboard", label: "Home", icon: LayoutDashboard };
+const analyticsItem: NavItem = { href: "/dashboard/analytics-engine", label: "Analytics Engine", icon: BrainCircuit };
 
 const groups: NavGroup[] = [
   {
-    label: "Fantasy Football",
+    label: "Player Analytics",
     icon: Trophy,
     items: [
       { href: "/dashboard/leagues", label: "Team overview", icon: Users2 },
       { href: "/dashboard/market", label: "Player market", icon: ChartCandlestick },
       { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
       { href: "/dashboard/news", label: "News feed", icon: Newspaper },
-      { label: "Leaderboard", icon: Medal, soon: true },
+      { href: "/dashboard/leaderboard", label: "Leaderboard", icon: Medal },
       { label: "Futures", icon: TrendingUp, soon: true },
     ],
   },
@@ -62,9 +65,9 @@ const groups: NavGroup[] = [
     label: "NFL",
     icon: ShieldAlert,
     items: [
-      { href: "/dashboard/parlay?sport=NFL", label: "Parlay Hub", icon: TicketCheck },
+      { href: "/dashboard/parlay?sport=NFL", label: "Market Odds", icon: TicketCheck },
       { href: "/dashboard/news", label: "News", icon: Newspaper },
-      { label: "Leaderboard", icon: Medal, soon: true },
+      { href: "/dashboard/leaderboard", label: "Leaderboard", icon: Medal },
       { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
       { label: "Stats", icon: BarChart3, soon: true },
       { href: "/dashboard/parlay?tab=mock-draft", label: "Latest mock draft", icon: ClipboardList },
@@ -74,9 +77,9 @@ const groups: NavGroup[] = [
     label: "CFB",
     icon: GraduationCap,
     items: [
-      { href: "/dashboard/parlay?sport=CFB", label: "Parlay Hub", icon: TicketCheck },
+      { href: "/dashboard/parlay?sport=CFB", label: "Market Odds", icon: TicketCheck },
       { label: "News", icon: Newspaper, soon: true },
-      { label: "Leaderboard", icon: Medal, soon: true },
+      { href: "/dashboard/leaderboard", label: "Leaderboard", icon: Medal },
       { href: "/dashboard/parlay?tab=college", label: "Rankings", icon: Trophy },
       { label: "Stats", icon: BarChart3, soon: true },
       { label: "Transfer portal", icon: Users, soon: true },
@@ -98,6 +101,7 @@ const moreItems: NavItem[] = [
   { href: "/dashboard/messages", label: "Messages", icon: MessagesSquare },
   { href: "/dashboard/sync", label: "Sync teams", icon: RefreshCw },
   { href: "/dashboard/membership", label: "Membership", icon: Trophy },
+  { href: "/dashboard/account", label: "My Account", icon: UserRound },
 ];
 
 function isActive(pathname: string, href?: string) {
@@ -205,6 +209,7 @@ export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
   if (!mobile) {
     return <nav aria-label="Dashboard navigation" className="flex-1 space-y-1 overflow-y-auto">
       <ItemLink item={homeItem} pathname={pathname} />
+      <ItemLink item={analyticsItem} pathname={pathname} />
       {groups.map((group) => <GroupDetails key={group.label} group={group} pathname={pathname} />)}
       <details data-dashboard-disclosure className="group/nav rounded-xl">
         <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted transition hover:bg-border/40 [&::-webkit-details-marker]:hidden">
@@ -218,6 +223,7 @@ export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
   }
   return <nav aria-label="Mobile dashboard navigation" className="flex flex-wrap items-center gap-1 border-b border-border bg-surface px-2 py-2">
       <ItemLink item={homeItem} pathname={pathname} mobile />
+      <ItemLink item={analyticsItem} pathname={pathname} mobile />
       {groups.map((group) => <details key={group.label} data-dashboard-disclosure className="group/mobile relative">
         <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-muted hover:bg-border/40 [&::-webkit-details-marker]:hidden">
           <group.icon className="h-3.5 w-3.5" />{group.label}<ChevronDown className="h-3 w-3" />
@@ -268,6 +274,9 @@ export function DashboardTopNavigation({ trailing }: { trailing?: ReactNode }) {
       <nav aria-label="Primary navigation" className="flex min-w-0 items-center justify-center gap-0 sm:gap-0.5">
         <Link href="/dashboard" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, homeItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, homeItem.href) ? "text-white" : "text-blue-100/65"}`}>
           <LayoutDashboard className="h-4 w-4 text-sky-200" /><span className="hidden sm:inline">Home</span>
+        </Link>
+        <Link href="/dashboard/analytics-engine" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, analyticsItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, analyticsItem.href) ? "text-white" : "text-blue-100/65"}`}>
+          <BrainCircuit className="h-4 w-4 text-violet-300" /><span className="hidden sm:inline">Analytics Engine</span>
         </Link>
         {groups.map((group) => <TopNavDropdown key={group.label} group={group} pathname={pathname} />)}
         <details data-dashboard-disclosure className="group/top relative">

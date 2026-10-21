@@ -157,7 +157,7 @@ export function PlayerProfile({
                 photoUrl={profile?.headshotUrl}
                 selectedPhoto={photo}
                 size={164}
-                className="relative drop-shadow-[0_20px_24px_rgba(0,0,0,.4)] sm:h-[190px] sm:w-[190px]"
+                className="relative drop-shadow-[0_20px_24px_rgba(0,0,0,.4)] sm:[--avatar-size:190px]"
               />
               <div className="absolute -bottom-2 -right-2 flex h-10 min-w-10 items-center justify-center rounded-full border-4 border-[#101820] bg-primary px-2 text-xs font-black text-primary-foreground">
                 {player.pos}

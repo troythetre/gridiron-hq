@@ -20,6 +20,24 @@ export interface PlayerRow {
   tradeContext?: PlayerTradeContext | null;
 }
 
+export type ParlayLegSnapshot = { event: string; selection: string; odds: string; book?: string };
+export type ParlayStatus = "pending" | "won" | "lost" | "void";
+
+export interface SavedParlayRow {
+  id: string;
+  profile_id: string;
+  sport: "NFL" | "CFB";
+  legs: ParlayLegSnapshot[];
+  stake: number;
+  combined_odds_decimal: number | null;
+  potential_payout: number | null;
+  status: ParlayStatus;
+  actual_payout: number | null;
+  placed_at: string;
+  settled_at: string | null;
+  updated_at: string;
+}
+
 export interface PlayerTradeContext {
   careerAverage: number | null;
   priorSeasonAverage: number | null;

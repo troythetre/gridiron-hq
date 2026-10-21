@@ -39,7 +39,15 @@ export function PlayerAvatar({
     return (
       <span
         className={`relative inline-block shrink-0 overflow-visible rounded-full border-2 border-white/70 bg-black p-0.5 shadow-[0_0_24px_rgba(255,255,255,.18)] ${className}`}
-        style={{ width: size, height: size }}
+        // Reads a --avatar-size custom property with the `size` prop as its
+        // fallback, instead of hardcoding width/height. An inline style
+        // always wins over a className - including responsive classNames
+        // like "sm:h-[190px]" - so a caller could never actually override
+        // the box size at a breakpoint before. A caller that wants a bigger
+        // box at sm+ now passes something like
+        // className="sm:[--avatar-size:190px]" and this still has a plain
+        // default when no override is given.
+        style={{ width: `var(--avatar-size, ${size}px)`, height: `var(--avatar-size, ${size}px)` }}
       >
         <span className="relative block h-full w-full overflow-hidden rounded-full bg-black">
           <Image src={photo} alt={`${name} player photo`} fill sizes={`${size}px`} unoptimized={photo.startsWith("http")} className="object-cover object-top" />

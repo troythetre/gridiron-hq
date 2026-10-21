@@ -4,6 +4,8 @@ export interface RawGameLog {
   targets: number;
   snapPct: number;
   oppDefRank: number; // 1 (toughest) to 32 (easiest)
+  // Projected team scoring environment for the game (a "game script" proxy -
+  // not betting data, and never surfaced to users as an odds/line number).
   vegasImpliedTotal: number;
 }
 
