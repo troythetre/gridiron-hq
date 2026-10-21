@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { AlertTriangle, Crown, Flame, GraduationCap, ShieldAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { getNflSeasonProjections, type StatLeaderboard, type AwardPick } from "@/lib/nfl-season-projections";
@@ -53,14 +54,51 @@ function StandingsGroup({ group }: { group: NflStandingsGroup }) {
   </div>;
 }
 
-export default async function PredictionsPage() {
-  const [nflProjections, nflStandings, cfbRankings] = await Promise.all([
-    Promise.resolve(getNflSeasonProjections()),
-    getNflStandings(),
-    getCollegeFootballRankings(),
-  ]);
+function LiveSectionSkeleton() {
+  return <div className="grid gap-4 sm:grid-cols-2">
+    {[0, 1].map((key) => <div key={key} className="space-y-1.5">
+      {[0, 1, 2, 3].map((row) => <div key={row} className="h-7 animate-pulse rounded-lg bg-border/40" />)}
+    </div>)}
+  </div>;
+}
 
+// Each of these awaits one live, unauthenticated ESPN fetch (bounded by a
+// 4s timeout in the lib - see nfl-standings-live.ts / college-football-live.ts).
+// They're split into their own async components wrapped in Suspense below so
+// a slow upstream only delays its own card instead of blocking the whole
+// page - this is also why the NFL/CFB nav items used to feel "laggy": the
+// entire page previously awaited both live fetches via Promise.all before
+// anything painted.
+async function NflPlayoffPicture() {
+  const nflStandings = await getNflStandings();
+  return nflStandings.error
+    ? <p className="flex items-center gap-2 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-xs text-amber-200"><AlertTriangle className="h-4 w-4 shrink-0" />Live standings are temporarily unavailable ({nflStandings.error}). Everything else on this page is unaffected.</p>
+    : <div className="grid gap-4 sm:grid-cols-2">
+      {nflStandings.groups.map((group) => <StandingsGroup key={group.name} group={group} />)}
+    </div>;
+}
+
+async function CfbPlayoffField() {
+  const cfbRankings = await getCollegeFootballRankings();
   const cfbPlayoffField = cfbRankings.teams.slice(0, 12);
+  return <>
+    {cfbRankings.error
+      ? <p className="flex items-center gap-2 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-xs text-amber-200"><AlertTriangle className="h-4 w-4 shrink-0" />Live rankings are temporarily unavailable ({cfbRankings.error}).</p>
+      : <div className="grid gap-1.5 sm:grid-cols-2">
+        {cfbPlayoffField.map((team) => <div key={team.team} className="flex items-center justify-between rounded-lg border border-border bg-background/20 px-2.5 py-1.5 text-xs">
+          <span className="flex items-center gap-2 font-bold"><span className="w-5 shrink-0 text-right text-muted">{team.rank}</span>{team.team}</span>
+          <span className="tabular-nums text-muted">{team.record}</span>
+        </div>)}
+      </div>}
+    {cfbRankings.lastUpdated && <p className="mt-2 text-[11px] text-muted">Updated {cfbRankings.week} · source: ESPN</p>}
+  </>;
+}
+
+export default function PredictionsPage() {
+  // Local, synchronous, computed straight from the bundled dataset - no
+  // network involved, so this renders immediately without waiting on the
+  // live ESPN sections below.
+  const nflProjections = getNflSeasonProjections();
 
   return <div className="mx-auto max-w-5xl space-y-8 pb-10">
     <div>
@@ -80,11 +118,9 @@ export default async function PredictionsPage() {
       <Card>
         <CardContent className="space-y-3 p-4">
           <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Playoff picture (live standings)</p>
-          {nflStandings.error
-            ? <p className="flex items-center gap-2 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-xs text-amber-200"><AlertTriangle className="h-4 w-4 shrink-0" />Live standings are temporarily unavailable ({nflStandings.error}). Everything else on this page is unaffected.</p>
-            : <div className="grid gap-4 sm:grid-cols-2">
-              {nflStandings.groups.map((group) => <StandingsGroup key={group.name} group={group} />)}
-            </div>}
+          <Suspense fallback={<LiveSectionSkeleton />}>
+            <NflPlayoffPicture />
+          </Suspense>
           <p className="text-[11px] text-muted">Top 7 per conference (highlighted) reflects the current playoff field if the season ended today - not a projection of the final record.</p>
         </CardContent>
       </Card>
@@ -115,15 +151,9 @@ export default async function PredictionsPage() {
       <SectionHeading icon={GraduationCap} title="College Football" detail="Projected College Football Playoff field from the latest live AP/CFP-style rankings." />
       <Card>
         <CardContent className="p-4">
-          {cfbRankings.error
-            ? <p className="flex items-center gap-2 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-xs text-amber-200"><AlertTriangle className="h-4 w-4 shrink-0" />Live rankings are temporarily unavailable ({cfbRankings.error}).</p>
-            : <div className="grid gap-1.5 sm:grid-cols-2">
-              {cfbPlayoffField.map((team) => <div key={team.team} className="flex items-center justify-between rounded-lg border border-border bg-background/20 px-2.5 py-1.5 text-xs">
-                <span className="flex items-center gap-2 font-bold"><span className="w-5 shrink-0 text-right text-muted">{team.rank}</span>{team.team}</span>
-                <span className="tabular-nums text-muted">{team.record}</span>
-              </div>)}
-            </div>}
-          {cfbRankings.lastUpdated && <p className="mt-2 text-[11px] text-muted">Updated {cfbRankings.week} · source: ESPN</p>}
+          <Suspense fallback={<LiveSectionSkeleton />}>
+            <CfbPlayoffField />
+          </Suspense>
         </CardContent>
       </Card>
       <Card className="border-dashed">

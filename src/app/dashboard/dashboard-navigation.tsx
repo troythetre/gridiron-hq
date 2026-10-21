@@ -10,7 +10,6 @@ import {
   ChartCandlestick,
   ChevronDown,
   CircleDot,
-  GraduationCap,
   LayoutDashboard,
   Newspaper,
   Search,
@@ -35,29 +34,24 @@ type NavGroup = {
 
 const homeItem: NavItem = { href: "/dashboard", label: "Home", icon: LayoutDashboard };
 const analyticsItem: NavItem = { href: "/dashboard/analytics-engine", label: "Analytics Engine", icon: BrainCircuit };
+const predictionsItem: NavItem = { href: "/dashboard/predictions", label: "Predictions", icon: TrendingUp };
 
-// Fantasy league-management and betting features (leagues, trades, waiver,
-// parlay/market-odds, the placeholder betting leaderboard) are hidden from
-// navigation for now - this platform's focus is player & team analysis -
-// but their routes and code are untouched, so nothing is deleted.
+// This platform is player & team analysis, not a per-league destination -
+// so navigation isn't split into NFL/CFB sections. The Predictions page
+// covers both leagues itself. Fantasy league-management and betting
+// features (leagues, trades, waiver, parlay/market-odds, the placeholder
+// betting leaderboard) are hidden from navigation for now - their routes
+// and code are untouched, so nothing is deleted.
 const groups: NavGroup[] = [
   {
-    label: "NFL",
-    icon: ShieldAlert,
+    label: "Player Analysis",
+    icon: Trophy,
     items: [
       { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
       { href: "/dashboard/market", label: "Player market", icon: ChartCandlestick },
-      { href: "/dashboard/predictions", label: "Predictions", icon: TrendingUp },
-      { href: "/dashboard/news", label: "News", icon: Newspaper },
       { href: "/dashboard/compare", label: "Compare players", icon: CircleDot },
       { href: "/dashboard/search", label: "Player search", icon: Search },
-    ],
-  },
-  {
-    label: "College Football",
-    icon: GraduationCap,
-    items: [
-      { href: "/dashboard/predictions#college-football", label: "Playoff predictions", icon: TrendingUp },
+      { href: "/dashboard/news", label: "News", icon: Newspaper },
     ],
   },
 ];
@@ -173,6 +167,7 @@ export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
     return <nav aria-label="Dashboard navigation" className="flex-1 space-y-1 overflow-y-auto">
       <ItemLink item={homeItem} pathname={pathname} />
       <ItemLink item={analyticsItem} pathname={pathname} />
+      <ItemLink item={predictionsItem} pathname={pathname} />
       {groups.map((group) => <GroupDetails key={group.label} group={group} pathname={pathname} />)}
       <details data-dashboard-disclosure className="group/nav rounded-xl">
         <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted transition hover:bg-border/40 [&::-webkit-details-marker]:hidden">
@@ -187,6 +182,7 @@ export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
   return <nav aria-label="Mobile dashboard navigation" className="flex flex-wrap items-center gap-1 border-b border-border bg-surface px-2 py-2">
       <ItemLink item={homeItem} pathname={pathname} mobile />
       <ItemLink item={analyticsItem} pathname={pathname} mobile />
+      <ItemLink item={predictionsItem} pathname={pathname} mobile />
       {groups.map((group) => <details key={group.label} data-dashboard-disclosure className="group/mobile relative">
         <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-muted hover:bg-border/40 [&::-webkit-details-marker]:hidden">
           <group.icon className="h-3.5 w-3.5" />{group.label}<ChevronDown className="h-3 w-3" />
@@ -240,6 +236,9 @@ export function DashboardTopNavigation({ trailing }: { trailing?: ReactNode }) {
         </Link>
         <Link href="/dashboard/analytics-engine" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, analyticsItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, analyticsItem.href) ? "text-white" : "text-blue-100/65"}`}>
           <BrainCircuit className="h-4 w-4 text-violet-300" /><span className="hidden sm:inline">Analytics Engine</span>
+        </Link>
+        <Link href="/dashboard/predictions" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, predictionsItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, predictionsItem.href) ? "text-white" : "text-blue-100/65"}`}>
+          <TrendingUp className="h-4 w-4 text-emerald-300" /><span className="hidden sm:inline">Predictions</span>
         </Link>
         {groups.map((group) => <TopNavDropdown key={group.label} group={group} pathname={pathname} />)}
         <details data-dashboard-disclosure className="group/top relative">

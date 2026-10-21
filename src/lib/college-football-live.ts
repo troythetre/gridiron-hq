@@ -48,6 +48,9 @@ export async function getCollegeFootballRankings(): Promise<CollegeFootballRanki
     const response = await fetch(RANKINGS_URL, {
       next: { revalidate: 3600, tags: ["college-football-rankings"] },
       headers: { Accept: "application/json" },
+      // Bound the live fetch so a slow/unreachable upstream degrades
+      // gracefully instead of blocking this page's render indefinitely.
+      signal: AbortSignal.timeout(4000),
     });
     if (!response.ok) {
       throw new Error(`ESPN rankings returned HTTP ${response.status}`);
@@ -86,6 +89,11 @@ export async function getCollegeFootballRankings(): Promise<CollegeFootballRanki
       error: null,
     };
   } catch (error) {
+    const message = error instanceof Error && error.name === "TimeoutError"
+      ? "ESPN did not respond in time."
+      : error instanceof Error
+        ? error.message
+        : "Could not load college football rankings.";
     return {
       poll: "AP Top 25",
       headline: "Latest college football rankings",
@@ -93,10 +101,7 @@ export async function getCollegeFootballRankings(): Promise<CollegeFootballRanki
       lastUpdated: null,
       teams: [],
       sourceUrl: RANKINGS_SOURCE_URL,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Could not load college football rankings.",
+      error: message,
     };
   }
 }

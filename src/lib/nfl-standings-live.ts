@@ -53,6 +53,11 @@ export async function getNflStandings(): Promise<NflStandings> {
     const response = await fetch(STANDINGS_URL, {
       next: { revalidate: 3600, tags: ["nfl-standings"] },
       headers: { Accept: "application/json" },
+      // Live ESPN fetches have no implicit timeout - an unusually slow upstream
+      // response would otherwise block this page's render indefinitely. Bound
+      // it so a slow/unreachable upstream degrades gracefully instead of
+      // making navigation feel like it's hanging.
+      signal: AbortSignal.timeout(4000),
     });
     if (!response.ok) throw new Error(`ESPN standings returned HTTP ${response.status}`);
 
@@ -83,11 +88,16 @@ export async function getNflStandings(): Promise<NflStandings> {
 
     return { groups, lastUpdated: new Date().toISOString(), sourceUrl: STANDINGS_SOURCE_URL, error: null };
   } catch (error) {
+    const message = error instanceof Error && error.name === "TimeoutError"
+      ? "ESPN did not respond in time."
+      : error instanceof Error
+        ? error.message
+        : "Could not load live NFL standings.";
     return {
       groups: [],
       lastUpdated: null,
       sourceUrl: STANDINGS_SOURCE_URL,
-      error: error instanceof Error ? error.message : "Could not load live NFL standings.",
+      error: message,
     };
   }
 }
