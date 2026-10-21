@@ -22,6 +22,12 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("points");
   const [positionDirection, setPositionDirection] = useState(1);
+  // The merged catalog can run several hundred players deep. Rendering (and
+  // hydrating) every one of them at once - in both the mobile card layout
+  // and the desktop table below - is what made this page feel slow to open.
+  // Show a page at a time instead; "Show more" reveals the rest on demand.
+  const PAGE_SIZE = 50;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const favoriteIds = usePlayerFavorites();
   const { scoring, mode } = useFantasyPreferences();
@@ -77,6 +83,18 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
     }).map((player) => ({ ...player, overallRank: overallRanks.get(player.id) ?? 0, positionRank: posRanks.get(player.id) ?? 0 }));
   }, [scoredPlayers, pos, query, sort, mode]);
 
+  // Reset pagination whenever the filtered set changes shape so a new
+  // search/position/sort always starts from the top instead of showing an
+  // empty tail of a now-shorter list.
+  const filterKey = `${pos}|${query}|${sort}|${mode}`;
+  const [previousFilterKey, setPreviousFilterKey] = useState(filterKey);
+  if (previousFilterKey !== filterKey) {
+    setPreviousFilterKey(filterKey);
+    setVisibleCount(PAGE_SIZE);
+  }
+  const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMore = visibleCount < filtered.length;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -116,7 +134,7 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
         aria-live="polite"
       >
       <div className="space-y-2 md:hidden">
-        {filtered.map((p) => {
+        {visible.map((p) => {
           const photo = PLAYER_PHOTOS[p.name] ?? p.photoUrl;
           const isFavorite = favoriteIds.has(p.id);
           return <div key={p.id} className="relative">
@@ -153,6 +171,9 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
           </div>;
         })}
         {filtered.length === 0 && <p className="rounded-2xl border border-border bg-surface p-6 text-center text-sm text-muted">No players match your filters.</p>}
+        {hasMore && <button type="button" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)} className="w-full rounded-2xl border border-border bg-surface py-2.5 text-xs font-bold text-muted transition hover:border-primary/40 hover:text-foreground">
+          Show more ({filtered.length - visible.length} remaining)
+        </button>}
       </div>
 
       <div className="hidden overflow-x-auto rounded-[var(--radius)] border border-border bg-surface md:block">
@@ -163,7 +184,7 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
             <span aria-label="Favorite" />
           </div>
           <div className="space-y-2">
-            {filtered.map((p) => {
+            {visible.map((p) => {
               const photo = PLAYER_PHOTOS[p.name] ?? p.photoUrl;
               return <div key={p.id} className="relative">
               <Link
@@ -194,6 +215,9 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
             })}
             {filtered.length === 0 && <p className="px-4 py-8 text-center text-muted">No players match your filters.</p>}
           </div>
+          {hasMore && <button type="button" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)} className="mt-2 w-full rounded-xl border border-border bg-surface py-2.5 text-xs font-bold text-muted transition hover:border-primary/40 hover:text-foreground">
+            Show more ({filtered.length - visible.length} remaining)
+          </button>}
         </div>
       </div>
       </div>
