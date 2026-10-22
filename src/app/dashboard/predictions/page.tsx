@@ -4,6 +4,7 @@ import { getNflSeasonProjections } from "@/lib/nfl-season-projections";
 import { getNflStandings, type NflStandingsGroup, type NflStandingsTeam } from "@/lib/nfl-standings-live";
 import { getCollegeFootballRankings } from "@/lib/college-football-live";
 import { getWeeklyGameLines } from "@/lib/weekly-game-lines";
+import { WeeklyFavoritesParlay } from "./weekly-favorites-parlay";
 import { getProjectionCandidates, getWeeklyLeaders, gamesObservedThisSeason } from "@/lib/player-projection-model";
 import { REGULAR_SEASON_GAMES, STAT_KEYS } from "@/lib/projection-math";
 import { PredictionsTabs } from "./predictions-tabs";
@@ -99,11 +100,14 @@ async function WeeklyLines() {
   if (lines.error) {
     return <p className="flex items-center gap-2 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-xs text-amber-200"><AlertTriangle className="h-4 w-4 shrink-0" />Live market lines are temporarily unavailable ({lines.error}).</p>;
   }
-  return <div className="space-y-1.5">
-    {lines.games.slice(0, 8).map((game) => <div key={game.eventId} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background/20 px-3 py-2 text-xs">
-      <span className="truncate font-bold">{game.awayTeam} @ {game.homeTeam}</span>
-      <span className="shrink-0 tabular-nums text-muted">{game.spread ? `Spread ${game.spread}` : null}{game.spread && game.total ? " · " : null}{game.total ? `O/U ${game.total}` : null}</span>
-    </div>)}
+  return <div className="space-y-3">
+    <WeeklyFavoritesParlay games={lines.games} />
+    <div className="space-y-1.5">
+      {lines.games.slice(0, 8).map((game) => <div key={game.eventId} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background/20 px-3 py-2 text-xs">
+        <span className="truncate font-bold">{game.awayTeam} @ {game.homeTeam}</span>
+        <span className="shrink-0 tabular-nums text-muted">{game.spread ? `Spread ${game.spread}` : null}{game.spread && game.total ? " · " : null}{game.total ? `O/U ${game.total}` : null}</span>
+      </div>)}
+    </div>
   </div>;
 }
 
