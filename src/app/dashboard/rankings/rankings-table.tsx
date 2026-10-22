@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, type TouchEvent } from "react";
 import Link from "next/link";
-import { Heart } from "lucide-react";
+import { Heart, Minus, TrendingDown, TrendingUp } from "lucide-react";
 import type { PlayerRow } from "@/lib/types";
 import { PosBadge } from "@/components/pos-badge";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,11 @@ import { togglePlayerFavorite, usePlayerFavorites } from "@/lib/player-favorites
 
 const POSITIONS = ["ALL", "QB", "RB", "WR", "TE", "K", "DST"] as const;
 type ReceptionStats = { wk1: number; wk2: number; avg: number; total: number; experience: number | null };
+
+// A player is "trending up/down" here if week 2 outscored (or undershot)
+// week 1 by more than a point - a quick visual cue, not the full
+// multi-game analysis the Player Analysis trending rail does.
+const TREND_THRESHOLD = 1;
 
 export function RankingsTable({ players, receptionsByPlayer }: { players: PlayerRow[]; receptionsByPlayer: Record<number, ReceptionStats> }) {
   const [pos, setPos] = useState<string>("ALL");
@@ -130,8 +135,9 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
         onTouchEnd={handleTouchEnd}
         aria-live="polite"
       >
-      {/* Mobile: compact stat cards, no headshots - rank/name/team up top, the
-          four core numbers in a row underneath. */}
+      {/* Mobile: a leaderboard-style stat card per player. Medal badge for
+          the top 3 overall, a trend arrow comparing week 2 to week 1, no
+          headshots. */}
       <div className="space-y-2 md:hidden">
         {visible.map((p) => {
           const isFavorite = favoriteIds.has(p.id);
@@ -140,21 +146,26 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
             href={p.profileHref ?? `/dashboard/players/${p.id}`}
             className="group block rounded-2xl border border-border bg-surface p-3 pr-14 transition hover:border-primary/50 hover:bg-surface-raised"
           >
-            <div className="flex min-w-0 items-start justify-between gap-2">
-              <div className="min-w-0">
-                <span className="block text-[9px] font-black uppercase tracking-wider text-muted">Rank #{p.overallRank}</span>
-                <span className="mt-0.5 block truncate text-sm font-black text-foreground transition group-hover:text-primary">{p.name}</span>
-                <span className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted"><PosBadge pos={p.pos} />{p.team}</span>
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <RankBadge rank={p.overallRank} />
+                <div className="min-w-0">
+                  <span className="block truncate text-sm font-black text-foreground transition group-hover:text-primary">{p.name}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted"><PosBadge pos={p.pos} />{p.team}</span>
+                </div>
               </div>
               <div className="shrink-0 rounded-lg border border-border bg-surface-raised px-2 py-1 text-right">
                 <span className="block font-display text-base font-black text-foreground">{p.displayAvg.toFixed(1)}</span>
                 <span className="block text-[9px] uppercase tracking-wider text-muted">Avg</span>
               </div>
             </div>
-            <div className="mt-2.5 flex justify-between gap-1.5 border-t border-border pt-1.5 text-[9px] text-muted">
+            <div className="mt-2.5 flex items-center justify-between gap-1.5 border-t border-border pt-1.5 text-[9px] text-muted">
               <span>Total <strong className="text-foreground">{p.displayTotal.toFixed(1)}</strong></span>
               <span>Pos rank <strong className="text-foreground">#{p.positionRank}</strong></span>
-              <span>W1/W2 <strong className="text-foreground">{p.displayWk1?.toFixed(1) ?? "—"} / {p.displayWk2?.toFixed(1) ?? "—"}</strong></span>
+              <span className="flex items-center gap-1">
+                W1/W2 <strong className="text-foreground">{p.displayWk1?.toFixed(1) ?? "—"} / {p.displayWk2?.toFixed(1) ?? "—"}</strong>
+                <TrendIndicator wk1={p.displayWk1} wk2={p.displayWk2} />
+              </span>
             </div>
           </Link>
           <FavoriteButton name={p.name} active={isFavorite} onClick={() => togglePlayerFavorite(p.id)} className="absolute right-3 top-3 z-20" />
@@ -166,13 +177,14 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
         </button>}
       </div>
 
-      {/* Desktop: a plain data table - same columns as before, just without
-          the background headshot/gradient treatment. */}
+      {/* Desktop: a leaderboard table - medal badge for the top 3 overall,
+          a dedicated Trend column (week 2 vs week 1), sticky header. */}
       <div className="hidden overflow-x-auto rounded-[var(--radius)] border border-border bg-surface md:block">
-        <div className="min-w-[860px] p-2">
-          <div className="grid grid-cols-[48px_minmax(220px,2fr)_64px_64px_repeat(5,minmax(76px,1fr))_38px] items-center gap-2 px-3 py-2 text-xs uppercase text-muted">
+        <div className="min-w-[920px] p-2">
+          <div className="sticky top-0 z-10 grid grid-cols-[52px_minmax(220px,2fr)_64px_64px_repeat(5,minmax(76px,1fr))_44px_38px] items-center gap-2 rounded-t-lg bg-surface px-3 py-2 text-xs uppercase text-muted">
             <span>Rank</span><span>Player</span><span>Pos</span><span>Team</span>
             <span className="text-right">Wk1</span><span className="text-right">Wk2</span><span className="text-right">Total</span><span className="text-right">Avg</span><span className="text-right">Pos Rank</span>
+            <span className="text-center">Trend</span>
             <span aria-label="Favorite" />
           </div>
           <div className="space-y-1">
@@ -180,9 +192,9 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
               return <div key={p.id} className="relative">
               <Link
                 href={p.profileHref ?? `/dashboard/players/${p.id}`}
-                className="group grid min-h-12 grid-cols-[48px_minmax(220px,2fr)_64px_64px_repeat(5,minmax(76px,1fr))_38px] items-center gap-2 rounded-xl border border-transparent px-3 py-2 text-sm transition hover:border-primary/35 hover:bg-surface-raised"
+                className="group grid min-h-12 grid-cols-[52px_minmax(220px,2fr)_64px_64px_repeat(5,minmax(76px,1fr))_44px_38px] items-center gap-2 rounded-xl border border-transparent px-3 py-2 text-sm transition hover:border-primary/35 hover:bg-surface-raised"
               >
-                <span className="text-muted">{p.overallRank}</span>
+                <RankBadge rank={p.overallRank} />
                 <span className="truncate font-bold text-foreground transition group-hover:text-primary">{p.name}</span>
                 <span><PosBadge pos={p.pos} /></span>
                 <span className="text-muted">{p.team}</span>
@@ -191,6 +203,7 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
                 <span className="text-right font-semibold text-foreground">{p.displayTotal.toFixed(1)}</span>
                 <span className="text-right text-muted">{p.displayAvg.toFixed(1)}</span>
                 <span className="text-right"><PositionRank rank={p.positionRank} /></span>
+                <span className="flex justify-center"><TrendIndicator wk1={p.displayWk1} wk2={p.displayWk2} /></span>
                 <span />
               </Link>
               <FavoriteButton name={p.name} active={favoriteIds.has(p.id)} onClick={() => togglePlayerFavorite(p.id)} className="absolute right-3 top-1/2 z-20 -translate-y-1/2" />
@@ -206,6 +219,34 @@ export function RankingsTable({ players, receptionsByPlayer }: { players: Player
       </div>
     </div>
   );
+}
+
+function RankBadge({ rank }: { rank: number }) {
+  const medalStyles: Record<number, string> = {
+    1: "border-amber-300/70 bg-gradient-to-br from-amber-200/30 via-amber-400/20 to-yellow-700/20 text-amber-200 shadow-[0_0_10px_rgba(251,191,36,.25)]",
+    2: "border-slate-200/60 bg-gradient-to-br from-slate-100/25 to-slate-500/10 text-slate-200",
+    3: "border-orange-400/60 bg-gradient-to-br from-orange-300/25 to-orange-700/10 text-orange-300",
+  };
+  if (rank in medalStyles) {
+    return <span title={`#${rank} overall`} className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-black tabular-nums ${medalStyles[rank]}`}>
+      {rank}
+    </span>;
+  }
+  return <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-sm font-semibold tabular-nums text-muted">{rank}</span>;
+}
+
+function TrendIndicator({ wk1, wk2 }: { wk1: number | null; wk2: number | null }) {
+  if (wk1 == null || wk2 == null) {
+    return <Minus className="h-3.5 w-3.5 shrink-0 text-muted/50" aria-label="Not enough weeks played to show a trend" />;
+  }
+  const delta = wk2 - wk1;
+  if (delta > TREND_THRESHOLD) {
+    return <TrendingUp className="h-3.5 w-3.5 shrink-0 text-emerald-400" aria-label={`Up ${delta.toFixed(1)} points from week 1 to week 2`} />;
+  }
+  if (delta < -TREND_THRESHOLD) {
+    return <TrendingDown className="h-3.5 w-3.5 shrink-0 text-rose-400" aria-label={`Down ${Math.abs(delta).toFixed(1)} points from week 1 to week 2`} />;
+  }
+  return <Minus className="h-3.5 w-3.5 shrink-0 text-muted/70" aria-label="Roughly flat from week 1 to week 2" />;
 }
 
 function FavoriteButton({ name, active, onClick, className }: { name: string; active: boolean; onClick: () => void; className: string }) {
