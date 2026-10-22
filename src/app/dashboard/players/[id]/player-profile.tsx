@@ -241,7 +241,7 @@ export function PlayerProfile({
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[640px] text-left text-xs">
                       <thead className="bg-black/15 text-[9px] uppercase tracking-[.16em] text-muted">
-                        <tr><th className="px-5 py-3">Week</th><th className="px-3 py-3 text-right">Fantasy</th><th className="px-3 py-3 text-right">Pass Yds</th><th className="px-3 py-3 text-right">Rush Yds</th><th className="px-3 py-3 text-right">Targets</th><th className="px-5 py-3 text-right">Rec Yds</th></tr>
+                        <tr><th className="px-5 py-3">Week</th><th className="px-3 py-3 text-right">Fantasy</th><th className="px-3 py-3 text-right">Pass Yds</th><th className="px-3 py-3 text-right">Rush Yds</th><th className="px-3 py-3 text-right">Targets</th><th className="px-3 py-3 text-right">Rec Yds</th><th className="px-5 py-3 text-right">Snap %</th></tr>
                       </thead>
                       <tbody>{weeks.map((week) => (
                         <tr key={week.week} className="border-t border-border/60 transition hover:bg-white/[.025]">
@@ -250,7 +250,8 @@ export function PlayerProfile({
                           <td className="px-3 py-3.5 text-right text-muted">{week.passingYards ?? "—"}</td>
                           <td className="px-3 py-3.5 text-right text-muted">{week.rushingYards ?? "—"}</td>
                           <td className="px-3 py-3.5 text-right text-muted">{week.targets ?? "—"}</td>
-                          <td className="px-5 py-3.5 text-right text-muted">{week.receivingYards ?? "—"}</td>
+                          <td className="px-3 py-3.5 text-right text-muted">{week.receivingYards ?? "—"}</td>
+                          <td className="px-5 py-3.5 text-right text-muted">{week.snapShare != null ? `${(week.snapShare * 100).toFixed(0)}%` : "—"}</td>
                         </tr>
                       ))}</tbody>
                     </table>
@@ -260,11 +261,12 @@ export function PlayerProfile({
             </Card>
             <Card className="bg-surface/75" style={{ borderColor: `${teamPrimary}55` }}>
               <CardContent className="p-5">
-                <SectionHeading eyebrow="Usage profile" title="Touches & targets" compact />
+                <SectionHeading eyebrow="Usage profile" title="Touches, targets & snaps" compact />
                 <TrendChart weeks={weeks} valueFor={(week) => (week.carries ?? 0) + (week.targets ?? 0)} unit="opps" tone="muted" color={teamPrimary} />
-                <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="mt-4 grid grid-cols-3 gap-3">
                   <MiniStat label="Carries" value={carries.toString()} />
                   <MiniStat label="Targets" value={targets.toString()} />
+                  <MiniStat label="Avg. snap %" value={formatPercent(mean(weeks.map((week) => week.snapShare ?? null)))} />
                 </div>
               </CardContent>
             </Card>
@@ -332,7 +334,8 @@ export function PlayerProfile({
             <Card className="border-white/10 bg-surface/75"><CardContent className="p-5">
               <SectionHeading eyebrow="Advanced usage" title="Opportunity signals" compact />
               <DataRow label="Targets" value={targets.toString()} /><DataRow label="Avg. target share" value={formatPercent(mean(weeks.map((week) => week.targetShare)))} />
-              <DataRow label="Avg. air-yards share" value={formatPercent(mean(weeks.map((week) => week.airYardsShare)))} /><DataRow label="WOPR" value={formatDecimal(mean(weeks.map((week) => week.wopr)))} />
+              <DataRow label="Avg. air-yards share" value={formatPercent(mean(weeks.map((week) => week.airYardsShare)))} /><DataRow label="Avg. snap share" value={formatPercent(mean(weeks.map((week) => week.snapShare ?? null)))} />
+              <DataRow label="WOPR" value={formatDecimal(mean(weeks.map((week) => week.wopr)))} />
               <DataRow label="RACR" value={formatDecimal(mean(weeks.map((week) => week.racr)))} last />
               <p className="mt-4 text-[10px] leading-4 text-muted">WOPR and RACR are receiver usage/efficiency metrics. Missing values are left blank.</p>
             </CardContent></Card>

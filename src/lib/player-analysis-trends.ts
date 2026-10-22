@@ -29,6 +29,8 @@ export type TrendingPlayer = {
   trendDelta: number;
   nextWeekProjection: number;
   weeklyPoints: { week: number; points: number }[];
+  /** Average snap share (0-1) over the same recent-window games as recentAverage - null if the dataset has no snap data for this player. */
+  recentSnapShare: number | null;
 };
 
 function playedGames(weeks: PlayerWeekStat[]) {
@@ -54,6 +56,9 @@ function toTrendingPlayer(profile: PlayerProfileData): TrendingPlayer | null {
   const priorAverage = average(prior);
   const seasonAverage = average(points);
   const recentGames = points.slice(-5);
+  const recentSnaps = games.slice(-RECENT_WINDOW)
+    .map((week) => week.snapShare)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
 
   return {
     key: profile.gsisId ?? `${profile.name}|${profile.team}`,
@@ -68,6 +73,7 @@ function toTrendingPlayer(profile: PlayerProfileData): TrendingPlayer | null {
     trendDelta: Math.round((recentAverage - priorAverage) * 10) / 10,
     nextWeekProjection: Math.round(blendedPace({ seasonAverage, recentGames }, 60) * 10) / 10,
     weeklyPoints: games.map((week) => ({ week: week.week, points: Math.round((week.fantasyPoints ?? 0) * 10) / 10 })),
+    recentSnapShare: recentSnaps.length ? average(recentSnaps) : null,
   };
 }
 

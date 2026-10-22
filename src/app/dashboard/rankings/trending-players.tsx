@@ -78,7 +78,7 @@ function PlayerDialog({ player, tone, onClose }: { player: TrendingPlayer | null
             <TrendChart player={player} tone={tone} />
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <div className="mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
             <div className="rounded-xl border border-border bg-background/30 p-2.5">
               <p className="text-[9px] font-bold uppercase tracking-wider text-muted">Season avg</p>
               <p className="mt-1 text-sm font-black">{player.seasonAverage}</p>
@@ -91,12 +91,17 @@ function PlayerDialog({ player, tone, onClose }: { player: TrendingPlayer | null
               <p className="text-[9px] font-bold uppercase tracking-wider text-muted">Next week proj.</p>
               <p className="mt-1 text-sm font-black">{player.nextWeekProjection}</p>
             </div>
+            <div className="rounded-xl border border-border bg-background/30 p-2.5">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-muted">Recent snap %</p>
+              <p className="mt-1 text-sm font-black">{player.recentSnapShare != null ? `${(player.recentSnapShare * 100).toFixed(0)}%` : "—"}</p>
+            </div>
           </div>
 
           <p className="mt-4 text-[11px] leading-4 text-muted">
             Trend compares this player&apos;s average fantasy points over their last 3 games ({player.recentAverage})
             against everything before that ({player.priorAverage}) - a {player.trendDelta > 0 ? "+" : ""}{player.trendDelta}
             pt/game swing. The next-week projection leans toward that recent form over the full-season average.
+            {player.recentSnapShare != null && " Recent snap % shows whether that swing is backed by more playing time or just better results on a similar role."}
           </p>
         </>}
       </Dialog.Content>
