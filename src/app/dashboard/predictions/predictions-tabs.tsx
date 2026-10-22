@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Flame, Gauge, Snowflake } from "lucide-react";
+import { Flame, Gauge, Medal, Snowflake } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  HISTORICAL_SEASON_CEILINGS,
   STAT_LABELS,
   blendedPace,
   projectFullSeason,
@@ -51,24 +52,29 @@ function WeeklyLeaderboardCard({ statKey, leaders }: { statKey: StatKey; leaders
 function YearlyLeaderboardCard({ statKey, candidates, aggressiveness }: { statKey: StatKey; candidates: ProjectionCandidate[]; aggressiveness: number }) {
   const leaders = useMemo(() => {
     return candidates
-      .map((candidate) => ({ candidate, projectedFullSeason: projectFullSeason(blendedPace(candidate, aggressiveness)) }))
-      .sort((a, b) => b.projectedFullSeason - a.projectedFullSeason)
+      .map((candidate) => ({ candidate, projection: projectFullSeason(blendedPace(candidate, aggressiveness), statKey) }))
+      .sort((a, b) => b.projection.value - a.projection.value)
       .slice(0, 5);
-  }, [candidates, aggressiveness]);
+  }, [candidates, aggressiveness, statKey]);
+  const ceiling = HISTORICAL_SEASON_CEILINGS[statKey];
 
   return <Card><CardContent className="space-y-2 p-4">
     <p className="text-[10px] font-bold uppercase tracking-wider text-violet-300">{STAT_LABELS[statKey]}</p>
     <div className="space-y-1.5">
       {leaders.length === 0 && <p className="text-xs text-muted">No qualifying players yet this season.</p>}
-      {leaders.map(({ candidate, projectedFullSeason: value }, index) => <div key={candidate.key} className="flex items-center justify-between gap-2 text-xs">
+      {leaders.map(({ candidate, projection }, index) => <div key={candidate.key} className="flex items-center justify-between gap-2 text-xs">
         <div className="flex min-w-0 items-center gap-2">
           <span className="w-4 shrink-0 text-right font-black text-muted">{index + 1}</span>
           <span className="truncate font-bold">{candidate.name}</span>
           <span className="shrink-0 text-muted">{candidate.position} · {candidate.team}</span>
+          {projection.cappedAtRecord && <Medal className="h-3 w-3 shrink-0 text-amber-400" aria-label={`Capped at the NFL single-season record (${ceiling.holder}, ${ceiling.year}) - the model's raw pace projected higher`} />}
         </div>
-        <span className="shrink-0 tabular-nums font-bold text-violet-200">{value.toLocaleString()}</span>
+        <span className="shrink-0 tabular-nums font-bold text-violet-200">{projection.value.toLocaleString()}</span>
       </div>)}
     </div>
+    {leaders.some((l) => l.projection.cappedAtRecord) && <p className="pt-1 text-[10px] leading-4 text-muted">
+      <Medal className="mr-1 inline h-3 w-3 text-amber-400" />Capped at the real NFL single-season record ({ceiling.value.toLocaleString()}, {ceiling.holder}, {ceiling.year}) - the model&apos;s raw pace projected a total no player has ever actually reached in a season.
+    </p>}
   </CardContent></Card>;
 }
 
@@ -183,13 +189,23 @@ export function PredictionsTabs({
 
     <TabsContent value="playoffs" className="space-y-6">
       <section className="space-y-3">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">NFL playoff picture (live standings)</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">NFL projected final standings</p>
         <Card><CardContent className="p-4">{playoffs.nflPlayoffPicture}</CardContent></Card>
-        <p className="text-[11px] text-muted">Top 7 per conference reflects the current playoff field if the season ended today - not a projection of the final record.</p>
+        <p className="text-[11px] leading-4 text-muted">
+          Each team&apos;s current record (live via ESPN) extrapolated at its current win rate over the games it has
+          left this season. Top 7 per conference is the projected playoff field at season&apos;s end under that
+          projection - not the real seeding logic (division winners get an automatic top-4 seed regardless of
+          record), and it doesn&apos;t know who&apos;s actually left on each team&apos;s schedule, so an easy or hard
+          remaining slate isn&apos;t reflected.
+        </p>
       </section>
       <section className="space-y-3">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">College Football Playoff field (live rankings)</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Projected College Football Playoff field</p>
         <Card><CardContent className="p-4">{playoffs.cfbPlayoffField}</CardContent></Card>
+        <p className="text-[11px] leading-4 text-muted">
+          The current AP Top 25 (not the CFP selection committee&apos;s own ranking, which this feed doesn&apos;t
+          expose) as a stand-in for the 12-team field if selection happened today.
+        </p>
       </section>
     </TabsContent>
   </Tabs>;

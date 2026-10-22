@@ -1,20 +1,50 @@
 import { Suspense } from "react";
 import { AlertTriangle } from "lucide-react";
 import { getNflSeasonProjections } from "@/lib/nfl-season-projections";
-import { getNflStandings, type NflStandingsGroup } from "@/lib/nfl-standings-live";
+import { getNflStandings, type NflStandingsGroup, type NflStandingsTeam } from "@/lib/nfl-standings-live";
 import { getCollegeFootballRankings } from "@/lib/college-football-live";
 import { getWeeklyGameLines } from "@/lib/weekly-game-lines";
 import { getProjectionCandidates, getWeeklyLeaders, gamesObservedThisSeason } from "@/lib/player-projection-model";
-import { STAT_KEYS } from "@/lib/projection-math";
+import { REGULAR_SEASON_GAMES, STAT_KEYS } from "@/lib/projection-math";
 import { PredictionsTabs } from "./predictions-tabs";
 
+type ProjectedStandingsTeam = NflStandingsTeam & {
+  gamesPlayed: number;
+  projectedWins: number;
+  projectedLosses: number;
+};
+
+/**
+ * Straight-line extrapolation of each team's current win rate over the
+ * games it has left in a 17-game season - the same "pace over the
+ * remaining sample" idea the player projections use, applied to team
+ * records instead of player stats. It has no access to remaining-schedule
+ * strength (who's left on the slate, home/away, injuries), so it's a
+ * simple projection, not a full season simulation - that's stated in the
+ * tab copy, not hidden.
+ */
+function projectStandingsTeam(team: NflStandingsTeam): ProjectedStandingsTeam {
+  const gamesPlayed = team.wins + team.losses + team.ties;
+  const remaining = Math.max(0, REGULAR_SEASON_GAMES - gamesPlayed);
+  const pace = team.winPercent ?? (gamesPlayed > 0 ? team.wins / gamesPlayed : 0);
+  const projectedWins = Math.min(REGULAR_SEASON_GAMES - team.ties, team.wins + pace * remaining);
+  const projectedLosses = Math.max(0, REGULAR_SEASON_GAMES - team.ties - projectedWins);
+  return { ...team, gamesPlayed, projectedWins, projectedLosses };
+}
+
 function StandingsGroup({ group }: { group: NflStandingsGroup }) {
+  const projected = group.teams
+    .map(projectStandingsTeam)
+    .sort((a, b) => b.projectedWins - a.projectedWins || (b.winPercent ?? 0) - (a.winPercent ?? 0));
   return <div className="space-y-1.5">
     <p className="text-[10px] font-bold uppercase tracking-wider text-sky-300">{group.name}</p>
     <div className="space-y-1">
-      {group.teams.map((team, index) => <div key={team.team} className={`flex items-center justify-between rounded-lg border px-2.5 py-1.5 text-xs ${index < 7 ? "border-emerald-300/25 bg-emerald-300/5" : "border-border bg-background/20"}`}>
-        <span className="font-bold">{team.team}</span>
-        <span className="tabular-nums text-muted">{team.wins}-{team.losses}{team.ties ? `-${team.ties}` : ""}</span>
+      {projected.map((team, index) => <div key={team.team} className={`flex items-center justify-between gap-3 rounded-lg border px-2.5 py-1.5 text-xs ${index < 7 ? "border-emerald-300/25 bg-emerald-300/5" : "border-border bg-background/20"}`}>
+        <span className="truncate font-bold">{team.team}</span>
+        <span className="flex shrink-0 items-baseline gap-1.5 tabular-nums">
+          <span className="text-muted">{team.wins}-{team.losses}{team.ties ? `-${team.ties}` : ""}</span>
+          <span className="text-[10px] text-sky-300">&rarr; {team.projectedWins.toFixed(1)}-{team.projectedLosses.toFixed(1)} proj.</span>
+        </span>
       </div>)}
     </div>
   </div>;
@@ -94,10 +124,12 @@ export default function PredictionsPage() {
       <p className="text-[10px] font-bold uppercase tracking-wider text-violet-300">Player &amp; team analysis</p>
       <h1 className="mt-1 text-2xl font-black sm:text-3xl">Predictions</h1>
       <p className="mt-2 max-w-3xl text-sm text-muted">
-        Computed from real season-to-date per-player data (the same dataset the model on the Analytics Engine page
-        trains on). Weekly favors recent form; Yearly extrapolates a full-season pace you can tune; Playoffs reflects
-        live current standings/rankings, not a full season simulation. Where this platform doesn&apos;t yet have the
-        data to back a prediction, that&apos;s stated plainly instead of guessed.
+        Computed from real season-to-date per-player and per-team data (the same dataset the model on the
+        Analytics Engine page trains on). Weekly favors recent form; Yearly extrapolates a full-season pace you can
+        tune, capped at real NFL single-season records so a hot early stretch can&apos;t project an unprecedented
+        total; Playoffs projects each team&apos;s final record by extrapolating its current win rate over its
+        remaining games - a straight-line projection, not a full schedule simulation. Where this platform
+        doesn&apos;t yet have the data to back a prediction, that&apos;s stated plainly instead of guessed.
       </p>
     </div>
 
