@@ -134,5 +134,27 @@ export default function AnalyticsEnginePage() {
         <PipelineTable />
       </CardContent>
     </Card>
+
+    <Card className="border-dashed">
+      <CardContent className="space-y-2 p-5">
+        <h2 className="text-sm font-bold">Not in the pipeline yet</h2>
+        <p className="text-xs leading-5 text-muted">
+          Two specific asks come up a lot when people look at this platform, and the honest answer is the data
+          isn&apos;t there yet rather than something approximated:
+        </p>
+        <ul className="list-disc space-y-1.5 pl-4 text-xs leading-5 text-muted">
+          <li><strong className="text-foreground">Offensive formation / personnel grouping</strong> - which personnel package and alignment a player lines up in on a given snap.</li>
+          <li><strong className="text-foreground">Defensive coverage scheme faced</strong> - man vs. zone, and which specific coverage, on a given snap.</li>
+        </ul>
+        <p className="text-xs leading-5 text-muted">
+          nflreadr&apos;s public play-by-play (this pipeline&apos;s source) doesn&apos;t carry per-play formation or
+          coverage tags - that level of charting is tracked by the league&apos;s own Next Gen Stats program and by
+          paid charting services (PFF and similar), neither of which this pipeline has access to. Snap share, target
+          share, air-yards share, and WOPR/RACR - the usage signals this pipeline <em>can</em> back with real data -
+          are already surfaced on every player&apos;s profile instead of standing in for what formation/coverage
+          would show.
+        </p>
+      </CardContent>
+    </Card>
   </div>;
 }
