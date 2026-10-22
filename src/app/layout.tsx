@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Gridiron HQ - Fantasy Football Command Center",
+  title: "Gridiron HQ - NFL Player & Team Analytics",
   description:
-    "Fantasy football rankings, start/sit advice, waiver pickups, injury updates, and roster tools for the leagues you already play in.",
+    "A real NFL data pipeline and from-scratch regression model behind player rankings, injury context, and data-driven playoff, award, and stat-leader predictions.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

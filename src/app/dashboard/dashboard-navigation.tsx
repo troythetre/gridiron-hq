@@ -2,32 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/logo";
 import {
-  ArrowLeftRight,
-  BarChart3,
-  ChartCandlestick,
+  BrainCircuit,
   ChevronDown,
   CircleDot,
-  ClipboardList,
-  GraduationCap,
   LayoutDashboard,
-  Medal,
-  MessagesSquare,
-  Newspaper,
-  RefreshCw,
   Search,
   ShieldAlert,
-  Siren,
-  Swords,
   TicketCheck,
   TrendingUp,
   Trophy,
-  Users,
-  Users2,
-  Video,
+  UserRound,
 } from "lucide-react";
 
 type NavItem = {
@@ -44,60 +32,24 @@ type NavGroup = {
 };
 
 const homeItem: NavItem = { href: "/dashboard", label: "Home", icon: LayoutDashboard };
+const analyticsItem: NavItem = { href: "/dashboard/analytics-engine", label: "Analytics Engine", icon: BrainCircuit };
+const predictionsItem: NavItem = { href: "/dashboard/predictions", label: "Predictions", icon: TrendingUp };
+const playerAnalysisItem: NavItem = { href: "/dashboard/player-analysis", label: "Player Analysis", icon: Trophy };
+const parlayItem: NavItem = { href: "/dashboard/parlay", label: "Parlay", icon: TicketCheck };
 
-const groups: NavGroup[] = [
-  {
-    label: "Fantasy Football",
-    icon: Trophy,
-    items: [
-      { href: "/dashboard/leagues", label: "Team overview", icon: Users2 },
-      { href: "/dashboard/market", label: "Player market", icon: ChartCandlestick },
-      { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
-      { href: "/dashboard/news", label: "News feed", icon: Newspaper },
-      { label: "Leaderboard", icon: Medal, soon: true },
-      { label: "Futures", icon: TrendingUp, soon: true },
-    ],
-  },
-  {
-    label: "NFL",
-    icon: ShieldAlert,
-    items: [
-      { href: "/dashboard/parlay?sport=NFL", label: "Parlay Hub", icon: TicketCheck },
-      { href: "/dashboard/news", label: "News", icon: Newspaper },
-      { label: "Leaderboard", icon: Medal, soon: true },
-      { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
-      { label: "Stats", icon: BarChart3, soon: true },
-      { href: "/dashboard/parlay?tab=mock-draft", label: "Latest mock draft", icon: ClipboardList },
-    ],
-  },
-  {
-    label: "CFB",
-    icon: GraduationCap,
-    items: [
-      { href: "/dashboard/parlay?sport=CFB", label: "Parlay Hub", icon: TicketCheck },
-      { label: "News", icon: Newspaper, soon: true },
-      { label: "Leaderboard", icon: Medal, soon: true },
-      { href: "/dashboard/parlay?tab=college", label: "Rankings", icon: Trophy },
-      { label: "Stats", icon: BarChart3, soon: true },
-      { label: "Transfer portal", icon: Users, soon: true },
-      { href: "/dashboard/parlay?tab=rivalries", label: "Rivalry history", icon: Swords },
-    ],
-  },
-];
+// This platform is player & team analysis, not a per-league destination -
+// so navigation isn't split into NFL/CFB sections, and Rankings/Compare/
+// Market/News are one consolidated Player Analysis page (playerAnalysisItem)
+// instead of four separate routes. Fantasy league-management features
+// (leagues, trades, waiver, start/sit, team review, roster sync) have been
+// removed entirely, not just hidden - this is a player-analysis platform,
+// not a fantasy-league assistant.
+const groups: NavGroup[] = [];
 
 const moreItems: NavItem[] = [
-  { href: "/dashboard/start-sit", label: "Start/Sit", icon: Swords },
-  { href: "/dashboard/team-review", label: "Team Review", icon: ClipboardList },
-  { href: "/dashboard/trades", label: "Trades", icon: ArrowLeftRight },
-  { href: "/dashboard/waiver", label: "Waiver Wire", icon: Siren },
-  { href: "/dashboard/injuries", label: "Injuries", icon: ShieldAlert },
   { href: "/dashboard/search", label: "Player search", icon: Search },
-  { href: "/dashboard/compare", label: "Compare players", icon: CircleDot },
-  { href: "/dashboard/fantasy-feed", label: "Fantasy Feed", icon: Video },
-  { href: "/dashboard/community", label: "The Huddle", icon: MessagesSquare },
-  { href: "/dashboard/messages", label: "Messages", icon: MessagesSquare },
-  { href: "/dashboard/sync", label: "Sync teams", icon: RefreshCw },
-  { href: "/dashboard/membership", label: "Membership", icon: Trophy },
+  { href: "/dashboard/injuries", label: "Injuries", icon: ShieldAlert },
+  { href: "/dashboard/account", label: "My Account", icon: UserRound },
 ];
 
 function isActive(pathname: string, href?: string) {
@@ -125,6 +77,34 @@ function closeOpenDisclosures() {
 
 function closeDisclosuresOnNavigation() {
   closeOpenDisclosures();
+}
+
+function useCloseDisclosuresOnOutsideInteraction() {
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      document
+        .querySelectorAll<HTMLDetailsElement>("[data-dashboard-disclosure][open]")
+        .forEach((disclosure) => {
+          if (!disclosure.contains(target)) {
+            disclosure.classList.add("nav-disclosure-closing");
+            window.setTimeout(() => {
+              disclosure.open = false;
+              disclosure.classList.remove("nav-disclosure-closing");
+            }, 150);
+          }
+        });
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") closeOpenDisclosures();
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 }
 
 function ItemLink({ item, pathname, mobile = false }: { item: NavItem; pathname: string; mobile?: boolean }) {
@@ -173,9 +153,14 @@ function GroupDetails({ group, pathname }: { group: NavGroup; pathname: string }
 
 export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
   const pathname = usePathname();
+  useCloseDisclosuresOnOutsideInteraction();
   if (!mobile) {
     return <nav aria-label="Dashboard navigation" className="flex-1 space-y-1 overflow-y-auto">
       <ItemLink item={homeItem} pathname={pathname} />
+      <ItemLink item={analyticsItem} pathname={pathname} />
+      <ItemLink item={predictionsItem} pathname={pathname} />
+      <ItemLink item={playerAnalysisItem} pathname={pathname} />
+      <ItemLink item={parlayItem} pathname={pathname} />
       {groups.map((group) => <GroupDetails key={group.label} group={group} pathname={pathname} />)}
       <details data-dashboard-disclosure className="group/nav rounded-xl">
         <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted transition hover:bg-border/40 [&::-webkit-details-marker]:hidden">
@@ -189,6 +174,10 @@ export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
   }
   return <nav aria-label="Mobile dashboard navigation" className="flex flex-wrap items-center gap-1 border-b border-border bg-surface px-2 py-2">
       <ItemLink item={homeItem} pathname={pathname} mobile />
+      <ItemLink item={analyticsItem} pathname={pathname} mobile />
+      <ItemLink item={predictionsItem} pathname={pathname} mobile />
+      <ItemLink item={playerAnalysisItem} pathname={pathname} mobile />
+      <ItemLink item={parlayItem} pathname={pathname} mobile />
       {groups.map((group) => <details key={group.label} data-dashboard-disclosure className="group/mobile relative">
         <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-muted hover:bg-border/40 [&::-webkit-details-marker]:hidden">
           <group.icon className="h-3.5 w-3.5" />{group.label}<ChevronDown className="h-3 w-3" />
@@ -208,18 +197,49 @@ export function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
 
 export function DashboardTopNavigation({ trailing }: { trailing?: ReactNode }) {
   const pathname = usePathname();
+  const headerRef = useRef<HTMLElement>(null);
+  useCloseDisclosuresOnOutsideInteraction();
   useEffect(() => {
     closeOpenDisclosures();
   }, [pathname]);
 
-  return <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5" style={{ viewTransitionName: "dashboard-header" }}>
-    <div className="mx-auto flex h-14 max-w-5xl items-center justify-center gap-1 rounded-full border border-white/15 bg-[linear-gradient(115deg,rgba(21,37,58,.78),rgba(31,25,54,.72),rgba(13,24,39,.78))] px-3 shadow-[0_12px_36px_rgba(0,0,0,.28),inset_0_1px_0_rgba(255,255,255,.12)] backdrop-blur-2xl sm:h-16 sm:gap-2 sm:px-5">
+  // Other pages (e.g. the Parlay Lab tab row) need to sit flush below this
+  // header without sliding underneath its translucent glass pill. Rather
+  // than guessing a pixel height per breakpoint - which drifts the moment
+  // padding, font size, or responsive height changes - publish the header's
+  // real measured height as a CSS variable every page can read.
+  useEffect(() => {
+    const node = headerRef.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const updateHeight = () => {
+      document.documentElement.style.setProperty("--dash-header-h", `${node.offsetHeight}px`);
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return <header ref={headerRef} className="sticky top-0 z-40 px-3 pt-3 sm:px-5" style={{ viewTransitionName: "dashboard-header" }}>
+    <div className="mx-auto flex h-14 max-w-5xl items-center justify-center gap-1 rounded-full border border-white/15 bg-[linear-gradient(115deg,rgba(21,37,58,.96),rgba(31,25,54,.94),rgba(13,24,39,.96))] px-3 shadow-[0_12px_36px_rgba(0,0,0,.4),inset_0_1px_0_rgba(255,255,255,.12)] backdrop-blur-2xl sm:h-16 sm:gap-2 sm:px-5">
       <Link href="/dashboard" onClick={closeDisclosuresOnNavigation} className="shrink-0" aria-label="Gridiron HQ home">
         <Logo height={26} />
       </Link>
       <nav aria-label="Primary navigation" className="flex min-w-0 items-center justify-center gap-0 sm:gap-0.5">
         <Link href="/dashboard" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, homeItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, homeItem.href) ? "text-white" : "text-blue-100/65"}`}>
           <LayoutDashboard className="h-4 w-4 text-sky-200" /><span className="hidden sm:inline">Home</span>
+        </Link>
+        <Link href="/dashboard/analytics-engine" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, analyticsItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, analyticsItem.href) ? "text-white" : "text-blue-100/65"}`}>
+          <BrainCircuit className="h-4 w-4 text-violet-300" /><span className="hidden sm:inline">Analytics Engine</span>
+        </Link>
+        <Link href="/dashboard/predictions" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, predictionsItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, predictionsItem.href) ? "text-white" : "text-blue-100/65"}`}>
+          <TrendingUp className="h-4 w-4 text-emerald-300" /><span className="hidden sm:inline">Predictions</span>
+        </Link>
+        <Link href="/dashboard/player-analysis" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, playerAnalysisItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, playerAnalysisItem.href) ? "text-white" : "text-blue-100/65"}`}>
+          <Trophy className="h-4 w-4 text-amber-300" /><span className="hidden sm:inline">Player Analysis</span>
+        </Link>
+        <Link href="/dashboard/parlay" onClick={closeDisclosuresOnNavigation} aria-current={isActive(pathname, parlayItem.href) ? "page" : undefined} className={`flex h-10 shrink-0 items-center gap-1 rounded-xl px-1.5 text-xs font-bold transition-colors hover:bg-white/[.08] sm:px-1.5 ${isActive(pathname, parlayItem.href) ? "text-white" : "text-blue-100/65"}`}>
+          <TicketCheck className="h-4 w-4 text-violet-300" /><span className="hidden sm:inline">Parlay</span>
         </Link>
         {groups.map((group) => <TopNavDropdown key={group.label} group={group} pathname={pathname} />)}
         <details data-dashboard-disclosure className="group/top relative">

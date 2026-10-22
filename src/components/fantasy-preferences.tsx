@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type ScoringFormat = "standard" | "half_ppr" | "ppr";
@@ -51,8 +52,16 @@ export function useFantasyPreferences() {
   return useContext(PreferencesContext);
 }
 
+// These league-scoring settings only matter to the fantasy-league pages
+// (hidden from navigation for now, but still reachable directly). They'd be
+// confusing clutter on the player/team-analysis showcase pages, including
+// the public ones a recruiter or a shared link might open with no account.
+const HIDDEN_ON_PREFIXES = ["/dashboard/analytics-engine", "/dashboard/predictions", "/dashboard/bettor"];
+
 export function FantasyPreferenceControls() {
   const { scoring, mode, setScoring, setMode } = useFantasyPreferences();
+  const pathname = usePathname();
+  if (HIDDEN_ON_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return null;
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2">
       <span className="text-[10px] font-bold uppercase tracking-wider text-muted">League settings</span>

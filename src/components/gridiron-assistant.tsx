@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Bot, ChevronRight, Search, Swords, ClipboardList, Siren, Newspaper, X, GraduationCap } from "lucide-react";
+import { Bot, ChevronRight, Search, Swords, TrendingUp, Newspaper, X, GraduationCap } from "lucide-react";
 
 const actions = [
-  { label: "Find a player", detail: "Search the player catalog", href: "/dashboard/search", icon: Search },
-  { label: "Set my lineup", detail: "Compare your start/sit options", href: "/dashboard/start-sit", icon: Swords },
-  { label: "Review my team", detail: "See strengths and roster gaps", href: "/dashboard/team-review", icon: ClipboardList },
-  { label: "Find waiver targets", detail: "Browse available pickups", href: "/dashboard/waiver", icon: Siren },
-  { label: "Catch up on news", detail: "Latest league updates", href: "/dashboard/news", icon: Newspaper },
+  { label: "Find a player", detail: "Search the player catalog", href: "/dashboard/player-analysis?tab=rankings", icon: Search },
+  { label: "Compare two players", detail: "Side-by-side stat comparison", href: "/dashboard/player-analysis?tab=compare", icon: Swords },
+  { label: "See predictions", detail: "Weekly, yearly, and playoffs", href: "/dashboard/predictions", icon: TrendingUp },
+  { label: "Catch up on news", detail: "Latest NFL coverage", href: "/dashboard/player-analysis?tab=news", icon: Newspaper },
   { label: "Latest college rankings", detail: "Current AP Top 25 poll", href: "/dashboard/parlay?tab=college", icon: GraduationCap },
 ];
 

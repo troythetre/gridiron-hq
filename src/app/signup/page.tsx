@@ -16,7 +16,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-xl">Create your account</CardTitle>
-          <CardDescription>Fantasy rankings, start/sit advice, waiver picks, and roster tools for leagues you already play in.</CardDescription>
+          <CardDescription>Player rankings, injury context, and tools for tracking a team in a league you already play in.</CardDescription>
         </CardHeader>
         <CardContent>
           <form action={formAction} className="space-y-4">

@@ -17,7 +17,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="relative min-h-screen min-w-0 bg-background">
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_15%_0%,rgba(37,99,235,.11),transparent_38%),radial-gradient(ellipse_at_85%_5%,rgba(124,58,237,.1),transparent_34%)]" />
       <div className="relative z-10 flex min-h-screen min-w-0 flex-col">
-        <DashboardTopNavigation trailing={
+        <DashboardTopNavigation trailing={user &&
           <form action={logout} className="shrink-0">
             <Button type="submit" variant="ghost" size="icon" aria-label={`Sign out ${displayName}`} title="Sign out" className="h-9 w-9 rounded-full border border-white/10 bg-white/[.04] text-blue-100/70 transition hover:bg-white/[.1] hover:text-white">
               <LogOut className="h-4 w-4" />

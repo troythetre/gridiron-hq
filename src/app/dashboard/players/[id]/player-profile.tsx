@@ -157,7 +157,7 @@ export function PlayerProfile({
                 photoUrl={profile?.headshotUrl}
                 selectedPhoto={photo}
                 size={164}
-                className="relative drop-shadow-[0_20px_24px_rgba(0,0,0,.4)] sm:h-[190px] sm:w-[190px]"
+                className="relative drop-shadow-[0_20px_24px_rgba(0,0,0,.4)] sm:[--avatar-size:190px]"
               />
               <div className="absolute -bottom-2 -right-2 flex h-10 min-w-10 items-center justify-center rounded-full border-4 border-[#101820] bg-primary px-2 text-xs font-black text-primary-foreground">
                 {player.pos}
@@ -241,7 +241,7 @@ export function PlayerProfile({
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[640px] text-left text-xs">
                       <thead className="bg-black/15 text-[9px] uppercase tracking-[.16em] text-muted">
-                        <tr><th className="px-5 py-3">Week</th><th className="px-3 py-3 text-right">Fantasy</th><th className="px-3 py-3 text-right">Pass Yds</th><th className="px-3 py-3 text-right">Rush Yds</th><th className="px-3 py-3 text-right">Targets</th><th className="px-5 py-3 text-right">Rec Yds</th></tr>
+                        <tr><th className="px-5 py-3">Week</th><th className="px-3 py-3 text-right">Fantasy</th><th className="px-3 py-3 text-right">Pass Yds</th><th className="px-3 py-3 text-right">Rush Yds</th><th className="px-3 py-3 text-right">Targets</th><th className="px-3 py-3 text-right">Rec Yds</th><th className="px-5 py-3 text-right">Snap %</th></tr>
                       </thead>
                       <tbody>{weeks.map((week) => (
                         <tr key={week.week} className="border-t border-border/60 transition hover:bg-white/[.025]">
@@ -250,7 +250,8 @@ export function PlayerProfile({
                           <td className="px-3 py-3.5 text-right text-muted">{week.passingYards ?? "—"}</td>
                           <td className="px-3 py-3.5 text-right text-muted">{week.rushingYards ?? "—"}</td>
                           <td className="px-3 py-3.5 text-right text-muted">{week.targets ?? "—"}</td>
-                          <td className="px-5 py-3.5 text-right text-muted">{week.receivingYards ?? "—"}</td>
+                          <td className="px-3 py-3.5 text-right text-muted">{week.receivingYards ?? "—"}</td>
+                          <td className="px-5 py-3.5 text-right text-muted">{week.snapShare != null ? `${(week.snapShare * 100).toFixed(0)}%` : "—"}</td>
                         </tr>
                       ))}</tbody>
                     </table>
@@ -260,11 +261,12 @@ export function PlayerProfile({
             </Card>
             <Card className="bg-surface/75" style={{ borderColor: `${teamPrimary}55` }}>
               <CardContent className="p-5">
-                <SectionHeading eyebrow="Usage profile" title="Touches & targets" compact />
+                <SectionHeading eyebrow="Usage profile" title="Touches, targets & snaps" compact />
                 <TrendChart weeks={weeks} valueFor={(week) => (week.carries ?? 0) + (week.targets ?? 0)} unit="opps" tone="muted" color={teamPrimary} />
-                <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="mt-4 grid grid-cols-3 gap-3">
                   <MiniStat label="Carries" value={carries.toString()} />
                   <MiniStat label="Targets" value={targets.toString()} />
+                  <MiniStat label="Avg. snap %" value={formatPercent(mean(weeks.map((week) => week.snapShare ?? null)))} />
                 </div>
               </CardContent>
             </Card>
@@ -332,7 +334,8 @@ export function PlayerProfile({
             <Card className="border-white/10 bg-surface/75"><CardContent className="p-5">
               <SectionHeading eyebrow="Advanced usage" title="Opportunity signals" compact />
               <DataRow label="Targets" value={targets.toString()} /><DataRow label="Avg. target share" value={formatPercent(mean(weeks.map((week) => week.targetShare)))} />
-              <DataRow label="Avg. air-yards share" value={formatPercent(mean(weeks.map((week) => week.airYardsShare)))} /><DataRow label="WOPR" value={formatDecimal(mean(weeks.map((week) => week.wopr)))} />
+              <DataRow label="Avg. air-yards share" value={formatPercent(mean(weeks.map((week) => week.airYardsShare)))} /><DataRow label="Avg. snap share" value={formatPercent(mean(weeks.map((week) => week.snapShare ?? null)))} />
+              <DataRow label="WOPR" value={formatDecimal(mean(weeks.map((week) => week.wopr)))} />
               <DataRow label="RACR" value={formatDecimal(mean(weeks.map((week) => week.racr)))} last />
               <p className="mt-4 text-[10px] leading-4 text-muted">WOPR and RACR are receiver usage/efficiency metrics. Missing values are left blank.</p>
             </CardContent></Card>
@@ -344,15 +347,15 @@ export function PlayerProfile({
             </CardContent></Card>
             <Card className="border-white/10 bg-surface/75"><CardContent className="p-5">
               <SectionHeading eyebrow="Get back in the game" title="Quick links" compact />
-              <QuickLink href="/dashboard/start-sit" title="Start / sit tool" detail="Compare against another player" icon={<CircleDot />} />
-              <QuickLink href="/dashboard/rankings" title="Full player board" detail="Browse every ranked player" icon={<BarChart3 />} />
-              <QuickLink href="/dashboard/waiver" title="Waiver wire" detail="Find your next breakout" icon={<Sparkles />} />
-              <QuickLink href="/dashboard/news" title="Fantasy news" detail="See the latest league updates" icon={<Newspaper />} last />
+              <QuickLink href="/dashboard/player-analysis?tab=compare" title="Compare players" detail="Put two players side by side" icon={<CircleDot />} />
+              <QuickLink href="/dashboard/player-analysis?tab=rankings" title="Full player board" detail="Browse every ranked player" icon={<BarChart3 />} />
+              <QuickLink href="/dashboard/player-analysis?tab=market" title="Player market" detail="See who's trending up or down" icon={<Sparkles />} />
+              <QuickLink href="/dashboard/player-analysis?tab=news" title="Player news" detail="See the latest coverage" icon={<Newspaper />} last />
             </CardContent></Card>
           </div>
           <Card className="border-primary/20 bg-primary/[.04]"><CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-primary">Player comparison</p><p className="mt-1 text-sm text-muted">See how {player.name} stacks up against the rest of the field.</p></div>
-            <Link href={player.id > 0 ? `/dashboard/compare?player=${player.id}` : "/dashboard/compare"} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-black uppercase tracking-wider text-black transition hover:brightness-110">Compare players <ChevronRight className="h-4 w-4" /></Link>
+            <Link href={player.id > 0 ? `/dashboard/player-analysis?tab=compare&player=${player.id}` : "/dashboard/player-analysis?tab=compare"} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-black uppercase tracking-wider text-black transition hover:brightness-110">Compare players <ChevronRight className="h-4 w-4" /></Link>
           </CardContent></Card>
         </div>
       )}
