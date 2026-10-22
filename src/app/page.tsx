@@ -3,17 +3,17 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Logo } from "@/components/logo";
-import { BrainCircuit, Trophy, TrendingUp, ShieldAlert, CircleDot, Newspaper } from "lucide-react";
+import { BrainCircuit, Trophy, TrendingUp, ShieldAlert, SwatchBook, ChartCandlestick } from "lucide-react";
 import { getNews } from "@/lib/data";
 import { NewsSlideshow } from "@/components/news-slideshow";
 
 const FEATURES = [
   { icon: BrainCircuit, title: "Analytics Engine", body: "A real NFL data pipeline and a from-scratch regression model, with live holdout accuracy - open to everyone, no account needed.", href: "/dashboard/analytics-engine" },
   { icon: TrendingUp, title: "Predictions", body: "Data-driven NFL & CFB playoff pictures, award projections, and stat-leader pace, computed live from real player data.", href: "/dashboard/predictions" },
-  { icon: Trophy, title: "Rankings", body: "Positional and overall player rankings built from real weekly production." },
-  { icon: CircleDot, title: "Compare Players", body: "Put any two players side by side and see where the numbers actually differ." },
-  { icon: ShieldAlert, title: "Injury Tracker", body: "Status, context, and who steps in next - color-coded by severity." },
-  { icon: Newspaper, title: "NFL News", body: "Short, sourced blurbs on what's actually moving around the league." },
+  { icon: Trophy, title: "Player Rankings", body: "Positional and overall player rankings built from real weekly production, with week-over-week trend signals.", href: "/dashboard/player-analysis?tab=rankings" },
+  { icon: SwatchBook, title: "Compare Players", body: "Put any two players side by side and see where the numbers actually differ.", href: "/dashboard/player-analysis?tab=compare" },
+  { icon: ChartCandlestick, title: "Player Market", body: "A trading-style production index that moves with weekly performance, practice reports, and injury news.", href: "/dashboard/player-analysis?tab=market" },
+  { icon: ShieldAlert, title: "Injury Tracker", body: "Status, context, and who steps in next - color-coded by severity.", href: "/dashboard/injuries" },
 ];
 
 export default async function Home() {
@@ -67,7 +67,7 @@ export default async function Home() {
             </Button>
           </div>
           <p className="mt-4 text-sm text-neutral-400">
-            Both are public, no account needed. <Link href="/signup" className="font-semibold text-primary underline-offset-4 hover:underline">Create a free account</Link> to track your own team.
+            Both are public, no account needed. <Link href="/signup" className="font-semibold text-primary underline-offset-4 hover:underline">Create a free account</Link> to save parlays, build a player watchlist, and share a public profile.
           </p>
         </div>
       </section>
